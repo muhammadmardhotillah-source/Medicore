@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daftar Mandiri — SIMRS TEMRS</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135deg,#072a4a 0%,#0a5c99 60%,#073d66 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;color:#fff;overflow-x:hidden}
+
+/* HEADER */
+.header{width:100%;background:rgba(0,0,0,.2);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.1);padding:14px 32px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-box{width:44px;height:44px;background:#e8192c;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff}
+.logo-name{font-size:18px;font-weight:800}
+.logo-sub{font-size:11px;opacity:.6;letter-spacing:.5px}
+.header-right{text-align:right}
+.header-time{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700}
+.header-date{font-size:12px;opacity:.6;margin-top:2px}
+
+/* MAIN WRAPPER */
+.wrapper{width:100%;max-width:900px;padding:32px 16px;flex:1}
+
+/* STEP INDICATOR */
+.steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:36px}
+.step{display:flex;align-items:center;gap:8px}
+.step-num{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;border:2px solid rgba(255,255,255,.3);color:rgba(255,255,255,.5);transition:.3s}
+.step-num.active{background:#fff;color:#0a5c99;border-color:#fff}
+.step-num.done{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.6);color:#fff}
+.step-label{font-size:13px;font-weight:600;color:rgba(255,255,255,.5)}
+.step-label.active{color:#fff}
+.step-line{width:60px;height:2px;background:rgba(255,255,255,.2);margin:0 8px}
+.step-line.done{background:rgba(255,255,255,.6)}
+
+/* SCREEN */
+.screen{display:none;animation:slideIn .35s ease}
+.screen.active{display:block}
+@keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* HEADING */
+.screen-title{text-align:center;font-size:22px;font-weight:800;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.screen-sub{text-align:center;font-size:14px;opacity:.7;margin-bottom:32px}
+
+/* PENJAMIN BUTTONS */
+.pj-grid{display:grid;grid-template-columns:1fr;gap:16px;max-width:500px;margin:0 auto}
+.pj-btn{padding:28px;border-radius:16px;border:3px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:800;cursor:pointer;transition:.25s;display:flex;align-items:center;justify-content:center;gap:16px;text-transform:uppercase;letter-spacing:1px;backdrop-filter:blur(5px)}
+.pj-btn:hover,.pj-btn:active{background:rgba(255,255,255,.2);border-color:#fff;transform:scale(1.02)}
+.pj-btn.umum{border-color:rgba(255,180,0,.5);color:#ffc107}
+.pj-btn.umum:hover{background:rgba(255,193,7,.2);border-color:#ffc107}
+.pj-btn.bpjs{border-color:rgba(0,200,150,.5);color:#4ade80}
+.pj-btn.bpjs:hover{background:rgba(74,222,128,.15);border-color:#4ade80}
+.pj-btn.asuransi{border-color:rgba(100,180,255,.5);color:#93c5fd}
+.pj-btn.asuransi:hover{background:rgba(147,197,253,.15);border-color:#93c5fd}
+
+/* SEARCH TYPE */
+.search-type{display:flex;gap:12px;justify-content:center;margin-bottom:24px;flex-wrap:wrap}
+.stype-btn{padding:14px 28px;border-radius:10px;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:.2s}
+.stype-btn.active,.stype-btn:hover{border-color:#fff;background:rgba(255,255,255,.2);color:#fff}
+
+/* INPUT */
+.input-area{max-width:580px;margin:0 auto}
+.input-label{font-size:13px;font-weight:600;opacity:.7;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.input-wrap{display:flex;gap:10px;margin-bottom:20px}
+.big-input{flex:1;padding:16px 20px;border-radius:12px;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;outline:none;transition:.2s;letter-spacing:2px}
+.big-input::placeholder{color:rgba(255,255,255,.3);font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:400;letter-spacing:0}
+.big-input:focus{border-color:#fff;background:rgba(255,255,255,.15)}
+.cari-btn{padding:16px 28px;border-radius:12px;border:none;background:#e8192c;color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:.2s;white-space:nowrap}
+.cari-btn:hover{background:#c0132a;transform:scale(1.02)}
+
+/* DATA CARD */
+.data-card{background:rgba(255,255,255,.12);backdrop-filter:blur(10px);border:2px solid rgba(255,255,255,.2);border-radius:16px;padding:24px;max-width:680px;margin:0 auto 24px}
+.data-card-title{font-size:12px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:8px}
+.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.data-item .lbl{font-size:11px;opacity:.6;margin-bottom:2px}
+.data-item .val{font-size:14px;font-weight:700}
+
+/* POLI GRID */
+.poli-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:680px;margin:0 auto 24px}
+.poli-btn{padding:20px 12px;border-radius:12px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:.25s;text-align:center;text-transform:uppercase}
+.poli-btn:hover,.poli-btn.selected{background:rgba(255,255,255,.2);border-color:#fff;transform:scale(1.03)}
+
+/* DOKTER CARD */
+.dokter-list{max-width:680px;margin:0 auto 24px;display:flex;flex-direction:column;gap:12px}
+.dokter-item{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:12px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);cursor:pointer;transition:.25s}
+.dokter-item:hover{background:rgba(255,255,255,.18);border-color:#fff;transform:translateX(4px)}
+.dokter-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#4ade80,#22c55e);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.dokter-name{font-size:16px;font-weight:700}
+.dokter-spesialis{font-size:13px;opacity:.7;margin-top:2px}
+.dokter-jadwal{font-size:12px;opacity:.6;margin-top:3px}
+.dokter-arrow{margin-left:auto;font-size:22px;opacity:.5}
+
+/* KONFIRMASI */
+.konfirmasi-box{background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border:2px solid rgba(255,255,255,.2);border-radius:16px;padding:24px;max-width:680px;margin:0 auto 20px}
+.konf-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.konf-row:last-child{border-bottom:none}
+.konf-lbl{font-size:13px;opacity:.7}
+.konf-val{font-size:14px;font-weight:700;text-align:right}
+
+/* TICKET */
+.ticket{background:#fff;color:#1a2533;border-radius:16px;padding:32px;max-width:500px;margin:0 auto;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+.ticket-rs{font-size:14px;font-weight:600;color:#6b7c93;text-transform:uppercase;letter-spacing:.5px}
+.ticket-icon{font-size:48px;margin:12px 0}
+.ticket-label{font-size:13px;color:#6b7c93;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.ticket-num{font-size:72px;font-weight:900;color:#0a5c99;line-height:1;font-family:'JetBrains Mono',monospace}
+.ticket-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;background:#f0f4f8;border-radius:10px;padding:14px}
+.ticket-info-item .lbl{font-size:11px;color:#6b7c93;font-weight:600}
+.ticket-info-item .val{font-size:13px;font-weight:700;margin-top:2px}
+.ticket-sep{border:none;border-top:2px dashed #d1dce8;margin:18px 0}
+.ticket-footer{font-size:12px;color:#6b7c93;margin-top:8px}
+.ticket-booking{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#0a5c99;margin-top:4px}
+
+/* NAV BUTTONS */
+.nav-btns{display:flex;justify-content:space-between;align-items:center;max-width:680px;margin:0 auto;padding-top:8px}
+.nav-btn{padding:14px 28px;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:8px}
+.btn-back{background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);color:#fff}
+.btn-back:hover{background:rgba(255,255,255,.25)}
+.btn-next{background:#fff;border:2px solid #fff;color:#0a5c99;margin-left:auto}
+.btn-next:hover{background:#f0f4f8}
+.btn-daftar{background:#e8192c;border:2px solid #e8192c;color:#fff;padding:16px 40px;font-size:17px}
+.btn-daftar:hover{background:#c0132a}
+.btn-home{background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);color:#fff}
+.btn-home:hover{background:rgba(255,255,255,.25)}
+.btn-print{background:#4ade80;border:2px solid #4ade80;color:#065f46}
+.btn-print:hover{background:#22c55e}
+
+/* FOOTER */
+.footer{width:100%;background:rgba(0,0,0,.2);padding:12px 32px;display:flex;align-items:center;justify-content:center;gap:24px;font-size:12px;opacity:.5}
+
+/* NUMPAD */
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:320px;margin:0 auto 20px}
+.np-btn{padding:18px;border-radius:10px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;cursor:pointer;transition:.2s;text-align:center}
+.np-btn:hover,.np-btn:active{background:rgba(255,255,255,.25);border-color:#fff}
+.np-btn.del{background:rgba(232,25,44,.2);border-color:rgba(232,25,44,.4);color:#f87171}
+.np-btn.ok{background:rgba(13,159,110,.2);border-color:rgba(13,159,110,.4);color:#4ade80}
+
+@media(max-width:600px){
+  .poli-grid{grid-template-columns:repeat(2,1fr)}
+  .data-grid{grid-template-columns:1fr}
+  .ticket-num{font-size:56px}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-box">i</div>
+    <div>
+      <div class="logo-name">TEMRS</div>
+      <div class="logo-sub">RS KIKA MAJU</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="header-time" id="htime">--:--:--</div>
+    <div class="header-date" id="hdate">--</div>
+  </div>
+</div>
+
+<!-- WRAPPER -->
+<div class="wrapper">
+
+  <!-- STEP INDICATOR -->
+  <div class="steps" id="step-indicator">
+    <div class="step">
+      <div class="step-num active" id="sn1">1</div>
+      <div class="step-label active" id="sl1">Penjamin</div>
+    </div>
+    <div class="step-line" id="sl12"></div>
+    <div class="step">
+      <div class="step-num" id="sn2">2</div>
+      <div class="step-label" id="sl2">Cari Data</div>
+    </div>
+    <div class="step-line" id="sl23"></div>
+    <div class="step">
+      <div class="step-num" id="sn3">3</div>
+      <div class="step-label" id="sl3">Pilih Poli</div>
+    </div>
+    <div class="step-line" id="sl34"></div>
+    <div class="step">
+      <div class="step-num" id="sn4">4</div>
+      <div class="step-label" id="sl4">Dokter</div>
+    </div>
+    <div class="step-line" id="sl45"></div>
+    <div class="step">
+      <div class="step-num" id="sn5">5</div>
+      <div class="step-label" id="sl5">Konfirmasi</div>
+    </div>
+    <div class="step-line" id="sl56"></div>
+    <div class="step">
+      <div class="step-num" id="sn6">6</div>
+      <div class="step-label" id="sl6">Tiket</div>
+    </div>
+  </div>
+
+  <!-- SCREEN 1: PILIH PENJAMIN -->
+  <div class="screen active" id="screen-1">
+    <div class="screen-title">Selamat Datang!</div>
+    <div class="screen-sub">Pilih jenis kunjungan sesuai penjamin Anda</div>
+    <div class="pj-grid">
+      <button class="pj-btn umum" onclick="pilihPenjamin('UMUM')">💳 UMUM</button>
+      <button class="pj-btn bpjs" onclick="pilihPenjamin('BPJS')">🏥 BPJS Kesehatan</button>
+      <button class="pj-btn asuransi" onclick="pilihPenjamin('ASURANSI')">📋 Asuransi Swasta</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: CARI DATA -->
+  <div class="screen" id="screen-2">
+    <div class="screen-title">Cari Data Rekam Medis</div>
+    <div class="screen-sub">Pilih identitas, masukkan data, lalu klik Cari</div>
+    <div class="search-type">
+      <button class="stype-btn active" onclick="pilihTipe(this,'NIK')">👤 NIK</button>
+      <button class="stype-btn" onclick="pilihTipe(this,'No. RM')">📁 No. RM</button>
+      <button class="stype-btn" onclick="pilihTipe(this,'No. BPJS')">🏥 No. BPJS</button>
+    </div>
+    <div class="input-area">
+      <div class="input-label" id="input-label">Masukkan Nomor NIK</div>
+      <div class="input-wrap">
+        <input class="big-input" id="search-input" placeholder="Ketik nomor disini..." maxlength="20">
+        <button class="cari-btn" onclick="cariPasien()">🔍 CARI</button>
+      </div>
+    </div>
+    <!-- NUMPAD -->
+    <div class="numpad">
+      <button class="np-btn" onclick="addNum('1')">1</button>
+      <button class="np-btn" onclick="addNum('2')">2</button>
+      <button class="np-btn" onclick="addNum('3')">3</button>
+      <button class="np-btn" onclick="addNum('4')">4</button>
+      <button class="np-btn" onclick="addNum('5')">5</button>
+      <button class="np-btn" onclick="addNum('6')">6</button>
+      <button class="np-btn" onclick="addNum('7')">7</button>
+      <button class="np-btn" onclick="addNum('8')">8</button>
+      <button class="np-btn" onclick="addNum('9')">9</button>
+      <button class="np-btn del" onclick="delNum()">⌫</button>
+      <button class="np-btn" onclick="addNum('0')">0</button>
+      <button class="np-btn ok" onclick="cariPasien()">✓</button>
+    </div>
+    <div class="nav-btns">
+      <button class="nav-btn btn-back" onclick="goScreen(1)">← Kembali</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: KONFIRMASI DATA -->
+  <div class="screen" id="screen-3">
+    <div class="screen-title">Konfirmasi Data Diri</div>
+    <div class="screen-sub">Pastikan data berikut benar sebelum melanjutkan</div>
+    <div class="data-card">
+      <div class="data-card-title">📁 Data Rekam Medis</div>
+      <div class="data-grid">
+        <div class="data-item"><div class="lbl">Nama Lengkap</div><div class="val" id="show-name">Rumiah Ny</div></div>
+        <div class="data-item"><div class="lbl">No. RM</div><div class="val" id="show-rm" style="font-family:'JetBrains Mono',monospace">009001461</div></div>
+        <div class="data-item"><div class="lbl">NIK</div><div class="val" id="show-nik" style="font-family:'JetBrains Mono',monospace">3602xxxxxxxx</div></div>
+        <div class="data-item"><div class="lbl">Tanggal Lahir</div><div class="val" id="show-ttl">02 Juni 1958 (64th)</div></div>
+        <div class="data-item"><div class="lbl">Jenis Kelamin</div><div class="val" id="show-jk">Perempuan</div></div>
+        <div class="data-item"><div class="lbl">Golongan Darah</div><div class="val">—</div></div>
+        <div class="data-item"><div class="lbl">Nomor HP</div><div class="val" id="show-hp">0859-3900-4395</div></div>
+        <div class="data-item"><div class="lbl">Penjamin</div><div class="val" id="show-penjamin">UMUM</div></div>
+        <div class="data-item" style="grid-column:span 2"><div class="lbl">Alamat</div><div class="val" id="show-alamat">JL Raya Cilegon KM 08, Kramatwatu, Kab. Serang, Banten</div></div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="nav-btn btn-back" onclick="goScreen(2)">← Kembali</button>
+      <button class="nav-btn btn-next" onclick="goScreen(4)">Selanjutnya →</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: PILIH POLI -->
+  <div class="screen" id="screen-4">
+    <div class="screen-title">Pilih Poli / Spesialistik Tujuan</div>
+    <div class="screen-sub">Klik nama poli yang ingin Anda tuju</div>
+    <div class="poli-grid">
+      <button class="poli-btn" onclick="pilihPoli(this,'Anak')">👶 ANAK</button>
+      <button class="poli-btn" onclick="pilihPoli(this,'Bedah Umum')">🔪 BEDAH UMUM</button>
+      <button class="poli-btn" onclick="pilihPoli(this,'Gigi')">🦷 GIGI</button>
+      <button class="poli-btn" onclick="pilihPoli(this,'Jantung')">🫀 JANTUNG</button>
+      <button class="poli-btn" onclick="pilihPoli(this,'Kandungan')">🤰 KANDUNGAN</button>
+      <button class="poli-btn" onclick="pilihPoli(this,'Mata')">👁️ MATA</button>
+      <button class="poli-btn" onclick="pilihPoli(this,'Paru')">🫁 PARU</button>
+      <button class="poli-btn" onclick="pilihPoli(this,'Penyakit Dalam')">🩺 P. DALAM</button>
+      <button class="poli-btn" onclick="pilihPoli(this,'Rehabilitasi Medik')">🏋️ REHAB MEDIK</button>
+      <button class="poli-btn" onclick="pilihPoli(this,'Umum')">🏥 UMUM</button>
+      <button class="poli-btn" onclick="pilihPoli(this,'Urologi')">💊 UROLOGI</button>
+      <button class="poli-btn" onclick="pilihPoli(this,'THT')">👂 THT</button>
+    </div>
+    <div class="nav-btns">
+      <button class="nav-btn btn-back" onclick="goScreen(3)">← Kembali</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 5: PILIH DOKTER -->
+  <div class="screen" id="screen-5">
+    <div class="screen-title">Pilih Dokter Tujuan</div>
+    <div class="screen-sub" id="poli-label">Poli Jantung</div>
+    <div class="dokter-list" id="dokter-list">
+      <!-- Diisi JS -->
+    </div>
+    <div class="nav-btns">
+      <button class="nav-btn btn-back" onclick="goScreen(4)">← Kembali</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 6: KONFIRMASI AKHIR -->
+  <div class="screen" id="screen-6">
+    <div class="screen-title">Konfirmasi Pendaftaran</div>
+    <div class="screen-sub">Pastikan semua data benar, lalu klik DAFTAR</div>
+    <div class="konfirmasi-box">
+      <div class="konf-row"><div class="konf-lbl">Nama Pasien</div><div class="konf-val" id="konf-name">Rumiah Ny</div></div>
+      <div class="konf-row"><div class="konf-lbl">No. RM</div><div class="konf-val" id="konf-rm" style="font-family:'JetBrains Mono',monospace">009001461</div></div>
+      <div class="konf-row"><div class="konf-lbl">Jenis Kelamin</div><div class="konf-val" id="konf-jk">Perempuan</div></div>
+      <div class="konf-row"><div class="konf-lbl">Penjamin</div><div class="konf-val" id="konf-penjamin">UMUM</div></div>
+      <div class="konf-row"><div class="konf-lbl">Poli Tujuan</div><div class="konf-val" id="konf-poli">Jantung</div></div>
+      <div class="konf-row"><div class="konf-lbl">Dokter</div><div class="konf-val" id="konf-dokter">Dr. Taka Mehi, Sp.JP, FIHA</div></div>
+      <div class="konf-row"><div class="konf-lbl">Jadwal</div><div class="konf-val" id="konf-jadwal">Siang 13:00 – 15:00</div></div>
+      <div class="konf-row"><div class="konf-lbl">No. Jadwal</div><div class="konf-val" id="konf-nojadwal">32860</div></div>
+      <div class="konf-row"><div class="konf-lbl">Catatan</div><div class="konf-val">—</div></div>
+    </div>
+    <div class="nav-btns">
+      <button class="nav-btn btn-back" onclick="goScreen(5)">← Kembali</button>
+      <button class="nav-btn btn-daftar" onclick="daftar()">✅ DAFTAR SEKARANG</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 7: TIKET ANTRIAN -->
+  <div class="screen" id="screen-7">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:22px;font-weight:800;margin-bottom:6px">🎉 Pendaftaran Berhasil!</div>
+      <div style="font-size:14px;opacity:.7">Simpan atau cetak tiket antrian Anda</div>
+    </div>
+    <div class="ticket">
+      <div class="ticket-rs">RS Kita Maju</div>
+      <div class="ticket-icon">🎫</div>
+      <div class="ticket-label">Nomor Antrian</div>
+      <div class="ticket-num" id="ticket-antrian">T-49</div>
+      <div style="margin-top:8px;font-size:13px;color:#6b7c93" id="ticket-poli">Poli Jantung — Dr. Taka Mehi</div>
+      <hr class="ticket-sep">
+      <div class="ticket-info">
+        <div class="ticket-info-item"><div class="lbl">No. Booking</div><div class="val" id="ticket-booking" style="font-family:'JetBrains Mono',monospace;color:#0a5c99">49T32860</div></div>
+        <div class="ticket-info-item"><div class="lbl">No. Registrasi</div><div class="val" id="ticket-reg" style="font-family:'JetBrains Mono',monospace;color:#0a5c99">974193</div></div>
+        <div class="ticket-info-item"><div class="lbl">Nama</div><div class="val" id="ticket-name">Rumiah Ny</div></div>
+        <div class="ticket-info-item"><div class="lbl">Penjamin</div><div class="val" id="ticket-penjamin">UMUM</div></div>
+        <div class="ticket-info-item"><div class="lbl">Jadwal</div><div class="val" id="ticket-jadwal">13:00 – 15:00</div></div>
+        <div class="ticket-info-item"><div class="lbl">Tanggal</div><div class="val" id="ticket-tgl">17 Mei 2026</div></div>
+      </div>
+      <hr class="ticket-sep">
+      <div class="ticket-footer">Harap menunggu di ruang tunggu. Nomor antrian akan dipanggil melalui display.</div>
+    </div>
+    <div class="nav-btns" style="justify-content:center;gap:12px;margin-top:20px">
+      <button class="nav-btn btn-home" onclick="goScreen(1)">🏠 Beranda</button>
+      <button class="nav-btn btn-print" onclick="window.print()">🖨️ Cetak Tiket</button>
+    </div>
+  </div>
+
+</div><!-- end wrapper -->
+
+<!-- FOOTER -->
+<div class="footer">
+  <span>TEMRS v2.4.1</span>
+  <span>•</span>
+  <span>RS Kita Maju</span>
+  <span>•</span>
+  <span>PT DIMAS TEKNOLOGI 2026</span>
+</div>
+
+<script src="js/shared-state.js"></script>
+<script src="js/daftar-mandiri.js"></script>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Display Antrian — ICHA RS Kurnia Serang</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#072a4a;color:#fff;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* HEADER */
+.hdr{background:#0a5c99;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #e8192c;flex-shrink:0}
+.hdr-logo{display:flex;align-items:center;gap:12px}
+.hdr-logo-box{width:40px;height:40px;background:#e8192c;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900}
+.hdr-name{font-size:20px;font-weight:800}
+.hdr-rs{font-size:13px;opacity:.7}
+.hdr-time{text-align:right}
+.hdr-clock{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:800;color:#4ade80}
+.hdr-date{font-size:12px;opacity:.7;margin-top:2px}
+
+/* MAIN AREA */
+.main{flex:1;display:grid;grid-template-columns:1fr 380px;gap:0;overflow:hidden}
+
+/* LEFT: PANGGILAN + LOKET */
+.left{display:flex;flex-direction:column;gap:0}
+
+/* PANGGILAN BESAR */
+.call-box{background:linear-gradient(135deg,#0a5c99,#073d66);border-right:3px solid rgba(255,255,255,.1);border-bottom:3px solid rgba(255,255,255,.1);padding:28px;display:flex;align-items:center;gap:28px;flex-shrink:0}
+.call-loket{background:#e8192c;border-radius:12px;padding:12px 20px;text-align:center;flex-shrink:0;min-width:120px}
+.call-loket-name{font-size:14px;font-weight:700;opacity:.8;text-transform:uppercase;letter-spacing:.5px}
+.call-loket-num{font-size:28px;font-weight:900}
+.call-arrow{font-size:40px;opacity:.5;flex-shrink:0}
+.call-num-wrap{text-align:center;flex:1}
+.call-lbl{font-size:14px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.call-num{font-family:'JetBrains Mono',monospace;font-size:80px;font-weight:900;line-height:1;color:#4ade80;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.call-name{font-size:18px;font-weight:700;opacity:.8;margin-top:4px}
+
+/* LOKET GRID */
+.loket-grid{flex:1;display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(255,255,255,.05)}
+.loket-item{background:#083a5e;padding:18px 20px;display:flex;align-items:center;gap:16px;transition:.3s}
+.loket-item.active{background:#0a5c99}
+.loket-badge{width:52px;height:52px;border-radius:10px;background:#0a5c99;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;text-align:center;flex-shrink:0;line-height:1.2}
+.loket-item.active .loket-badge{background:#e8192c}
+.loket-name{font-size:13px;font-weight:700;opacity:.7;text-transform:uppercase;letter-spacing:.5px}
+.loket-type{font-size:11px;opacity:.5;margin-top:2px}
+.loket-num{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:800;margin-left:auto;color:#4ade80}
+.loket-item.active .loket-num{animation:pulse 1.5s infinite}
+
+/* RIGHT: VIDEO + INFO */
+.right{background:#051e33;display:flex;flex-direction:column;border-left:3px solid rgba(255,255,255,.08)}
+.video-area{flex:1;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.video-placeholder{text-align:center;opacity:.3}
+.video-icon{font-size:48px;margin-bottom:8px}
+.video-text{font-size:13px}
+.info-ticker{background:#e8192c;padding:10px 16px;font-size:13px;font-weight:600;overflow:hidden;white-space:nowrap;flex-shrink:0}
+.ticker-content{display:inline-block;animation:ticker 25s linear infinite}
+@keyframes ticker{0%{transform:translateX(100%)}100%{transform:translateX(-100%)} }
+.rs-info{background:#0a5c99;padding:14px 16px;flex-shrink:0;border-top:2px solid rgba(255,255,255,.1)}
+.rs-info-name{font-size:16px;font-weight:800;margin-bottom:4px}
+.rs-info-sub{font-size:12px;opacity:.6}
+.rs-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.rs-stat{background:rgba(255,255,255,.1);border-radius:7px;padding:8px;text-align:center}
+.rs-stat .val{font-size:18px;font-weight:800;color:#4ade80}
+.rs-stat .lbl{font-size:10px;opacity:.6;margin-top:1px}
+
+/* FOOTER */
+.footer{background:#051e33;padding:8px 24px;display:flex;align-items:center;justify-content:space-between;border-top:2px solid rgba(255,255,255,.08);flex-shrink:0}
+.footer-left{font-size:11px;opacity:.4}
+.footer-right{font-size:11px;opacity:.4;font-family:'JetBrains Mono',monospace}
+
+/* POLI DISPLAY MODE */
+.poli-display{display:none;position:fixed;inset:0;background:#072a4a;z-index:100;flex-direction:column}
+.poli-display.active{display:flex}
+.pd-header{background:#0a5c99;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #e8192c;flex-shrink:0}
+.pd-poli-name{font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px}
+.pd-body{flex:1;display:grid;grid-template-columns:300px 1fr;overflow:hidden}
+.pd-left{background:#083a5e;border-right:3px solid rgba(255,255,255,.1);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;gap:16px}
+.pd-dokter-photo{width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#4ade80,#22c55e);display:flex;align-items:center;justify-content:center;font-size:44px;border:3px solid rgba(255,255,255,.2)}
+.pd-dokter-name{font-size:16px;font-weight:800;text-align:center;line-height:1.3}
+.pd-jadwal{font-size:13px;opacity:.6;text-align:center}
+.pd-status-label{font-size:12px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-top:8px}
+.pd-status-val{font-size:14px;font-weight:700;color:#4ade80}
+.pd-right{display:grid;grid-template-rows:1fr 1fr;overflow:hidden}
+.pd-call{background:linear-gradient(135deg,#0a5c99,#073d66);display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:2px solid rgba(255,255,255,.08)}
+.pd-call-lbl{font-size:14px;font-weight:600;opacity:.6;text-transform:uppercase;margin-bottom:4px}
+.pd-call-num{font-family:'JetBrains Mono',monospace;font-size:100px;font-weight:900;line-height:1;color:#4ade80;animation:pulse 2s infinite}
+.pd-stats{display:grid;grid-template-columns:1fr 1fr;background:#051e33}
+.pd-stat{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1px solid rgba(255,255,255,.05)}
+.pd-stat .val{font-size:52px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#fbbf24}
+.pd-stat .lbl{font-size:14px;opacity:.6;font-weight:600}
+
+/* MODE SELECTOR */
+.mode-bar{position:fixed;top:12px;right:12px;display:flex;gap:8px;z-index:200}
+.mode-btn{padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(7,42,74,.9);color:#fff;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;backdrop-filter:blur(4px);transition:.2s}
+.mode-btn:hover{background:rgba(10,92,153,.9);border-color:#fff}
+.mode-btn.active{background:#e8192c;border-color:#e8192c}
+
+/* ALL QUEUE MODE */
+.all-q{display:none;position:fixed;inset:0;background:#051e33;z-index:100}
+.all-q.active{display:grid;grid-template-rows:auto 1fr auto}
+.aq-head{background:#0a5c99;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #e8192c}
+.aq-title{font-size:20px;font-weight:800}
+.aq-body{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;background:rgba(255,255,255,.05);overflow:hidden}
+.aq-col{background:#072a4a;display:flex;flex-direction:column}
+.aq-col-head{background:#0a5c99;padding:12px 16px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e8192c}
+.aq-item{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:10px;transition:.2s}
+.aq-item.calling{background:rgba(74,222,128,.1);border-left:4px solid #4ade80}
+.aq-q{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;min-width:50px}
+.aq-info{flex:1}
+.aq-name{font-size:13px;font-weight:600}
+.aq-unit{font-size:11px;opacity:.5}
+</style>
+</head>
+<body>
+
+<!-- MODE BUTTONS -->
+<div class="mode-bar">
+  <button class="mode-btn active" onclick="setMode('kunjungan', event)">🏥 Kunjungan</button>
+  <button class="mode-btn" onclick="setMode('poli', event)">🩺 Poli Display</button>
+  <button class="mode-btn" onclick="setMode('semua', event)">📋 Semua Antrian</button>
+</div>
+
+<!-- ========= MODE: KUNJUNGAN ========= -->
+<div id="mode-kunjungan" style="display:flex;flex-direction:column;height:100vh">
+  <div class="hdr">
+    <div class="hdr-logo">
+      <div class="hdr-logo-box">i</div>
+      <div>
+        <div class="hdr-name">ICHA Display</div>
+        <div class="hdr-rs">RS Kurnia Serang</div>
+      </div>
+    </div>
+    <div class="hdr-time">
+      <div class="hdr-clock" id="clk">--:--:--</div>
+      <div class="hdr-date" id="dt">--</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="left">
+      <!-- PANGGILAN SEKARANG -->
+      <div class="call-box">
+        <div class="call-loket">
+          <div class="call-loket-name" id="call-loket-name">Loket 1</div>
+          <div class="call-loket-num">A</div>
+        </div>
+        <div class="call-arrow">›</div>
+        <div class="call-num-wrap">
+          <div class="call-lbl">Nomor Antrian Dipanggil</div>
+          <div class="call-num" id="call-num">A-47</div>
+          <div class="call-name" id="call-name">UMUM / ASURANSI</div>
+        </div>
+      </div>
+
+      <!-- LOKET GRID -->
+      <div class="loket-grid">
+        <div class="loket-item active" id="loket-1">
+          <div class="loket-badge">Loket<br>1</div>
+          <div>
+            <div class="loket-name">Loket 1</div>
+            <div class="loket-type">Umum / Asuransi</div>
+          </div>
+          <div class="loket-num" id="ln1">A-47</div>
+        </div>
+        <div class="loket-item" id="loket-2">
+          <div class="loket-badge">Loket<br>2</div>
+          <div>
+            <div class="loket-name">Loket 2</div>
+            <div class="loket-type">BPJS</div>
+          </div>
+          <div class="loket-num" id="ln2">B-23</div>
+        </div>
+        <div class="loket-item" id="loket-3">
+          <div class="loket-badge">Loket<br>3</div>
+          <div>
+            <div class="loket-name">Loket 3</div>
+            <div class="loket-type">BPJS / JKN Mobile</div>
+          </div>
+          <div class="loket-num" id="ln3">C-11</div>
+        </div>
+        <div class="loket-item" id="loket-4">
+          <div class="loket-badge">Loket<br>4</div>
+          <div>
+            <div class="loket-name">Loket 4</div>
+            <div class="loket-type">ICHA Mobile</div>
+          </div>
+          <div class="loket-num" id="ln4">D-05</div>
+        </div>
+        <div class="loket-item" id="loket-5">
+          <div class="loket-badge">💊<br>Farm.</div>
+          <div>
+            <div class="loket-name">Farmasi</div>
+            <div class="loket-type">Pengambilan Obat</div>
+          </div>
+          <div class="loket-num" id="ln5">F-38</div>
+        </div>
+        <div class="loket-item" id="loket-6">
+          <div class="loket-badge">💳<br>Kasir</div>
+          <div>
+            <div class="loket-name">Kasir</div>
+            <div class="loket-type">Pembayaran</div>
+          </div>
+          <div class="loket-num" id="ln6">K-15</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right">
+      <div class="video-area">
+        <div class="video-placeholder">
+          <div class="video-icon">📺</div>
+          <div class="video-text">Area Video / Iklan RS</div>
+        </div>
+      </div>
+      <div class="info-ticker">
+        <div class="ticker-content">📢 Selamat datang di RS Kurnia Serang &nbsp;|&nbsp; 🏥 Kami melayani dengan sepenuh hati &nbsp;|&nbsp; 📞 Layanan SMS: 087871555511 &nbsp;|&nbsp; 💊 Jadwal Apotek: Senin–Sabtu 08:00–20:00 &nbsp;|&nbsp; 🚑 UGD: 24 Jam &nbsp;|&nbsp; 🌐 rskurnia.co.id</div>
+      </div>
+      <div class="rs-info">
+        <div class="rs-info-name">RS Kurnia Serang</div>
+        <div class="rs-info-sub">Jl. Raya Cilegon KM 8, Serang, Banten</div>
+        <div class="rs-stats">
+          <div class="rs-stat"><div class="val" id="stat-rj">127</div><div class="lbl">Rawat Jalan</div></div>
+          <div class="rs-stat"><div class="val" id="stat-ri">84</div><div class="lbl">Rawat Inap</div></div>
+          <div class="rs-stat"><div class="val" id="stat-tt">38</div><div class="lbl">TT Tersedia</div></div>
+          <div class="rs-stat"><div class="val" id="stat-q">12</div><div class="lbl">Antrian Aktif</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">ICHA v2.4.1 — PT Adwa Info Mandiri 2026</div>
+    <div class="footer-right" id="ft-clk">Server: ICHA-SRV-01 | Online</div>
+  </div>
+</div>
+
+<!-- ========= MODE: POLI DISPLAY ========= -->
+<div class="poli-display" id="mode-poli">
+  <div class="pd-header">
+    <div>
+      <div style="font-size:12px;opacity:.6;text-transform:uppercase;letter-spacing:.5px">Display Poli</div>
+      <div class="pd-poli-name" id="pd-poli-name">POLI B — JANTUNG</div>
+    </div>
+    <div style="text-align:right">
+      <div class="hdr-clock" id="pd-clk">--:--:--</div>
+      <div style="font-size:12px;opacity:.6" id="pd-dt">--</div>
+    </div>
+  </div>
+  <div class="pd-body">
+    <div class="pd-left">
+      <div class="pd-dokter-photo">👨‍⚕️</div>
+      <div class="pd-dokter-name">Dr. Sitoresmi Prabaningrum SpA</div>
+      <div class="pd-jadwal">⏰ Senin 08:00 – 11:00</div>
+      <div class="pd-status-label">Status</div>
+      <div class="pd-status-val">● Sedang Praktik</div>
+    </div>
+    <div class="pd-right">
+      <div class="pd-call">
+        <div class="pd-call-lbl">Nomor Dipanggil</div>
+        <div class="pd-call-num" id="pd-num">S-6</div>
+      </div>
+      <div class="pd-stats">
+        <div class="pd-stat">
+          <div class="val" id="pd-tunggu">1</div>
+          <div class="lbl">Antrian Menunggu</div>
+        </div>
+        <div class="pd-stat">
+          <div class="val" id="pd-proses">0</div>
+          <div class="lbl">Pemanggilan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========= MODE: SEMUA ANTRIAN ========= -->
+<div class="all-q" id="mode-semua">
+  <div class="aq-head">
+    <div>
+      <div style="font-size:12px;opacity:.6;text-transform:uppercase">Display</div>
+      <div class="aq-title">Nomor Antrian — <span style="font-family:'JetBrains Mono',monospace;color:#4ade80" id="aq-num">0000</span></div>
+    </div>
+    <div style="text-align:right">
+      <div class="hdr-clock" id="aq-clk">--:--:--</div>
+    </div>
+  </div>
+  <div class="aq-body">
+    <!-- Pendaftaran -->
+    <div class="aq-col">
+      <div class="aq-col-head">🏥 Pendaftaran / Loket</div>
+      <div class="aq-item calling"><div class="aq-q">A-47</div><div class="aq-info"><div class="aq-name">Dipanggil</div><div class="aq-unit">Loket 1 — Umum</div></div></div>
+      <div class="aq-item"><div class="aq-q">A-48</div><div class="aq-info"><div class="aq-name">Menunggu</div><div class="aq-unit">Loket 1</div></div></div>
+      <div class="aq-item"><div class="aq-q">B-23</div><div class="aq-info"><div class="aq-name">Dipanggil</div><div class="aq-unit">Loket 2 — BPJS</div></div></div>
+      <div class="aq-item"><div class="aq-q">B-24</div><div class="aq-info"><div class="aq-name">Menunggu</div><div class="aq-unit">Loket 2</div></div></div>
+      <div class="aq-item"><div class="aq-q">C-11</div><div class="aq-info"><div class="aq-name">Dipanggil</div><div class="aq-unit">Loket 3 — JKN</div></div></div>
+    </div>
+    <!-- Farmasi & Kasir -->
+    <div class="aq-col">
+      <div class="aq-col-head">💊 Farmasi &amp; 💳 Kasir</div>
+      <div class="aq-item calling"><div class="aq-q">F-38</div><div class="aq-info"><div class="aq-name">Dipanggil</div><div class="aq-unit">Farmasi 1</div></div></div>
+      <div class="aq-item"><div class="aq-q">F-39</div><div class="aq-info"><div class="aq-name">Menunggu</div><div class="aq-unit">Farmasi</div></div></div>
+      <div class="aq-item"><div class="aq-q">F-40</div><div class="aq-info"><div class="aq-name">Menunggu</div><div class="aq-unit">Farmasi</div></div></div>
+      <div class="aq-item calling" style="border-left-color:#fbbf24"><div class="aq-q">K-15</div><div class="aq-info"><div class="aq-name">Dipanggil</div><div class="aq-unit">Kasir 1</div></div></div>
+      <div class="aq-item"><div class="aq-q">K-16</div><div class="aq-info"><div class="aq-name">Menunggu</div><div class="aq-unit">Kasir</div></div></div>
+    </div>
+    <!-- Lab & Radiologi -->
+    <div class="aq-col">
+      <div class="aq-col-head">🧪 Lab &amp; 🔬 Radiologi</div>
+      <div class="aq-item calling" style="border-left-color:#38bdf8"><div class="aq-q">L-09</div><div class="aq-info"><div class="aq-name">Dipanggil</div><div class="aq-unit">Lab 1</div></div></div>
+      <div class="aq-item"><div class="aq-q">L-10</div><div class="aq-info"><div class="aq-name">Menunggu</div><div class="aq-unit">Laboratorium</div></div></div>
+      <div class="aq-item"><div class="aq-q">L-11</div><div class="aq-info"><div class="aq-name">Menunggu</div><div class="aq-unit">Laboratorium</div></div></div>
+      <div class="aq-item calling" style="border-left-color:#a78bfa"><div class="aq-q">R-03</div><div class="aq-info"><div class="aq-name">Dipanggil</div><div class="aq-unit">Radiologi</div></div></div>
+      <div class="aq-item"><div class="aq-q">R-04</div><div class="aq-info"><div class="aq-name">Menunggu</div><div class="aq-unit">Radiologi</div></div></div>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-left">ICHA Display — RS Kurnia Serang | Semua Antrian</div>
+    <div class="footer-right" id="aq-ft">Online | ICHA-SRV-01</div>
+  </div>
+</div>
+
+<script src="js/shared-state.js"></script>
+<script>
+// CLOCK
+function tick(){
+  const n=new Date();
+  const t=n.toLocaleTimeString('id-ID');
+  const d=n.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  ['clk','pd-clk','aq-clk'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t;});
+  ['dt','pd-dt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=d;});
+}
+tick();setInterval(tick,1000);
+
+// MODE SWITCH
+function setMode(mode, event){
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  if (event && event.currentTarget) {
+    event.currentTarget.classList.add('active');
+  }
+  const modeKunjungan = document.getElementById('mode-kunjungan');
+  const modePoli = document.getElementById('mode-poli');
+  const modeSemua = document.getElementById('mode-semua');
+  if (modeKunjungan) modeKunjungan.style.display='none';
+  if (modePoli) modePoli.classList.remove('active');
+  if (modeSemua) modeSemua.classList.remove('active');
+  if(mode==='kunjungan' && modeKunjungan){ modeKunjungan.style.display='flex'; }
+  else if(mode==='poli' && modePoli){ modePoli.classList.add('active'); }
+  else if(mode==='semua' && modeSemua){ modeSemua.classList.add('active'); }
+}
+
+// RENDER QUEUES
+function renderQueues(){
+  const queues = SharedState.getQueues();
+  const stats = SharedState.getStats();
+  const beds = SharedState.getData('icha_beds');
+
+  // Loket mapping from ID in shared-state to LN ID in HTML
+  if(queues.qa1) document.getElementById('ln1').textContent = queues.qa1.current;
+  if(queues.qa2) document.getElementById('ln2').textContent = queues.qa2.current;
+  if(queues.qa3) document.getElementById('ln3').textContent = queues.qa3.current;
+  if(queues.far) document.getElementById('ln5').textContent = queues.far.current;
+  if(queues.kasir) document.getElementById('ln6').textContent = queues.kasir.current;
+
+  // Stats
+  if(document.getElementById('stat-rj')) document.getElementById('stat-rj').textContent = stats.rawatJalan;
+  if(document.getElementById('stat-ri')) document.getElementById('stat-ri').textContent = stats.rawatInap;
+  if(document.getElementById('stat-tt')) document.getElementById('stat-tt').textContent = beds.tersedia;
+}
+
+// INIT
+document.addEventListener('DOMContentLoaded', () => {
+  renderQueues();
+  SharedState.onUpdate(() => {
+    renderQueues();
+  });
+});
+</script>
+</body>
+</html>
