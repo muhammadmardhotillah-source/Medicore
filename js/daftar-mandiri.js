@@ -34,23 +34,42 @@ function goScreen(n){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+// --- INISIALISASI HALAMAN ---
+document.addEventListener('DOMContentLoaded', () => {
+    loadPoli();
+});
+
 // PILIH PENJAMIN
 function pilihPenjamin(p){
   state.penjamin=p;
-  document.getElementById('show-penjamin').textContent=p;
-  document.getElementById('konf-penjamin').textContent=p;
-  document.getElementById('ticket-penjamin').textContent=p;
+  // Pastikan elemen ID berikut ada di HTML
+  const elShow = document.getElementById('show-penjamin');
+  const elKonf = document.getElementById('konf-penjamin');
+  const elTicket = document.getElementById('ticket-penjamin');
+  
+  if(elShow) elShow.textContent=p;
+  if(elKonf) elKonf.textContent=p;
+  if(elTicket) elTicket.textContent=p;
+  
   goScreen(2);
 }
 
 // PILIH TIPE PENCARIAN
 function pilihTipe(btn,tipe){
+  // Hapus class active dari semua tombol tipe
   document.querySelectorAll('.stype-btn').forEach(b=>b.classList.remove('active'));
+  // Tambahkan class active ke tombol yang diklik
   btn.classList.add('active');
+  
   state.tipe=tipe;
-  document.getElementById('input-label').textContent='Masukkan '+tipe;
-  document.getElementById('search-input').value='';
-  document.getElementById('search-input').placeholder='Ketik '+tipe+' disini...';
+  const label = document.getElementById('input-label');
+  const input = document.getElementById('search-input');
+  
+  if(label) label.textContent='Masukkan '+tipe;
+  if(input) {
+      input.value='';
+      input.placeholder='Ketik '+tipe+' disini...';
+  }
 }
 
 // NUMPAD
@@ -64,58 +83,98 @@ function delNum(){
 }
 
 // CARI PASIEN
-function cariPasien(){
+async function cariPasien(){
   const val=document.getElementById('search-input').value.trim();
   if(!val){alert('Harap masukkan '+state.tipe+' terlebih dahulu');return;}
   
-  // Mock finding a patient for prototype
-  state.name = (val === '123' || val === '009001461') ? 'Rumiah Ny' : 'Pasien Baru (' + val + ')';
-  
-  // Update UI Displays
-  if(document.getElementById('show-name')) document.getElementById('show-name').textContent = state.name;
-  if(document.getElementById('show-rm')) document.getElementById('show-rm').textContent = (state.tipe === 'No. RM' ? val : '009' + Math.floor(Math.random()*900000+100000));
-  if(document.getElementById('show-nik')) document.getElementById('show-nik').textContent = (state.tipe === 'NIK' ? val : '3602' + Math.floor(Math.random()*900000000000));
-  
-  if(document.getElementById('konf-name')) document.getElementById('konf-name').textContent = state.name;
-  if(document.getElementById('ticket-name')) document.getElementById('ticket-name').textContent = state.name;
-  
-  goScreen(3);
+  // Cari di Supabase via SharedState
+  // Kita asumsikan SharedState punya fungsi findPatient
+  try {
+      const patient = await SharedState.findPatient(state.tipe, val);
+      if (patient) {
+          state.name = patient.nama;
+          state.patientId = patient.id;
+        
+          // Update UI
+          if(document.getElementById('show-name')) document.getElementById('show-name').textContent = state.name;
+          if(document.getElementById('show-rm')) document.getElementById('show-rm').textContent = patient.no_rm;
+          if(document.getElementById('show-nik')) document.getElementById('show-nik').textContent = patient.nik;
+        
+          if(document.getElementById('konf-name')) document.getElementById('konf-name').textContent = state.name;
+          if(document.getElementById('ticket-name')) document.getElementById('ticket-name').textContent = state.name;
+        
+          goScreen(3);
+      } else {
+          // Pasien tidak ditemukan, tawarkan untuk menambah pasien baru
+          const proceed = confirm('Data pasien tidak ditemukan. Tambahkan pasien baru dengan ' + state.tipe + ': ' + val + '?');
+          if (proceed) {
+              // Pindahkan ke layar pendaftaran untuk input data baru
+              goScreen(2); 
+              state.isNewPatient = true;
+              state.newPatientValue = val;
+        
+              // Tampilkan modal tambah pasien baru
+              const modal = document.getElementById('mdl-tambah-pasien');
+              if (modal) {
+                  modal.style.display = 'flex';
+                  document.getElementById('new-id').value = val;
+              }
+          } else {
+              document.getElementById('search-input').value = '';
+          }
+      }
+      } catch (err) {
+      console.error(err);
+      alert('Terjadi kesalahan saat mencari data.');
+      }
+}
+
+// LOAD POLI DARI SUPABASE
+function loadPoli() {
+    const polis = SharedState.getPoli();
+    const container = document.querySelector('.poli-grid');
+    container.innerHTML = '';
+    polis.forEach(p => {
+        const btn = document.createElement('button');
+        btn.className = 'poli-btn';
+        btn.textContent = p.nama_poli;
+        btn.onclick = () => pilihPoli(btn, p.id, p.nama_poli);
+        container.appendChild(btn);
+    });
 }
 
 // PILIH POLI
-function pilihPoli(btn,poli){
-  document.querySelectorAll('.poli-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');
-  state.poli=poli;
-  document.getElementById('konf-poli').textContent=poli;
-  document.getElementById('ticket-poli').textContent='Poli '+poli;
-  // Load dokter sesuai poli
-  loadDokter(poli);
-  goScreen(5);
+function pilihPoli(btn, poliId, poliNama) {
+    document.querySelectorAll('.poli-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    state.poli = poliNama;
+    state.poliId = poliId;
+    document.getElementById('konf-poli').textContent = poliNama;
+    document.getElementById('ticket-poli').textContent = 'Poli ' + poliNama;
+    // Load dokter sesuai poli dari Supabase
+    loadDokter(poliId, poliNama);
+    goScreen(5);
 }
 
-// LOAD DOKTER PER POLI
-const dokterData={
-  'Jantung':[{nama:'Dr. Taka Mehi, Sp.JP, FIHA',jadwal:'Siang 13:00 – 15:00',no:'32860'}],
-  'Kandungan':[{nama:'Dr. Budi Hartono, Sp.OG',jadwal:'Pagi 09:00 – 13:00',no:'32861'},{nama:'Dr. Zainuri Miltas, Sp.OG',jadwal:'Siang 14:00 – 17:00',no:'32862'}],
-  'Penyakit Dalam':[{nama:'Dr. Siti Rahmawati, Sp.PD',jadwal:'Pagi 08:00 – 12:00',no:'32863'}],
-  'Bedah Umum':[{nama:'Dr. Ahmad Yani, Sp.B',jadwal:'Pagi 10:00 – 14:00',no:'32864'}],
-  'Anak':[{nama:'Dr. Sitoresmi Prabaningrum, Sp.A',jadwal:'Pagi 08:00 – 11:00',no:'32865'}],
-  'default':[{nama:'Dr. Umum Jaga',jadwal:'08:00 – 14:00',no:'32866'}]
-};
+// LOAD DOKTER PER POLI DARI SUPABASE
+function loadDokter(poliId, poliNama) {
+    const list = SharedState.getDoctorsByPoli(poliId);
+    const container = document.getElementById('dokter-list');
+    document.getElementById('poli-label').textContent = 'Poli ' + poliNama;
+    container.innerHTML = '';
+    
+    if (list.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:20px;opacity:0.6">Belum ada dokter tersedia.</div>';
+        return;
+    }
 
-function loadDokter(poli){
-  const list=dokterData[poli]||dokterData['default'];
-  const container=document.getElementById('dokter-list');
-  document.getElementById('poli-label').textContent='Poli '+poli;
-  container.innerHTML='';
-  list.forEach(d=>{
-    const div=document.createElement('div');
-    div.className='dokter-item';
-    div.innerHTML=`<div class="dokter-avatar">👨‍⚕️</div><div><div class="dokter-name">${d.nama}</div><div class="dokter-spesialis">Poli ${poli}</div><div class="dokter-jadwal">⏰ ${d.jadwal}</div></div><div class="dokter-arrow">›</div>`;
-    div.onclick=()=>pilihDokter(d.nama,d.jadwal,d.no);
-    container.appendChild(div);
-  });
+    list.forEach(d=>{
+        const div = document.createElement('div');
+        div.className = 'dokter-item';
+        div.innerHTML = `<div class="dokter-avatar">👨‍⚕️</div><div><div class="dokter-name">${d.nama_dokter}</div><div class="dokter-spesialis">Poli ${poliNama}</div><div class="dokter-jadwal">⏰ ${d.jadwal_praktik}</div></div><div class="dokter-arrow">›</div>`;
+        div.onclick = () => pilihDokter(d.nama_dokter, d.jadwal_praktik, d.id);
+        container.appendChild(div);
+    });
 }
 
 // PILIH DOKTER
@@ -131,37 +190,80 @@ function pilihDokter(nama,jadwal,no){
 }
 
 // DAFTAR
-function daftar(){
-  const antrian='T-'+Math.floor(Math.random()*20+45);
-  const booking=Math.floor(Math.random()*90000+10000)+'T'+Math.floor(Math.random()*90000+10000);
-  const reg=974000+Math.floor(Math.random()*999);
+async function daftar(){
+  // Pastikan kita menggunakan data dari state yang sudah terverifikasi dari DB
+  const antrian = 'T-' + Math.floor(Math.random() * 20 + 45);
+  const booking = Math.floor(Math.random() * 90000 + 10000) + 'T' + Math.floor(Math.random() * 90000 + 10000);
   
-  // Create patient object
-  const newPatient = {
-      id: '009' + Math.floor(Math.random()*900000+100000),
-      name: state.name || 'Pasien Baru', 
-      age: '64th',
-      poli: state.poli,
+  const registration = {
+      patient_id: state.patientId,
+      poli_id: state.poliId,
       penjamin: state.penjamin,
       status: 'Menunggu',
-      date: new Date().toISOString().split('T')[0],
-      tipe_daftar: 'Mandiri'
+      no_antrian: antrian,
+      created_at: new Date().toISOString()
   };
 
-  // Save to SharedState
-  SharedState.addPatient(newPatient);
-  
-  // Update Queue in SharedState
-  const queues = SharedState.getQueues();
-  // Find relevant queue (e.g. Loket 1 if Umum)
-  if (state.penjamin === 'UMUM') {
-      SharedState.updateQueue('qa1', { current: antrian });
-  } else if (state.penjamin === 'BPJS') {
-      SharedState.updateQueue('qa2', { current: antrian });
-  }
+  // Kirim ke database (registrations)
+  try {
+      const { data, error } = await sb.from('registrations').insert([registration]);
+      
+      if (error) throw error;
 
-  document.getElementById('ticket-antrian').textContent=antrian;
-  document.getElementById('ticket-booking').textContent=booking;
-  document.getElementById('ticket-reg').textContent=reg;
-  goScreen(7);
+      // Update tampilan tiket
+      document.getElementById('ticket-antrian').textContent = antrian;
+      document.getElementById('ticket-booking').textContent = booking;
+      document.getElementById('ticket-reg').textContent = data ? data[0].id.substring(0,8) : 'REG-' + Math.floor(Math.random()*9999);
+      
+      goScreen(7);
+  } catch (err) {
+      console.error('Error saat mendaftar:', err);
+      alert('Gagal menyimpan pendaftaran ke database.');
+  }
+}
+
+// SIMPAN PASIEN BARU
+async function saveNewPatient(e) {
+    e.preventDefault();
+    const name = document.getElementById('new-name').value;
+    const idVal = document.getElementById('new-id').value;
+    const dob = document.getElementById('new-dob').value;
+    const jk = document.getElementById('new-jk').value;
+
+    const newPatient = {
+        nama: name,
+        [state.tipe === 'NIK' ? 'nik' : 'no_rm']: idVal,
+        tgl_lahir: dob,
+        jk: jk
+    };
+
+    try {
+        const { data, error } = await sb.from('patients').insert([newPatient]).select().single();
+        if (error) throw error;
+
+        state.name = data.nama;
+        state.patientId = data.id;
+        
+        // Update UI
+        if(document.getElementById('show-name')) document.getElementById('show-name').textContent = data.nama;
+        if(document.getElementById('show-rm')) document.getElementById('show-rm').textContent = data.no_rm || '-';
+        if(document.getElementById('show-nik')) document.getElementById('show-nik').textContent = data.nik || '-';
+        
+        if(document.getElementById('konf-name')) document.getElementById('konf-name').textContent = data.nama;
+        if(document.getElementById('ticket-name')) document.getElementById('ticket-name').textContent = data.nama;
+        
+        hideM('mdl-tambah-pasien');
+        goScreen(3);
+    } catch (err) {
+        console.error(err);
+        alert('Gagal menyimpan pasien baru.');
+    }
+}
+
+// MODAL UTILS
+function hideM(id) { document.getElementById(id).style.display = 'none'; }
+
+// FILL KONFIRMASI
+function fillConfirmation() {
+    goScreen(4);
 }

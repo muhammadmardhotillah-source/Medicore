@@ -870,3 +870,55 @@ textarea.fc { resize: vertical; min-height: 100px; }
 /* TABLE ROW COLORING */
 .row-u td { background: #fff1f2 !important; }
 .row-n td { background: #f0fdf4 !important; }
+
+/* MOBILE RESPONSIVENESS (PWA) */
+@media (max-width: 1024px) {
+  .sidebar { 
+    transform: translateX(-100%); 
+    position: fixed; 
+    z-index: 9999; 
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+  }
+  .sidebar.show { transform: translateX(0); }
+  .main { margin-left: 0; width: 100%; padding: 10px; }
+  .topbar { padding: 10px 15px; }
+  .sbar { display: none; }
+  .sg { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .g3, .g33, .g3r, .g2 { grid-template-columns: 1fr; }
+  .card { margin-bottom: 10px; }
+  .qb { padding: 10px; }
+  .qn { font-size: 24px; }
+  
+  /* FAB for Menu on Mobile */
+  .menu-toggle {
+    display: flex !important;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,102,255,0.3);
+    z-index: 10000;
+    cursor: pointer;
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sg { grid-template-columns: 1fr; }
+  .tb-right .ib { display: none; }
+  .u-nm { display: none; }
+  .sv { font-size: 24px !important; }
+}
+/* Penjamin selector di modal daftar */
+.pj-bar{display:flex;gap:8px;margin-bottom:5px}
+.pj{padding:10px 24px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text-muted);font-weight:600;font-size:14px;cursor:pointer;transition:.2s;user-select:none;flex:1;text-align:center}
+.pj:hover{border-color:var(--primary);color:var(--primary)}
+.pj.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.pj.active:hover{background:var(--primary-dark)}

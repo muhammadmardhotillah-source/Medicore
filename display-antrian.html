@@ -322,6 +322,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#072a4a;color:#fff;he
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/shared-state.js"></script>
 <script>
 // CLOCK
@@ -372,10 +373,16 @@ function renderQueues(){
 
 // INIT
 document.addEventListener('DOMContentLoaded', () => {
+  // Render initial
   renderQueues();
-  SharedState.onUpdate(() => {
-    renderQueues();
-  });
+
+  // Listen for updates
+  if (window.SharedState) {
+    SharedState.onUpdate(() => {
+      console.log('SharedState updated, re-rendering...');
+      renderQueues();
+    });
+  }
 });
 </script>
 </body>

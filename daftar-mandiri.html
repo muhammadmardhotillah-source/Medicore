@@ -261,7 +261,24 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
     </div>
     <div class="nav-btns">
       <button class="nav-btn btn-back" onclick="goScreen(2)">← Kembali</button>
-      <button class="nav-btn btn-next" onclick="goScreen(4)">Selanjutnya →</button>
+      <button class="nav-btn btn-next" onclick="fillConfirmation()">Selanjutnya →</button>
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH PASIEN BARU -->
+  <div id="mdl-tambah-pasien" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div class="modal-content" style="background:white; padding:20px; border-radius:10px; width:400px; color:black;">
+      <h3>Tambah Pasien Baru</h3>
+      <form id="form-tambah-pasien" onsubmit="saveNewPatient(event)">
+        <div class="fg" style="margin-bottom: 10px;"><label>Nama Lengkap</label><input type="text" id="new-name" class="fc" style="width:100%; padding:8px;" required></div>
+        <div class="fg" style="margin-bottom: 10px;"><label>NIK / No.RM</label><input type="text" id="new-id" class="fc" style="width:100%; padding:8px;" readonly></div>
+        <div class="fg" style="margin-bottom: 10px;"><label>Tanggal Lahir</label><input type="date" id="new-dob" class="fc" style="width:100%; padding:8px;" required></div>
+        <div class="fg" style="margin-bottom: 15px;"><label>Jenis Kelamin</label>
+          <select id="new-jk" class="fc" style="width:100%; padding:8px;"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
+        </div>
+        <button type="submit" class="btn btn-p" style="width:100%; padding:10px;">Simpan Pasien</button>
+        <button type="button" class="btn btn-o" style="width:100%; padding:10px; margin-top:5px;" onclick="hideM('mdl-tambah-pasien')">Batal</button>
+      </form>
     </div>
   </div>
 
@@ -305,15 +322,42 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
     <div class="screen-title">Konfirmasi Pendaftaran</div>
     <div class="screen-sub">Pastikan semua data benar, lalu klik DAFTAR</div>
     <div class="konfirmasi-box">
-      <div class="konf-row"><div class="konf-lbl">Nama Pasien</div><div class="konf-val" id="konf-name">Rumiah Ny</div></div>
-      <div class="konf-row"><div class="konf-lbl">No. RM</div><div class="konf-val" id="konf-rm" style="font-family:'JetBrains Mono',monospace">009001461</div></div>
-      <div class="konf-row"><div class="konf-lbl">Jenis Kelamin</div><div class="konf-val" id="konf-jk">Perempuan</div></div>
-      <div class="konf-row"><div class="konf-lbl">Penjamin</div><div class="konf-val" id="konf-penjamin">UMUM</div></div>
-      <div class="konf-row"><div class="konf-lbl">Poli Tujuan</div><div class="konf-val" id="konf-poli">Jantung</div></div>
-      <div class="konf-row"><div class="konf-lbl">Dokter</div><div class="konf-val" id="konf-dokter">Dr. Taka Mehi, Sp.JP, FIHA</div></div>
-      <div class="konf-row"><div class="konf-lbl">Jadwal</div><div class="konf-val" id="konf-jadwal">Siang 13:00 – 15:00</div></div>
-      <div class="konf-row"><div class="konf-lbl">No. Jadwal</div><div class="konf-val" id="konf-nojadwal">32860</div></div>
-      <div class="konf-row"><div class="konf-lbl">Catatan</div><div class="konf-val">—</div></div>
+      <div class="konf-row">
+        <div class="konf-lbl">Nama Pasien</div>
+        <div class="konf-val" id="konf-name"></div>
+      </div>
+      <div class="konf-row">
+        <div class="konf-lbl">No. RM</div>
+        <div class="konf-val" id="konf-rm" style="font-family:'JetBrains Mono',monospace"></div>
+      </div>
+      <div class="konf-row">
+        <div class="konf-lbl">Jenis Kelamin</div>
+        <div class="konf-val" id="konf-jk"></div>
+      </div>
+      <div class="konf-row">
+        <div class="konf-lbl">Penjamin</div>
+        <div class="konf-val" id="konf-penjamin"></div>
+      </div>
+      <div class="konf-row">
+        <div class="konf-lbl">Poli Tujuan</div>
+        <div class="konf-val" id="konf-poli"></div>
+      </div>
+      <div class="konf-row">
+        <div class="konf-lbl">Dokter</div>
+        <div class="konf-val" id="konf-dokter"></div>
+      </div>
+      <div class="konf-row">
+        <div class="konf-lbl">Jadwal</div>
+        <div class="konf-val" id="konf-jadwal"></div>
+      </div>
+      <div class="konf-row">
+        <div class="konf-lbl">No. Jadwal</div>
+        <div class="konf-val" id="konf-nojadwal"></div>
+      </div>
+      <div class="konf-row">
+        <div class="konf-lbl">Catatan</div>
+        <div class="konf-val">—</div>
+      </div>
     </div>
     <div class="nav-btns">
       <button class="nav-btn btn-back" onclick="goScreen(5)">← Kembali</button>
@@ -362,6 +406,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135de
   <span>PT DIMAS TEKNOLOGI 2026</span>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/shared-state.js"></script>
 <script src="js/daftar-mandiri.js"></script>
 </body>

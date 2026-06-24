@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TEMRS — SIM KITA MAJU</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/index.css">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="MediCore">
+<link rel="stylesheet" href="css/index.css?v=2">
 </head>
 <body>
 
@@ -88,13 +92,10 @@
         </div>
         <div class="card">
           <div class="ch"><div><div class="ct">📋 Kunjungan Terbaru</div></div><button class="cl" onclick="go('pendaftaran')">+ Daftarkan</button></div>
-          <table class="t" id="latest-patients-table">
+            <table class="t" id="latest-patients-table">
             <thead><tr><th>No.RM</th><th>Nama</th><th>Poli</th><th>Penjamin</th><th>Status</th></tr></thead>
             <tbody>
-              <tr><td class="mono">009001461</td><td><strong>Rumiah Ny</strong></td><td>Jantung</td><td><span class="b bp">Umum</span></td><td><span class="b bs">Selesai</span></td></tr>
-              <tr><td class="mono">009002317</td><td><strong>Ahmad Fauzi</strong></td><td>P. Dalam</td><td><span class="b bi">BPJS</span></td><td><span class="b bw">Menunggu</span></td></tr>
-              <tr class="row-n"><td class="mono">009003882</td><td><strong>Siti Rahayu</strong></td><td>Kandungan</td><td><span class="b bi">BPJS</span></td><td><span class="b bp">Proses</span></td></tr>
-              <tr><td class="mono">009004115</td><td><strong>Budi Santoso</strong></td><td>Bedah</td><td><span class="b bw">Asuransi</span></td><td><span class="b bw">Menunggu</span></td></tr>
+              <!-- Data diisi otomatis oleh Supabase via index.js -->
             </tbody>
           </table>
         </div>
@@ -135,65 +136,27 @@
   <!-- ===== ANTRIAN ===== -->
   <div id="pg-antrian" class="page">
     <div class="sh"><div><div class="st">Antrian &amp; Display</div><div class="ss">Monitoring seluruh loket dan unit</div></div><div class="sa"><button class="btn btn-o btn-sm">🖨️ Print Server</button><button class="btn btn-p btn-sm">📺 Mode Display</button></div></div>
-    <div class="g33">
-      <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🏥 Loket Pendaftaran</div></div>
-        <div class="qg">
-          <div class="qb on"><div class="ql">Loket 1 — Umum</div><div class="qn" id="qa1">A-47</div><div class="qt">Dilayani</div></div>
-          <div class="qb"><div class="ql">Loket 2 — BPJS</div><div class="qn" id="qa2">B-23</div><div class="qt">Dilayani</div></div>
-          <div class="qb"><div class="ql">Loket 3 — JKN</div><div class="qn" id="qa3">C-11</div><div class="qt">Dilayani</div></div>
-        </div>
-        <div style="padding:0 11px 11px;display:flex;gap:7px"><button class="btn btn-p" style="flex:1;font-size:12px" onclick="nextQ('qa1','A',47)">⏭️ Berikutnya</button><button class="btn btn-o btn-sm">🔁 Ulang</button></div>
-      </div>
-      <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">💊 Farmasi</div></div>
-        <div class="qg">
-          <div class="qb on"><div class="ql">Farmasi 1</div><div class="qn">F-38</div><div class="qt">Dilayani</div></div>
-          <div class="qb"><div class="ql">Farmasi 2</div><div class="qn">F-39</div><div class="qt">Menunggu</div></div>
-          <div class="qb"><div class="ql">Menunggu</div><div class="qn" style="color:var(--warning)">12</div><div class="qt">antrian</div></div>
-        </div>
-        <div style="padding:0 11px 11px;display:flex;gap:7px"><button class="btn btn-s" style="flex:1;font-size:12px">⏭️ Berikutnya</button><button class="btn btn-o btn-sm">🔁 Ulang</button></div>
-      </div>
-      <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🧪 Lab &amp; Kasir</div></div>
-        <div class="qg">
-          <div class="qb on"><div class="ql">Lab</div><div class="qn">L-09</div><div class="qt">Dilayani</div></div>
-          <div class="qb on" style="border-color:var(--success);background:#d1fae5"><div class="ql">Kasir</div><div class="qn" style="color:var(--success)">K-15</div><div class="qt">Dilayani</div></div>
-          <div class="qb"><div class="ql">Radiologi</div><div class="qn">R-03</div><div class="qt">Dilayani</div></div>
-        </div>
-        <div style="padding:0 11px 11px;display:flex;gap:7px"><button class="btn btn-i" style="flex:1;font-size:12px">⏭️ Berikutnya</button><button class="btn btn-o btn-sm">🔁 Ulang</button></div>
-      </div>
+    <div class="g33" id="antrian-queue-container">
+      <!-- Queue cards diisi dinamis oleh loadAntrian() -->
+      <div class="loader" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data antrian...</div>
     </div>
     <div class="card">
-      <div class="ch"><div class="ct">🛏️ Monitoring Tempat Tidur</div><div style="display:flex;gap:10px;font-size:11px"><span style="color:var(--success)">🟢 Tersedia(38)</span><span style="color:var(--danger)">🔴 Terpakai(84)</span><span style="color:var(--warning)">🟡 Reservasi(6)</span></div></div>
-      <div class="bg-g">
-        <div class="bi2 bo"><div class="icon">🛏</div><div class="num">217B</div><div class="cls">K-3</div></div>
-        <div class="bi2 ba"><div class="icon">🛏</div><div class="num">217D</div><div class="cls">K-3</div></div>
-        <div class="bi2 bo"><div class="icon">🛏</div><div class="num">222B</div><div class="cls">K-3</div></div>
-        <div class="bi2 ba"><div class="icon">🛏</div><div class="num">222C</div><div class="cls">K-3</div></div>
-        <div class="bi2 bo"><div class="icon">🛏</div><div class="num">222D</div><div class="cls">K-3</div></div>
-        <div class="bi2 br"><div class="icon">🛏</div><div class="num">220A</div><div class="cls">K-3</div></div>
-        <div class="bi2 ba"><div class="icon">🛏</div><div class="num">220B</div><div class="cls">K-3</div></div>
-        <div class="bi2 bo"><div class="icon">🛏</div><div class="num">223B</div><div class="cls">K-3</div></div>
-        <div class="bi2 bo"><div class="icon">🛏</div><div class="num">103C</div><div class="cls">K-2</div></div>
-        <div class="bi2 ba"><div class="icon">🛏</div><div class="num">103A</div><div class="cls">K-2</div></div>
-        <div class="bi2 br"><div class="icon">🛏</div><div class="num">104B</div><div class="cls">K-2</div></div>
-        <div class="bi2 bo"><div class="icon">🛏</div><div class="num">105A</div><div class="cls">K-1</div></div>
+      <div class="ch"><div class="ct">🛏️ Monitoring Tempat Tidur</div><div style="display:flex;gap:10px;font-size:11px"><span style="color:var(--success)">🟢 Tersedia</span><span style="color:var(--danger)">🔴 Terpakai</span><span style="color:var(--warning)">🟡 Reservasi</span></div></div>
+      <div class="bg-g" id="bed-container">
+        <!-- Data diisi dinamis oleh index.js -->
       </div>
     </div>
   </div>
 
   <!-- ===== PENDAFTARAN ===== -->
   <div id="pg-pendaftaran" class="page">
-    <div class="sh"><div><div class="st">Pendaftaran Pasien</div><div class="ss">Registrasi kunjungan rawat jalan &amp; rawat inap</div></div><div class="sa"><button class="btn btn-o btn-sm" onclick="document.getElementById('import-file').click()">📥 Import</button><button class="btn btn-p" onclick="showM('mdl-daftar')">+ Daftarkan Pasien</button></div></div>
-    <div class="sg"><div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="sv" style="color:var(--primary)">127</div><div class="sl">Total Kunjungan</div></div><div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="sv" style="color:var(--warning)">34</div><div class="sl">Menunggu</div></div><div class="sc"><div class="sb" style="background:var(--info)"></div><div class="sv" style="color:var(--info)">58</div><div class="sl">Dalam Proses</div></div><div class="sc"><div class="sb" style="background:var(--success)"></div><div class="sv" style="color:var(--success)">35</div><div class="sl">Selesai</div></div></div>
-    <div class="srch"><input class="fc" style="max-width:260px" placeholder="🔍 Cari No.RM / Nama / NIK..."><select class="fc" style="max-width:130px"><option>Semua Penjamin</option><option>Umum</option><option>BPJS</option><option>Asuransi</option></select><select class="fc" style="max-width:130px"><option>Semua Status</option><option>Menunggu</option><option>Proses</option><option>Selesai</option></select><input class="fc" type="date" style="max-width:130px" value="2026-05-17"><button class="btn btn-p btn-sm">Cari</button><span style="margin-left:auto;font-size:12px;color:var(--text-muted)">127 kunjungan</span></div>
-    <div class="card"><div class="ch"><div class="ct">Daftar Kunjungan — Minggu, 17 Mei 2026</div><div style="display:flex;gap:7px"><button class="btn btn-o btn-sm">🖨️ Print</button><button class="btn btn-o btn-sm" onclick="SharedState.exportData()">📥 Export</button></div></div>
+    <div class="sh"><div><div class="st">Pendaftaran Pasien</div><div class="ss">Registrasi kunjungan rawat jalan &amp; rawat inap</div></div><div class="sa"><button class="btn btn-o btn-sm" onclick="document.getElementById('import-file').click()">📥 Import</button><button class="btn btn-p" onclick="showM('mdl-daftar');loadPoliOptions();document.getElementById('reg-name').value='';document.getElementById('search-result').style.display='none';window._regPatientId=null">+ Daftarkan Pasien</button></div></div>
+    <div class="sg"><div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="sv" id="stat-kunjungan-total" style="color:var(--primary)">0</div><div class="sl">Total Kunjungan</div></div><div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="sv" id="stat-kunjungan-menunggu" style="color:var(--warning)">0</div><div class="sl">Menunggu</div></div><div class="sc"><div class="sb" style="background:var(--info)"></div><div class="sv" id="stat-kunjungan-proses" style="color:var(--info)">0</div><div class="sl">Dalam Proses</div></div><div class="sc"><div class="sb" style="background:var(--success)"></div><div class="sv" id="stat-kunjungan-selesai" style="color:var(--success)">0</div><div class="sl">Selesai</div></div></div>
+    <div class="srch"><input class="fc" style="max-width:260px" placeholder="🔍 Cari No.RM / Nama / NIK..."><select class="fc" style="max-width:130px"><option>Semua Penjamin</option><option>Umum</option><option>BPJS</option><option>Asuransi</option></select><select class="fc" style="max-width:130px"><option>Semua Status</option><option>Menunggu</option><option>Proses</option><option>Selesai</option></select><input class="fc" type="date" style="max-width:130px" value="2026-05-17"><button class="btn btn-p btn-sm">Cari</button><span style="margin-left:auto;font-size:12px;color:var(--text-muted)" id="stat-kunjungan-count">0 kunjungan</span></div>
+    <div class="card"><div class="ch"><div class="ct">Daftar Kunjungan</div><div style="display:flex;gap:7px"><button class="btn btn-o btn-sm">🖨️ Print</button><button class="btn btn-o btn-sm" onclick="SharedState.exportData()">📥 Export</button></div></div>
       <table class="t" id="pendaftaran-table">
         <thead><tr><th>No.Reg</th><th>No.RM</th><th>Nama</th><th>Usia</th><th>Poli</th><th>Dokter</th><th>Penjamin</th><th>No.Antrian</th><th>Status</th><th>Aksi</th></tr></thead>
-        <tbody>
-          <tr><td class="mono">974188</td><td class="mono">009001461</td><td><strong>Rumiah Ny</strong></td><td>64th</td><td>Jantung</td><td>Dr. Taka Mehi, Sp.JP</td><td><span class="b bp">Umum</span></td><td><strong>T-45</strong></td><td><span class="b bs">Selesai</span></td><td><button class="btn btn-o btn-xs" onclick="showM('mdl-detail')">Detail</button></td></tr>
-          <tr class="row-n"><td class="mono">974189</td><td class="mono">009002317</td><td><strong>Ahmad Fauzi</strong></td><td>45th</td><td>P. Dalam</td><td>Dr. Siti Rahmawati, Sp.PD</td><td><span class="b bi">BPJS</span></td><td><strong>T-46</strong></td><td><span class="b bw">Menunggu</span></td><td><button class="btn btn-o btn-xs">Detail</button></td></tr>
-          <tr><td class="mono">974190</td><td class="mono">009003882</td><td><strong>Siti Rahayu</strong></td><td>32th</td><td>Kandungan</td><td>Dr. Budi Hartono, Sp.OG</td><td><span class="b bi">BPJS</span></td><td><strong>T-47</strong></td><td><span class="b bp">Proses</span></td><td><button class="btn btn-o btn-xs">Detail</button></td></tr>
-          <tr><td class="mono">974191</td><td class="mono">009004115</td><td><strong>Budi Santoso</strong></td><td>52th</td><td>Bedah Umum</td><td>Dr. Ahmad Yani, Sp.B</td><td><span class="b bw">Asuransi</span></td><td><strong>T-48</strong></td><td><span class="b bw">Menunggu</span></td><td><button class="btn btn-o btn-xs">Detail</button></td></tr>
-          <tr class="row-u"><td class="mono">974192</td><td class="mono">009004290</td><td><strong>Dewi Lestari</strong></td><td>28th</td><td>UGD</td><td>—</td><td><span class="b bi">BPJS</span></td><td><strong>UGD</strong></td><td><span class="b bd">URGENT</span></td><td><button class="btn btn-d btn-xs">Tangani</button></td></tr>
+        <tbody id="pendaftaran-tbody">
         </tbody>
       </table>
     </div>
@@ -203,67 +166,35 @@
   <div id="pg-rawatjalan" class="page">
     <div class="sh"><div><div class="st">Rawat Jalan</div><div class="ss">Poliklinik &amp; rekam medis elektronik</div></div><div class="sa"><div class="tg"><button class="tgb active" onclick="swTab(this,'rj-q')">Antrian Poli</button><button class="tgb" onclick="swTab(this,'rj-emr')">Input EMR</button><button class="tgb" onclick="swTab(this,'rj-rx')">Resep</button></div></div></div>
     <div id="rj-q">
-      <div class="g33">
-        <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🫀 Poli Jantung</div><span class="b bw">8 menunggu</span></div>
-          <div style="padding:10px 13px"><div style="font-size:11px;color:var(--text-muted);margin-bottom:7px">Dr. Taka Mehi, Sp.JP — 13:00–15:00</div>
-          <table class="t"><thead><tr><th>Antrian</th><th>Nama</th><th>Status</th></tr></thead><tbody>
-            <tr class="row-n"><td><strong>T-45</strong></td><td>Rumiah Ny</td><td><span class="b bp">Proses</span></td></tr>
-            <tr><td><strong>T-46</strong></td><td>Hendra K.</td><td><span class="b bw">Menunggu</span></td></tr>
-            <tr><td><strong>T-47</strong></td><td>Maria S.</td><td><span class="b bw">Menunggu</span></td></tr>
-          </tbody></table>
-          <button class="btn btn-p btn-sm" style="margin-top:9px;width:100%" onclick="showM('mdl-emr')">⏭️ Panggil &amp; Input EMR</button></div>
-        </div>
-        <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🩺 Poli P. Dalam</div><span class="b bw">12 menunggu</span></div>
-          <div style="padding:10px 13px"><div style="font-size:11px;color:var(--text-muted);margin-bottom:7px">Dr. Siti Rahmawati, Sp.PD — 08:00–12:00</div>
-          <table class="t"><thead><tr><th>Antrian</th><th>Nama</th><th>Status</th></tr></thead><tbody>
-            <tr><td><strong>T-12</strong></td><td>Ahmad Fauzi</td><td><span class="b bs">Selesai</span></td></tr>
-            <tr class="row-n"><td><strong>T-13</strong></td><td>Sutarjo W.</td><td><span class="b bp">Proses</span></td></tr>
-            <tr><td><strong>T-14</strong></td><td>Nurul H.</td><td><span class="b bw">Menunggu</span></td></tr>
-          </tbody></table>
-          <button class="btn btn-p btn-sm" style="margin-top:9px;width:100%">⏭️ Panggil Berikutnya</button></div>
-        </div>
-        <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🤰 Poli Kandungan</div><span class="b bi">6 menunggu</span></div>
-          <div style="padding:10px 13px"><div style="font-size:11px;color:var(--text-muted);margin-bottom:7px">Dr. Budi Hartono, Sp.OG — 09:00–13:00</div>
-          <table class="t"><thead><tr><th>Antrian</th><th>Nama</th><th>Status</th></tr></thead><tbody>
-            <tr class="row-n"><td><strong>K-01</strong></td><td>Siti Rahayu</td><td><span class="b bp">Proses</span></td></tr>
-            <tr><td><strong>K-02</strong></td><td>Rina P.</td><td><span class="b bw">Menunggu</span></td></tr>
-          </tbody></table>
-          <button class="btn btn-p btn-sm" style="margin-top:9px;width:100%">⏭️ Panggil Berikutnya</button></div>
-        </div>
+      <div class="g33" id="rj-queue-container">
+        <div class="loader" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data antrian...</div>
       </div>
     </div>
     <div id="rj-emr" style="display:none">
       <div class="g3r">
         <div style="display:flex;flex-direction:column;gap:13px">
           <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">👤 Pasien Aktif</div></div>
-            <div style="padding:13px">
-              <div class="pc" style="margin-bottom:10px;cursor:default"><div class="p-av">RN</div><div><div class="p-name">Rumiah Ny</div><div class="p-meta">No.RM: 009001461 • 64th • P</div><div class="p-meta">Umum • Antrian T-45</div></div></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:12px">
-                <div><span style="color:var(--text-muted)">Poli:</span> <strong>Jantung</strong></div>
-                <div><span style="color:var(--text-muted)">Dokter:</span> <strong>Dr. Taka Mehi</strong></div>
-                <div><span style="color:var(--text-muted)">Kunjungan ke:</span> <strong>3</strong></div>
-                <div><span style="color:var(--text-muted)">Alergi:</span> <strong style="color:var(--success)">Tidak ada</strong></div>
-              </div>
+            <div id="rj-emr-patient" style="padding:13px">
+              <div style="text-align:center;padding:30px;color:var(--text-muted)">Pilih pasien dari antrian untuk memulai EMR</div>
             </div>
           </div>
           <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">❤️ Tanda Vital</div></div>
-            <div style="padding:11px">
+            <div id="rj-emr-vitals" style="padding:11px">
               <div class="vg">
-                <div class="vb"><div style="font-size:18px">🩸</div><div class="vv">120/80</div><div class="vu">mmHg</div><div class="vl">TD</div></div>
-                <div class="vb"><div style="font-size:18px">💓</div><div class="vv">82</div><div class="vu">bpm</div><div class="vl">Nadi</div></div>
-                <div class="vb"><div style="font-size:18px">🌡️</div><div class="vv">36,8</div><div class="vu">°C</div><div class="vl">Suhu</div></div>
-                <div class="vb"><div style="font-size:18px">🫁</div><div class="vv">98%</div><div class="vu">SpO₂</div><div class="vl">Oksigen</div></div>
+                <div class="vb"><div style="font-size:18px">🩸</div><div class="vv">—</div><div class="vu">mmHg</div><div class="vl">TD</div></div>
+                <div class="vb"><div style="font-size:18px">💓</div><div class="vv">—</div><div class="vu">bpm</div><div class="vl">Nadi</div></div>
+                <div class="vb"><div style="font-size:18px">🌡️</div><div class="vv">—</div><div class="vu">°C</div><div class="vl">Suhu</div></div>
+                <div class="vb"><div style="font-size:18px">🫁</div><div class="vv">—</div><div class="vu">SpO₂</div><div class="vl">Oksigen</div></div>
               </div>
               <div class="fr" style="margin-top:9px">
-                <div class="fg" style="margin-bottom:0"><label class="fl">BB (kg)</label><input class="fc" value="60"></div>
-                <div class="fg" style="margin-bottom:0"><label class="fl">TB (cm)</label><input class="fc" value="155"></div>
+                <div class="fg" style="margin-bottom:0"><label class="fl">BB (kg)</label><input class="fc" id="vit-bb" value=""></div>
+                <div class="fg" style="margin-bottom:0"><label class="fl">TB (cm)</label><input class="fc" id="vit-tb" value=""></div>
               </div>
             </div>
           </div>
           <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">📚 Riwayat</div></div>
-            <div class="tl">
-              <div class="tl-i"><div class="tl-dot" style="background:#dbeeff">📋</div><div class="tl-body"><div class="tl-t">Kontrol Jantung</div><div class="tl-s">Dr. Taka Mehi, Sp.JP</div><div class="tl-time">15 April 2026</div></div></div>
-              <div class="tl-i"><div class="tl-dot" style="background:#d1fae5">💊</div><div class="tl-body"><div class="tl-t">Kontrol Obat</div><div class="tl-s">Dr. Taka Mehi, Sp.JP</div><div class="tl-time">12 Maret 2026</div></div></div>
+            <div id="rj-emr-history" style="padding:13px;color:var(--text-muted);font-size:12px;text-align:center">
+              Pilih pasien untuk melihat riwayat
             </div>
           </div>
         </div>
@@ -276,39 +207,39 @@
               <div class="tab" onclick="swSub(this,'emr-p')">Plan</div>
             </div>
             <div id="emr-s">
-              <div class="fg"><label class="fl">Keluhan Utama</label><textarea class="fc">Dada terasa berdebar, sesak nafas sejak 2 hari yang lalu</textarea></div>
-              <div class="fg"><label class="fl">Riwayat Penyakit Sekarang</label><textarea class="fc" placeholder="Uraikan riwayat penyakit..."></textarea></div>
-              <div class="fg"><label class="fl">Riwayat Penyakit Dahulu</label><input class="fc" value="Hipertensi, DM Tipe 2"></div>
-              <div class="fg"><label class="fl">Riwayat Alergi</label><input class="fc" placeholder="Tidak ada alergi yang diketahui"></div>
+              <div class="fg"><label class="fl">Keluhan Utama</label><textarea class="fc" id="emr-keluhan" placeholder="Keluhan utama pasien..."></textarea></div>
+              <div class="fg"><label class="fl">Riwayat Penyakit Sekarang</label><textarea class="fc" id="emr-rps" placeholder="Uraikan riwayat penyakit..."></textarea></div>
+              <div class="fg"><label class="fl">Riwayat Penyakit Dahulu</label><input class="fc" id="emr-rpd" placeholder="Hipertensi, DM, dll"></div>
+              <div class="fg"><label class="fl">Riwayat Alergi</label><input class="fc" id="emr-alergi" placeholder="Tidak ada alergi yang diketahui"></div>
             </div>
             <div id="emr-o" style="display:none">
-              <div class="fg"><label class="fl">Pemeriksaan Fisik Umum</label><textarea class="fc">KU: Sedang, Kesadaran: CM, TD: 120/80, HR: 82x/mnt, RR: 20x/mnt, T: 36,8°C</textarea></div>
-              <div class="fg"><label class="fl">Pemeriksaan Khusus</label><textarea class="fc" placeholder="Jantung, Paru, Abdomen, Ekstremitas..."></textarea></div>
+              <div class="fg"><label class="fl">Pemeriksaan Fisik Umum</label><textarea class="fc" id="emr-fisik" placeholder="KU, Kesadaran, TD, HR, RR, T..."></textarea></div>
+              <div class="fg"><label class="fl">Pemeriksaan Khusus</label><textarea class="fc" id="emr-khusus" placeholder="Jantung, Paru, Abdomen, Ekstremitas..."></textarea></div>
             </div>
             <div id="emr-a" style="display:none">
-              <div class="fg"><label class="fl">Diagnosis Utama (ICD-10)</label><input class="fc" value="I10 — Essential (primary) hypertension"></div>
-              <div class="fg"><label class="fl">Diagnosis Sekunder</label><input class="fc" value="E11 — Type 2 diabetes mellitus"></div>
-              <div class="fg"><label class="fl">Catatan Asesmen</label><textarea class="fc">Hipertensi grade I terkontrol, DM terkompensasi. Perlu kontrol rutin.</textarea></div>
+              <div class="fg"><label class="fl">Diagnosis Utama (ICD-10)</label><input class="fc" id="emr-dx1" placeholder="Kode — Nama diagnosis"></div>
+              <div class="fg"><label class="fl">Diagnosis Sekunder</label><input class="fc" id="emr-dx2" placeholder="Kode — Nama diagnosis"></div>
+              <div class="fg"><label class="fl">Catatan Asesmen</label><textarea class="fc" id="emr-asesmen" placeholder="Catatan asesmen..."></textarea></div>
             </div>
             <div id="emr-p" style="display:none">
-              <div class="fg"><label class="fl">Rencana Tatalaksana</label><textarea class="fc">1. Lanjut obat antihipertensi&#10;2. Kontrol gula darah&#10;3. Diet rendah garam</textarea></div>
+              <div class="fg"><label class="fl">Rencana Tatalaksana</label><textarea class="fc" id="emr-plan" placeholder="1. ...\n2. ..."></textarea></div>
               <div class="fg"><label class="fl">Tindakan</label>
                 <div style="display:flex;flex-wrap:wrap;gap:8px">
-                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox"> Konsul</label>
-                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox"> Rawat Inap</label>
-                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" checked> Resep Obat</label>
-                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox"> Rujukan</label>
-                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox"> Lab</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="act-konsul"> Konsul</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="act-ranap"> Rawat Inap</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="act-resep"> Resep Obat</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="act-rujuk"> Rujukan</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="act-lab"> Lab</label>
                 </div>
               </div>
               <div class="fg"><label class="fl">Surat Kontrol</label>
-                <div style="display:flex;gap:8px"><select class="fc"><option>2 minggu lagi</option><option>1 bulan lagi</option></select><button class="btn btn-o btn-sm">🖨️ Cetak</button></div>
+                <div style="display:flex;gap:8px"><select class="fc" id="emr-kontrol"><option value="">Pilih...</option><option value="2m">2 minggu lagi</option><option value="1b">1 bulan lagi</option><option value="3b">3 bulan lagi</option></select><button class="btn btn-o btn-sm" onclick="printKontrol()">🖨️ Cetak</button></div>
               </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:6px">
-              <button class="btn btn-o" style="flex:1">💾 Simpan Draft</button>
-              <button class="btn btn-w" style="flex:1" onclick="swTab(document.querySelector('.tgb:last-child'),'rj-rx')">💊 Resepkan</button>
-              <button class="btn btn-p" style="flex:1">✅ Selesai</button>
+              <button class="btn btn-o" style="flex:1" onclick="simpanEMR('draft')">💾 Simpan Draft</button>
+              <button class="btn btn-w" style="flex:1" onclick="lanjutResep()">💊 Resepkan</button>
+              <button class="btn btn-p" style="flex:1" onclick="simpanEMR('selesai')">✅ Selesai</button>
             </div>
           </div>
         </div>
@@ -317,28 +248,26 @@
     <div id="rj-rx" style="display:none">
       <div class="g3r">
         <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🔍 Cari &amp; Tambah Obat</div></div>
-          <div style="padding:11px"><input class="fc" placeholder="Ketik nama obat..." style="margin-bottom:9px"></div>
-          <div class="di"><div class="d-icon">💊</div><div><div class="d-name">Amlodipine 5mg</div><div class="d-det">Tab • Rp 850/tab</div></div><div class="d-stock"><div class="d-qty" style="color:var(--success)">240</div><div class="d-unit">tab</div></div><button class="btn btn-p btn-xs" style="margin-left:10px">+ Tambah</button></div>
-          <div class="di"><div class="d-icon">💊</div><div><div class="d-name">Metformin 500mg</div><div class="d-det">Tab • Rp 420/tab</div></div><div class="d-stock"><div class="d-qty" style="color:var(--success)">380</div><div class="d-unit">tab</div></div><button class="btn btn-p btn-xs" style="margin-left:10px">+ Tambah</button></div>
-          <div class="di"><div class="d-icon">💊</div><div><div class="d-name">Bisoprolol 5mg</div><div class="d-det">Tab • Rp 1.200/tab</div></div><div class="d-stock"><div class="d-qty" style="color:var(--warning)">42</div><div class="d-unit">tab</div></div><button class="btn btn-p btn-xs" style="margin-left:10px">+ Tambah</button></div>
-          <div class="di"><div class="d-icon">💉</div><div><div class="d-name">Furosemide inj 10mg</div><div class="d-det">Inj • Rp 4.500/amp</div></div><div class="d-stock"><div class="d-qty" style="color:var(--danger)">8</div><div class="d-unit">amp</div></div><button class="btn btn-p btn-xs" style="margin-left:10px">+ Tambah</button></div>
+          <div style="padding:11px"><input class="fc" id="rx-search" placeholder="Ketik nama obat..." style="margin-bottom:9px"></div>
+          <div id="rx-obat-list">
+            <div class="di"><div class="d-icon">💊</div><div><div class="d-name">Amlodipine 5mg</div><div class="d-det">Tab • Rp 850/tab</div></div><div class="d-stock"><div class="d-qty" style="color:var(--success)">240</div><div class="d-unit">tab</div></div><button class="btn btn-p btn-xs" onclick="tambahObat('Amlodipine 5mg')">+ Tambah</button></div>
+            <div class="di"><div class="d-icon">💊</div><div><div class="d-name">Metformin 500mg</div><div class="d-det">Tab • Rp 420/tab</div></div><div class="d-stock"><div class="d-qty" style="color:var(--success)">380</div><div class="d-unit">tab</div></div><button class="btn btn-p btn-xs" onclick="tambahObat('Metformin 500mg')">+ Tambah</button></div>
+            <div class="di"><div class="d-icon">💊</div><div><div class="d-name">Bisoprolol 5mg</div><div class="d-det">Tab • Rp 1.200/tab</div></div><div class="d-stock"><div class="d-qty" style="color:var(--warning)">42</div><div class="d-unit">tab</div></div><button class="btn btn-p btn-xs" onclick="tambahObat('Bisoprolol 5mg')">+ Tambah</button></div>
+            <div class="di"><div class="d-icon">💉</div><div><div class="d-name">Furosemide inj 10mg</div><div class="d-det">Inj • Rp 4.500/amp</div></div><div class="d-stock"><div class="d-qty" style="color:var(--danger)">8</div><div class="d-unit">amp</div></div><button class="btn btn-p btn-xs" onclick="tambahObat('Furosemide inj 10mg')">+ Tambah</button></div>
+          </div>
         </div>
-        <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🧾 Resep — Rumiah Ny</div></div>
+        <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🧾 Resep — <span id="rx-pasien-nama">—</span></div></div>
           <div style="padding:13px">
-            <table class="t" style="margin-bottom:11px"><thead><tr><th>Nama Obat</th><th>Dosis</th><th>Frek</th><th>Jml</th><th>Ket</th><th></th></tr></thead><tbody>
-              <tr><td>Amlodipine 5mg</td><td>1x1</td><td>Pagi</td><td>30 tab</td><td>Setelah makan</td><td><button class="btn btn-d btn-xs">✕</button></td></tr>
-              <tr><td>Metformin 500mg</td><td>3x1</td><td>3x sehari</td><td>90 tab</td><td>Bersama makan</td><td><button class="btn btn-d btn-xs">✕</button></td></tr>
-              <tr><td>Bisoprolol 5mg</td><td>1x1</td><td>Pagi</td><td>30 tab</td><td>—</td><td><button class="btn btn-d btn-xs">✕</button></td></tr>
-            </tbody></table>
+            <table class="t" style="margin-bottom:11px"><thead><tr><th>Nama Obat</th><th>Dosis</th><th>Frek</th><th>Jml</th><th>Ket</th><th></th></tr></thead><tbody id="rx-tbody"></tbody></table>
             <div style="background:var(--bg);border-radius:7px;padding:11px;font-size:12px;margin-bottom:11px">
-              <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Subtotal Obat</span><span style="font-weight:600">Rp 74.400</span></div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Subtotal Obat</span><span id="rx-subtotal" style="font-weight:600">Rp 0</span></div>
               <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Jasa Apotek</span><span style="font-weight:600">Rp 5.000</span></div>
               <hr style="border:none;border-top:1px dashed var(--border);margin:6px 0">
-              <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total</span><span style="color:var(--primary)">Rp 79.400</span></div>
+              <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total</span><span id="rx-total" style="color:var(--primary)">Rp 5.000</span></div>
             </div>
             <div style="display:flex;gap:8px">
               <button class="btn btn-o" style="flex:1">🖨️ Cetak Resep</button>
-              <button class="btn btn-p" style="flex:1">✅ Kirim ke Farmasi</button>
+              <button class="btn btn-p" style="flex:1" onclick="kirimFarmasi()">✅ Kirim ke Farmasi</button>
             </div>
           </div>
         </div>
@@ -348,82 +277,44 @@
 
   <!-- ===== RAWAT INAP ===== -->
   <div id="pg-rawatinap" class="page">
-    <div class="sh"><div><div class="st">Rawat Inap</div><div class="ss">Manajemen kamar, pasien opname &amp; tindakan</div></div><div class="sa"><button class="btn btn-p">+ Admit Pasien</button></div></div>
-    <div class="sg"><div class="sc"><div class="sb" style="background:var(--danger)"></div><div class="sv" style="color:var(--danger)">84</div><div class="sl">Pasien Opname</div></div><div class="sc"><div class="sb" style="background:var(--success)"></div><div class="sv" style="color:var(--success)">38</div><div class="sl">TT Tersedia</div></div><div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="sv" style="color:var(--warning)">7</div><div class="sl">Rencana Pulang</div></div><div class="sc"><div class="sb" style="background:var(--info)"></div><div class="sv" style="color:var(--info)">3</div><div class="sl">Pasien Kritis</div></div></div>
+    <div class="sh"><div><div class="st">Rawat Inap</div><div class="ss">Manajemen kamar, pasien opname &amp; tindakan</div></div><div class="sa"><button class="btn btn-p" onclick="admitPasien()">+ Admit Pasien</button></div></div>
+    <div class="sg" id="ri-stats">
+      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div>
+    </div>
     <div class="g2">
       <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🛏️ Peta Kamar</div><div style="display:flex;gap:8px;font-size:11px"><span style="color:var(--success)">🟢 Tersedia</span><span style="color:var(--danger)">🔴 Terpakai</span><span style="color:var(--warning)">🟡 Reservasi</span></div></div>
-        <div style="padding:11px;font-size:11px;font-weight:700;color:var(--text-muted)">KELAS 3</div>
-        <div class="bg-g" style="padding:0 11px 11px">
-          <div class="bi2 bo"><div class="icon">🛏</div><div class="num">217B</div><div class="cls">K-3</div></div>
-          <div class="bi2 ba"><div class="icon">🛏</div><div class="num">217D</div><div class="cls">K-3</div></div>
-          <div class="bi2 bo"><div class="icon">🛏</div><div class="num">222B</div><div class="cls">K-3</div></div>
-          <div class="bi2 ba"><div class="icon">🛏</div><div class="num">222C</div><div class="cls">K-3</div></div>
-          <div class="bi2 bo"><div class="icon">🛏</div><div class="num">222D</div><div class="cls">K-3</div></div>
-          <div class="bi2 br"><div class="icon">🛏</div><div class="num">220A</div><div class="cls">K-3</div></div>
-        </div>
-        <div style="padding:0 11px;font-size:11px;font-weight:700;color:var(--text-muted)">KELAS 2</div>
-        <div class="bg-g" style="padding:0 11px 11px">
-          <div class="bi2 bo"><div class="icon">🛏</div><div class="num">103C</div><div class="cls">K-2</div></div>
-          <div class="bi2 ba"><div class="icon">🛏</div><div class="num">103A</div><div class="cls">K-2</div></div>
-          <div class="bi2 br"><div class="icon">🛏</div><div class="num">104B</div><div class="cls">K-2</div></div>
-          <div class="bi2 bo"><div class="icon">🛏</div><div class="num">105A</div><div class="cls">K-2</div></div>
-          <div class="bi2 ba"><div class="icon">🛏</div><div class="num">105C</div><div class="cls">K-2</div></div>
-          <div class="bi2 ba"><div class="icon">🛏</div><div class="num">106A</div><div class="cls">K-2</div></div>
-        </div>
+        <div id="ri-bedmap" style="padding:13px;color:var(--text-muted);text-align:center;font-size:12px">⏳ Memuat peta kamar...</div>
       </div>
       <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">👥 Pasien Opname Aktif</div></div>
-        <table class="t"><thead><tr><th>Kamar</th><th>Nama</th><th>Diagnosa</th><th>DPJP</th><th>Hari ke-</th><th>Status</th></tr></thead><tbody>
-          <tr class="row-u"><td><strong>ICU-1</strong></td><td>Joko Widodo</td><td>CHF</td><td>Dr. Taka Mehi</td><td>3</td><td><span class="b bd">Kritis</span></td></tr>
-          <tr class="row-n"><td><strong>222 B</strong></td><td>Siti Rahayu</td><td>SC Post Op</td><td>Dr. Budi H.</td><td>1</td><td><span class="b bp">Observasi</span></td></tr>
-          <tr><td><strong>217 B</strong></td><td>Ahmad Fauzi</td><td>DHF</td><td>Dr. Siti R.</td><td>2</td><td><span class="b bw">Pemulihan</span></td></tr>
-          <tr><td><strong>220 C</strong></td><td>Budi Santoso</td><td>App. Post Op</td><td>Dr. Ahmad Y.</td><td>2</td><td><span class="b bs">Stabil</span></td></tr>
-          <tr><td><strong>223 D</strong></td><td>Hendra K.</td><td>Typhoid</td><td>Dr. Siti R.</td><td>4</td><td><span class="b bw">Pemulihan</span></td></tr>
-        </tbody></table>
+        <div id="ri-opname-table"><table class="t"><thead><tr><th>Kamar</th><th>Nama</th><th>Diagnosa</th><th>DPJP</th><th>Hari ke-</th></tr></thead><tbody></tbody></table></div>
       </div>
     </div>
   </div>
 
   <!-- ===== UGD ===== -->
   <div id="pg-ugd" class="page">
-    <div class="sh"><div><div class="st">Unit Gawat Darurat</div><div class="ss">Triase &amp; penanganan pasien darurat</div></div><div class="sa"><button class="btn btn-d">🚨 Input Pasien UGD Baru</button></div></div>
-    <div class="ib2 warn">⚠️ <span><strong>3 pasien</strong> dalam penanganan aktif. Pastikan semua tindakan tercatat segera.</span></div>
-    <div class="sg"><div class="sc"><div class="sb" style="background:var(--danger)"></div><div class="sv" style="color:var(--danger)">3</div><div class="sl">🔴 Merah (Kritis)</div></div><div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="sv" style="color:var(--warning)">5</div><div class="sl">🟡 Kuning (Sedang)</div></div><div class="sc"><div class="sb" style="background:var(--success)"></div><div class="sv" style="color:var(--success)">8</div><div class="sl">🟢 Hijau (Ringan)</div></div><div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">2</div><div class="sl">⚫ Hitam</div></div></div>
-    <div class="card"><div class="ch"><div class="ct">Pasien UGD Aktif</div></div>
-      <table class="t"><thead><tr><th>No</th><th>Nama</th><th>Keluhan</th><th>GCS</th><th>TD</th><th>Triase</th><th>Dokter</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-        <tr class="row-u"><td>1</td><td><strong>Dewi Lestari</strong></td><td>Sesak napas berat</td><td>15</td><td>90/60</td><td><span class="b bd">🔴 Merah</span></td><td>Dr. Andi S.</td><td><span class="b bd">Penanganan</span></td><td><button class="btn btn-p btn-xs" onclick="showM('mdl-emr')">EMR</button></td></tr>
-        <tr class="row-u"><td>2</td><td><strong>Tn. X (unkn.)</strong></td><td>Tidak sadar, KLL</td><td>8</td><td>80/50</td><td><span class="b bd">🔴 Merah</span></td><td>Dr. Yuni P.</td><td><span class="b bd">Penanganan</span></td><td><button class="btn btn-p btn-xs">EMR</button></td></tr>
-        <tr><td>3</td><td><strong>Rudi Hartono</strong></td><td>Nyeri dada</td><td>15</td><td>140/90</td><td><span class="b bw">🟡 Kuning</span></td><td>Dr. Andi S.</td><td><span class="b bp">Observasi</span></td><td><button class="btn btn-o btn-xs">EMR</button></td></tr>
-      </tbody></table>
+    <div class="sh"><div><div class="st">Unit Gawat Darurat</div><div class="ss">Triase &amp; penanganan pasien darurat</div></div><div class="sa"><button class="btn btn-d" onclick="showM('mdl-ugd')">🚨 Input Pasien UGD Baru</button></div></div>
+    <div class="sg" id="ugd-stats">
+      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div>
+    </div>
+    <div class="card"><div class="ch"><div class="ct">🆘 Pasien UGD Aktif</div></div>
+      <div id="ugd-table"><table class="t"><thead><tr><th>No</th><th>Nama</th><th>Antrian</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>
     </div>
   </div>
 
   <!-- ===== REKAM MEDIS ===== -->
   <div id="pg-rekammedis" class="page">
-    <div class="sh"><div><div class="st">Rekam Medis</div><div class="ss">Pencarian &amp; pengelolaan berkas rekam medis</div></div><div class="sa"><button class="btn btn-p">+ Buat No.RM Baru</button></div></div>
-    <div class="srch"><input class="fc" style="max-width:340px" placeholder="🔍 Cari No.RM / Nama / NIK / No.BPJS..."><button class="btn btn-p btn-sm">Cari</button></div>
+    <div class="sh"><div><div class="st">Rekam Medis</div><div class="ss">Pencarian &amp; pengelolaan berkas rekam medis</div></div></div>
+    <div class="srch"><input id="rm-search" class="fc" style="max-width:340px" placeholder="🔍 Cari No.RM / Nama / NIK..."><button class="btn btn-p btn-sm" onclick="searchRM()">Cari</button></div>
     <div class="g3r">
-      <div>
-        <div class="pc"><div class="p-av">RN</div><div><div class="p-name">Rumiah Ny</div><div class="p-name">Rumiah Ny</div><div class="p-meta">No.RM: 009001461 • 64th • P</div><div class="p-meta">NIK: 3602xxxxxxxx • Umum</div></div><div class="p-right"><span class="b bs">Aktif</span><div style="font-size:10px;color:var(--text-muted);margin-top:3px">3 kunjungan</div></div></div>
-        <div class="pc"><div class="p-av">AF</div><div><div class="p-name">Ahmad Fauzi</div><div class="p-meta">No.RM: 009002317 • 45th • L</div><div class="p-meta">BPJS: 00021635356338</div></div><div class="p-right"><span class="b bs">Aktif</span><div style="font-size:10px;color:var(--text-muted);margin-top:3px">12 kunjungan</div></div></div>
-        <div class="pc"><div class="p-av">SR</div><div><div class="p-name">Siti Rahayu</div><div class="p-meta">No.RM: 009003882 • 32th • P</div><div class="p-meta">BPJS: 00028457821934</div></div><div class="p-right"><span class="b bs">Aktif</span><div style="font-size:10px;color:var(--text-muted);margin-top:3px">5 kunjungan</div></div></div>
+      <div id="rm-results">
+        <div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">🔍 Masukkan kata kunci untuk mencari pasien</div>
       </div>
-      <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">📁 Detail RM — Rumiah Ny</div><button class="btn btn-o btn-sm">🖨️ Cetak</button></div>
-        <div style="padding:13px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:12px;background:var(--bg);padding:11px;border-radius:8px;margin-bottom:13px">
-            <div><span style="color:var(--text-muted)">No.RM</span><div style="font-weight:700;font-family:monospace">009001461</div></div>
-            <div><span style="color:var(--text-muted)">Nama</span><div style="font-weight:700">Rumiah Ny</div></div>
-            <div><span style="color:var(--text-muted)">TTL</span><div style="font-weight:600">02 Juni 1958 (64th)</div></div>
-            <div><span style="color:var(--text-muted)">JK</span><div style="font-weight:600">Perempuan</div></div>
-            <div><span style="color:var(--text-muted)">Alamat</span><div style="font-weight:600">JL Raya Cilegon KM 08</div></div>
-            <div><span style="color:var(--text-muted)">No. HP</span><div style="font-weight:600">085939004395</div></div>
-            <div><span style="color:var(--text-muted)">Penjamin</span><div style="font-weight:600">Umum</div></div>
-            <div><span style="color:var(--text-muted)">Agama</span><div style="font-weight:600">Islam</div></div>
+      <div id="rm-detail" style="display:none">
+        <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">📁 Detail Rekam Medis</div><button class="btn btn-o btn-sm" onclick="printRMDetail()">🖨️ Cetak</button></div>
+          <div id="rm-detail-content" style="padding:13px">
+            <div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat detail...</div>
           </div>
-          <table class="t"><thead><tr><th>Tanggal</th><th>Poli</th><th>Dokter</th><th>Diagnosa</th><th>Biaya</th></tr></thead><tbody>
-            <tr><td>17 Mei 2026</td><td>Jantung</td><td>Dr. Taka Mehi</td><td>I10 - Hipertensi</td><td>Rp 150.000</td></tr>
-            <tr><td>15 Apr 2026</td><td>Jantung</td><td>Dr. Taka Mehi</td><td>I10 - Hipertensi</td><td>Rp 150.000</td></tr>
-            <tr><td>12 Mar 2026</td><td>Jantung</td><td>Dr. Taka Mehi</td><td>I10 - Hipertensi</td><td>Rp 145.000</td></tr>
-          </tbody></table>
         </div>
       </div>
     </div>
@@ -432,53 +323,35 @@
   <!-- ===== LABORATORIUM ===== -->
   <div id="pg-laboratorium" class="page">
     <div class="sh"><div><div class="st">Laboratorium</div><div class="ss">Registrasi, sampel &amp; input hasil lab</div></div><div class="sa"><button class="btn btn-p">+ Registrasi Lab</button></div></div>
-    <div class="sg"><div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="sv" style="color:var(--primary)">24</div><div class="sl">Sampel Hari Ini</div></div><div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="sv" style="color:var(--warning)">8</div><div class="sl">Menunggu Sampel</div></div><div class="sc"><div class="sb" style="background:var(--info)"></div><div class="sv" style="color:var(--info)">10</div><div class="sl">Diproses</div></div><div class="sc"><div class="sb" style="background:var(--success)"></div><div class="sv" style="color:var(--success)">6</div><div class="sl">Hasil Siap</div></div></div>
+    <div class="sg" id="lab-stats">
+      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div>
+    </div>
     <div class="card"><div class="ch"><div class="ct">Daftar Pemeriksaan Lab</div></div>
-      <table class="t"><thead><tr><th>No.Lab</th><th>Nama Pasien</th><th>Jenis Pemeriksaan</th><th>Asal</th><th>Dokter</th><th>Sampel</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-        <tr><td class="mono">LAB-240517-001</td><td><strong>Ahmad Fauzi</strong></td><td>Darah Lengkap, GDS</td><td>RJ</td><td>Dr. Siti R.</td><td><span class="b bs">Diambil</span></td><td><span class="b bs">Selesai</span></td><td><button class="btn btn-p btn-xs">Lihat Hasil</button></td></tr>
-        <tr><td class="mono">LAB-240517-002</td><td><strong>Siti Rahayu</strong></td><td>Darah Lengkap, SGOT/SGPT</td><td>RI</td><td>Dr. Budi H.</td><td><span class="b bs">Diambil</span></td><td><span class="b bp">Diproses</span></td><td><button class="btn btn-o btn-xs">Input Hasil</button></td></tr>
-        <tr><td class="mono">LAB-240517-003</td><td><strong>Hendra K.</strong></td><td>Widal, DL</td><td>RI</td><td>Dr. Siti R.</td><td><span class="b bw">Belum</span></td><td><span class="b bw">Menunggu</span></td><td><button class="btn btn-o btn-xs">Ambil Sampel</button></td></tr>
-        <tr><td class="mono">LAB-240517-004</td><td><strong>Budi Santoso</strong></td><td>HbA1c, Kolesterol</td><td>Rujukan</td><td>—</td><td><span class="b bw">Belum</span></td><td><span class="b bw">Menunggu</span></td><td><button class="btn btn-o btn-xs">Ambil Sampel</button></td></tr>
-      </tbody></table>
+      <div id="lab-table">
+        <table class="t"><thead><tr><th>No.Lab</th><th>Nama Pasien</th><th>Jenis Pemeriksaan</th><th>Asal</th><th>Dokter</th><th>Sampel</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table>
+      </div>
     </div>
   </div>
 
   <!-- ===== RADIOLOGI ===== -->
   <div id="pg-radiologi" class="page">
     <div class="sh"><div><div class="st">Radiologi</div><div class="ss">Pemeriksaan radiologi &amp; hasil</div></div><div class="sa"><button class="btn btn-p">+ Registrasi Radiologi</button></div></div>
-    <div class="sg"><div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="sv" style="color:var(--primary)">9</div><div class="sl">Total Pemeriksaan</div></div><div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="sv" style="color:var(--warning)">3</div><div class="sl">Antrian</div></div><div class="sc"><div class="sb" style="background:var(--info)"></div><div class="sv" style="color:var(--info)">4</div><div class="sl">Diproses</div></div><div class="sc"><div class="sb" style="background:var(--success)"></div><div class="sv" style="color:var(--success)">2</div><div class="sl">Hasil Siap</div></div></div>
+    <div class="sg" id="rad-stats">
+      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div>
+    </div>
     <div class="card"><div class="ch"><div class="ct">Daftar Pemeriksaan Radiologi</div></div>
-      <table class="t"><thead><tr><th>No.Rad</th><th>Nama Pasien</th><th>Jenis Pemeriksaan</th><th>Dokter</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-        <tr><td class="mono">RAD-001</td><td><strong>Dewi Lestari</strong></td><td>Rontgen Thorax AP</td><td>Dr. Andi S.</td><td><span class="b bs">Hasil Siap</span></td><td><button class="btn btn-p btn-xs">Lihat Hasil</button></td></tr>
-        <tr><td class="mono">RAD-002</td><td><strong>Rudi Hartono</strong></td><td>EKG + Rontgen Thorax</td><td>Dr. Taka Mehi</td><td><span class="b bp">Diproses</span></td><td><button class="btn btn-o btn-xs">Input Hasil</button></td></tr>
-        <tr><td class="mono">RAD-003</td><td><strong>Joko Widodo</strong></td><td>USG Abdomen</td><td>Dr. Ahmad Y.</td><td><span class="b bw">Menunggu</span></td><td><button class="btn btn-o btn-xs">Mulai</button></td></tr>
-      </tbody></table>
+      <div id="rad-table">
+        <table class="t"><thead><tr><th>No.Rad</th><th>Nama Pasien</th><th>Jenis Pemeriksaan</th><th>Dokter</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table>
+      </div>
     </div>
   </div>
 
   <!-- ===== FARMASI ===== -->
   <div id="pg-farmasi" class="page">
     <div class="sh"><div><div class="st">Farmasi</div><div class="ss">Resep, racik obat &amp; manajemen stok</div></div><div class="sa"><div class="tg"><button class="tgb active" onclick="swTab(this,'far-rx')">Resep Masuk</button><button class="tgb" onclick="swTab(this,'far-stok')">Stok Obat</button><button class="tgb" onclick="swTab(this,'far-retur')">Retur</button></div></div></div>
-    <div class="sg"><div class="sc"><div class="sb" style="background:var(--success)"></div><div class="sv" style="color:var(--success)">38</div><div class="sl">Resep Hari Ini</div></div><div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="sv" style="color:var(--warning)">12</div><div class="sl">Menunggu Racik</div></div><div class="sc"><div class="sb" style="background:var(--danger)"></div><div class="sv" style="color:var(--danger)">7</div><div class="sl">Stok Menipis</div></div><div class="sc"><div class="sb" style="background:var(--info)"></div><div class="sv" style="color:var(--info)">1.240</div><div class="sl">Total Item Obat</div></div></div>
-    <div id="far-rx"><div class="card"><div class="ch"><div class="ct">📋 Resep Masuk</div></div>
-      <table class="t"><thead><tr><th>No.Resep</th><th>Nama Pasien</th><th>Dokter</th><th>Unit</th><th>Jml Item</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-        <tr><td class="mono">RX-240517-001</td><td><strong>Rumiah Ny</strong></td><td>Dr. Taka Mehi, Sp.JP</td><td>RJ</td><td>3</td><td>Rp 79.400</td><td><span class="b bs">Siap Ambil</span></td><td><button class="btn btn-s btn-xs">Serahkan</button></td></tr>
-        <tr><td class="mono">RX-240517-002</td><td><strong>Ahmad Fauzi</strong></td><td>Dr. Siti Rahmawati, Sp.PD</td><td>RJ</td><td>5</td><td>Rp 125.000</td><td><span class="b bp">Diracik</span></td><td><button class="btn btn-o btn-xs">Detail</button></td></tr>
-        <tr><td class="mono">RX-240517-003</td><td><strong>Siti Rahayu</strong></td><td>Dr. Budi Hartono, Sp.OG</td><td>RI</td><td>4</td><td>Rp 98.500</td><td><span class="b bw">Menunggu</span></td><td><button class="btn btn-p btn-xs">Proses</button></td></tr>
-        <tr><td class="mono">RX-240517-004</td><td><strong>Hendra K.</strong></td><td>Dr. Siti Rahmawati, Sp.PD</td><td>RI</td><td>6</td><td>Rp 210.000</td><td><span class="b bw">Menunggu</span></td><td><button class="btn btn-p btn-xs">Proses</button></td></tr>
-      </tbody></table>
-    </div></div>
-    <div id="far-stok" style="display:none"><div class="srch"><input class="fc" style="max-width:260px" placeholder="🔍 Cari nama obat..."><select class="fc" style="max-width:140px"><option>Semua Kategori</option><option>Tablet</option><option>Kapsul</option><option>Injeksi</option></select><button class="btn btn-p btn-sm">Filter</button><button class="btn btn-o btn-sm" style="margin-left:auto">+ Penerimaan Stok</button></div>
-    <div class="card"><div class="ch"><div class="ct">Daftar Stok Obat</div></div>
-      <table class="t"><thead><tr><th>Kode</th><th>Nama Obat</th><th>Kat.</th><th>Stok</th><th>Min.Stok</th><th>Harga</th><th>ED</th><th>Status</th></tr></thead><tbody>
-        <tr><td class="mono">OBT-001</td><td><strong>Amlodipine 5mg</strong></td><td>Tab</td><td>240</td><td>50</td><td>Rp 850</td><td>Des 2027</td><td><span class="b bs">Normal</span></td></tr>
-        <tr><td class="mono">OBT-002</td><td><strong>Metformin 500mg</strong></td><td>Tab</td><td>380</td><td>100</td><td>Rp 420</td><td>Jun 2027</td><td><span class="b bs">Normal</span></td></tr>
-        <tr class="row-u"><td class="mono">OBT-003</td><td><strong>Bisoprolol 5mg</strong></td><td>Tab</td><td>42</td><td>50</td><td>Rp 1.200</td><td>Mar 2027</td><td><span class="b bw">Menipis</span></td></tr>
-        <tr class="row-u"><td class="mono">OBT-004</td><td><strong>Furosemide inj 10mg</strong></td><td>Inj</td><td>8</td><td>20</td><td>Rp 4.500</td><td>Sep 2026</td><td><span class="b bd">Kritis</span></td></tr>
-        <tr><td class="mono">OBT-005</td><td><strong>Omeprazole 20mg</strong></td><td>Kaps</td><td>520</td><td>100</td><td>Rp 680</td><td>Nov 2027</td><td><span class="b bs">Normal</span></td></tr>
-        <tr><td class="mono">OBT-006</td><td><strong>Ceftriaxone inj 1gr</strong></td><td>Inj</td><td>45</td><td>20</td><td>Rp 28.000</td><td>Agu 2026</td><td><span class="b bs">Normal</span></td></tr>
-      </tbody></table>
-    </div></div>
+    <div class="sg" id="far-stats"><div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div></div>
+    <div id="far-rx"><div id="far-rx-table"><div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data resep...</div></div></div>
+    <div id="far-stok" style="display:none"><div id="far-stok-table"><div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data stok...</div></div></div>
     <div id="far-retur" style="display:none"><div class="card"><div class="ch"><div class="ct">Retur Obat</div><button class="btn btn-p btn-sm">+ Retur Baru</button></div>
       <table class="t"><thead><tr><th>No.Retur</th><th>Pasien</th><th>Obat</th><th>Jumlah</th><th>Alasan</th><th>Status</th></tr></thead><tbody>
         <tr><td class="mono">RTR-001</td><td>Ahmad Fauzi</td><td>Metformin 500mg</td><td>30 tab</td><td>Pasien pulang lebih awal</td><td><span class="b bs">Diterima</span></td></tr>
@@ -490,13 +363,9 @@
   <!-- ===== KAMAR OPERASI ===== -->
   <div id="pg-operasi" class="page">
     <div class="sh"><div><div class="st">Kamar Operasi</div><div class="ss">Jadwal operasi &amp; monitoring OK</div></div><div class="sa"><button class="btn btn-p">+ Jadwal Operasi</button></div></div>
-    <div class="sg"><div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="sv" style="color:var(--primary)">3</div><div class="sl">Operasi Hari Ini</div></div><div class="sc"><div class="sb" style="background:var(--success)"></div><div class="sv" style="color:var(--success)">1</div><div class="sl">Selesai</div></div><div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="sv" style="color:var(--warning)">1</div><div class="sl">Sedang Berjalan</div></div><div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">1</div><div class="sl">Menunggu</div></div></div>
-    <div class="card"><div class="ch"><div class="ct">Jadwal Operasi — Minggu, 17 Mei 2026</div></div>
-      <table class="t"><thead><tr><th>Waktu</th><th>Kamar OK</th><th>Pasien</th><th>Tindakan</th><th>Klasifikasi</th><th>Dokter Operator</th><th>Diagnosa</th><th>Status</th></tr></thead><tbody>
-        <tr><td><strong>07:00</strong></td><td>OK 2</td><td>Tn. Bakri</td><td>Appendektomi</td><td><span class="b bi">Elektif Mayor</span></td><td>Dr. Zainuri Miltas, Sp.OG</td><td>G83A2 H 38 MOG BSC 2X</td><td><span class="b bs">Selesai</span></td></tr>
-        <tr class="row-n"><td><strong>10:00</strong></td><td>OK 3</td><td>Ny. Sari</td><td>SC (Sectio Caesarea)</td><td><span class="b bw">Elektif Mayor</span></td><td>Dr. Budi Hartono, Sp.OG</td><td>gll p2 a0 34mg bsc 2x</td><td><span class="b bw">Berjalan</span></td></tr>
-        <tr><td><strong>13:00</strong></td><td>OK 1</td><td>Tn. Joko</td><td>Laparotomi</td><td><span class="b bd">Cito Mayor</span></td><td>Dr. Ahmad Yani, Sp.B</td><td>Ileus Obstruksi</td><td><span class="b bg">Menunggu</span></td></tr>
-      </tbody></table>
+    <div class="sg" id="ok-stats"><div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div></div>
+    <div class="card"><div class="ch"><div class="ct">Jadwal Operasi</div></div>
+      <div id="ok-table"><div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat jadwal operasi...</div></div>
     </div>
   </div>
 
@@ -504,27 +373,7 @@
   <div id="pg-kasir" class="page">
     <div class="sh"><div><div class="st">Kasir &amp; Pembayaran</div><div class="ss">Transaksi, SEP BPJS &amp; kwitansi</div></div><div class="sa"><button class="btn btn-p">+ Transaksi Baru</button></div></div>
     <div class="g3r">
-      <div style="display:flex;flex-direction:column;gap:13px">
-        <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🎫 Antrian Kasir</div></div>
-          <div style="padding:11px">
-            <div class="qb on" style="margin-bottom:8px;padding:13px"><div class="ql">Sedang Dilayani</div><div class="qn" style="font-size:34px">K-15</div><div class="qt">Rumiah Ny • Umum</div></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px">
-              <div class="qb"><div class="ql">Menunggu</div><div class="qn" style="font-size:22px;color:var(--warning)">8</div></div>
-              <div class="qb"><div class="ql">Selesai</div><div class="qn" style="font-size:22px;color:var(--success)">24</div></div>
-            </div>
-            <button class="btn btn-p" style="width:100%;font-size:12px">⏭️ Panggil Berikutnya</button>
-          </div>
-        </div>
-        <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">📊 Rekap Kasir Hari Ini</div></div>
-          <div style="padding:11px;font-size:13px">
-            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span>Total Transaksi</span><strong>32</strong></div>
-            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span>Tunai</span><strong style="color:var(--success)">Rp 24.750.000</strong></div>
-            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span>Transfer/QRIS</span><strong style="color:var(--info)">Rp 38.200.000</strong></div>
-            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span>BPJS (Piutang)</span><strong style="color:var(--warning)">Rp 26.450.000</strong></div>
-            <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:14px"><span style="font-weight:700">Total</span><strong style="color:var(--primary)">Rp 89.400.000</strong></div>
-          </div>
-        </div>
-      </div>
+      <div id="kasir-sidebar"></div>
       <div style="display:flex;flex-direction:column;gap:13px">
         <div class="sep-box">
           <div class="sep-tit">Surat Eligibilitas Peserta (SEP) — BPJS Kesehatan</div>
@@ -568,26 +417,14 @@
         </div>
       </div>
     </div>
-    <div class="card"><div class="ch"><div class="ct">Riwayat Transaksi Hari Ini</div></div>
-      <table class="t"><thead><tr><th>No.Reg</th><th>Nama</th><th>Penjamin</th><th>Total Tagihan</th><th>Metode</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-        <tr><td class="mono">974185</td><td>Dewi Lestari</td><td><span class="b bi">BPJS</span></td><td>Rp 0</td><td>BPJS</td><td><span class="b bs">Lunas</span></td><td><button class="btn btn-o btn-xs">Kwitansi</button></td></tr>
-        <tr><td class="mono">974186</td><td>Tn. Suparman</td><td><span class="b bp">Umum</span></td><td>Rp 245.000</td><td>Tunai</td><td><span class="b bs">Lunas</span></td><td><button class="btn btn-o btn-xs">Kwitansi</button></td></tr>
-        <tr><td class="mono">974187</td><td>Ny. Kartini</td><td><span class="b bw">Asuransi</span></td><td>Rp 380.000</td><td>Transfer</td><td><span class="b bs">Lunas</span></td><td><button class="btn btn-o btn-xs">Kwitansi</button></td></tr>
-      </tbody></table>
-    </div>
+    <div id="kasir-table"></div>
   </div>
 
   <!-- ===== TAGIHAN ===== -->
   <div id="pg-tagihan" class="page">
     <div class="sh"><div><div class="st">Manajemen Tagihan</div><div class="ss">Piutang, INA-CBG &amp; klaim asuransi</div></div><div class="sa"><button class="btn btn-p">+ Buat Tagihan</button></div></div>
-    <div class="sg"><div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="sv" style="color:var(--primary);font-size:19px">Rp 240,5jt</div><div class="sl">Piutang BPJS</div></div><div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="sv" style="color:var(--warning);font-size:19px">Rp 63,4jt</div><div class="sl">Piutang Asuransi</div></div><div class="sc"><div class="sb" style="background:var(--success)"></div><div class="sv" style="color:var(--success);font-size:19px">Rp 1,18M</div><div class="sl">BPJS Terbayar</div></div><div class="sc"><div class="sb" style="background:var(--info)"></div><div class="sv" style="color:var(--info)">47</div><div class="sl">Klaim Pending</div></div></div>
-    <div class="card"><div class="ch"><div class="ct">Daftar Tagihan</div></div>
-      <table class="t"><thead><tr><th>No.Tagihan</th><th>Pasien</th><th>Penjamin</th><th>Tanggal</th><th>Total</th><th>Terbayar</th><th>Sisa</th><th>Status</th></tr></thead><tbody>
-        <tr><td class="mono">TAG-2605-001</td><td>Ahmad Fauzi</td><td><span class="b bi">BPJS</span></td><td>17 Mei 2026</td><td>Rp 450.000</td><td>Rp 0</td><td style="color:var(--danger);font-weight:600">Rp 450.000</td><td><span class="b bw">Belum Bayar</span></td></tr>
-        <tr><td class="mono">TAG-2605-002</td><td>Siti Rahayu</td><td><span class="b bi">BPJS</span></td><td>16 Mei 2026</td><td>Rp 2.800.000</td><td>Rp 0</td><td style="color:var(--danger);font-weight:600">Rp 2.800.000</td><td><span class="b bw">Klaim Pending</span></td></tr>
-        <tr><td class="mono">TAG-2604-089</td><td>Ny. Kartini</td><td><span class="b bw">Admedika</span></td><td>30 Apr 2026</td><td>Rp 1.200.000</td><td>Rp 1.200.000</td><td style="color:var(--success);font-weight:600">Rp 0</td><td><span class="b bs">Lunas</span></td></tr>
-      </tbody></table>
-    </div>
+    <div class="sg" id="tag-stats"></div>
+    <div id="tag-table"></div>
   </div>
 
   <!-- ===== LAPORAN ===== -->
@@ -625,15 +462,9 @@
 
   <!-- ===== SDM ===== -->
   <div id="pg-sdm" class="page">
-    <div class="sh"><div><div class="st">SDM &amp; Dokter</div><div class="ss">Data kepegawaian &amp; jadwal dokter</div></div><div class="sa"><button class="btn btn-p">+ Tambah Pegawai</button></div></div>
-    <div class="card"><div class="ch"><div class="ct">Jadwal Praktik Dokter Hari Ini</div></div>
-      <table class="t"><thead><tr><th>Nama Dokter</th><th>Spesialisasi</th><th>Poli</th><th>Jam Praktik</th><th>Pasien</th><th>Status</th></tr></thead><tbody>
-        <tr><td><strong>Dr. Taka Mehi, Sp.JP, FIHA</strong></td><td>Jantung</td><td>Poli Jantung</td><td>13:00–15:00</td><td>8</td><td><span class="b bp">Praktik</span></td></tr>
-        <tr><td><strong>Dr. Siti Rahmawati, Sp.PD</strong></td><td>Penyakit Dalam</td><td>Poli P. Dalam</td><td>08:00–12:00</td><td>12</td><td><span class="b bs">Selesai</span></td></tr>
-        <tr><td><strong>Dr. Budi Hartono, Sp.OG</strong></td><td>Obstetri &amp; Gyn</td><td>Poli Kandungan</td><td>09:00–13:00</td><td>6</td><td><span class="b bp">Praktik</span></td></tr>
-        <tr><td><strong>Dr. Ahmad Yani, Sp.B</strong></td><td>Bedah Umum</td><td>Poli Bedah</td><td>10:00–14:00</td><td>5</td><td><span class="b bp">Praktik</span></td></tr>
-        <tr><td><strong>Dr. Sitoresmi Prabaningrum, Sp.A</strong></td><td>Anak</td><td>Poli Anak</td><td>08:00–11:00</td><td>15</td><td><span class="b bs">Selesai</span></td></tr>
-      </tbody></table>
+    <div class="sh"><div><div class="st">SDM &amp; Dokter</div><div class="ss">Data kepegawaian &amp; jadwal dokter</div></div></div>
+    <div id="sdm-container">
+      <div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data SDM...</div>
     </div>
   </div>
 
@@ -678,23 +509,25 @@
   <div class="modal">
     <div class="mh"><div class="mt">📋 Daftarkan Pasien Baru</div><button class="mc" onclick="hideM('mdl-daftar')">✕</button></div>
     <div class="mb">
-      <div class="fg"><label class="fl">Pilih Penjamin</label><div class="pj-bar"><div class="pj active">UMUM</div><div class="pj">BPJS</div><div class="pj">ASURANSI</div></div></div>
-      <div class="fg"><label class="fl">Cari Pasien</label>
+      <div class="fg"><label class="fl">Pilih Penjamin</label><div class="pj-bar">
+        <div class="pj active" onclick="selectPenjamin('Umum', this)">UMUM</div>
+        <div class="pj" onclick="selectPenjamin('BPJS', this)">BPJS</div>
+        <div class="pj" onclick="selectPenjamin('Asuransi', this)">ASURANSI</div>
+      </div></div>
+      <div class="fg"><label class="fl">Data Pasien</label>
         <div style="display:flex;gap:7px;margin-bottom:7px"><button class="btn btn-p btn-sm">NIK</button><button class="btn btn-o btn-sm">No. RM</button><button class="btn btn-o btn-sm">No. BPJS</button></div>
-        <div style="display:flex;gap:7px"><input class="fc" placeholder="Masukkan NIK / No.RM / No.BPJS..."><button class="btn btn-p btn-sm">🔍 Cari</button></div>
-      </div>
-      <div style="background:var(--bg);border-radius:8px;padding:11px;margin-bottom:13px;font-size:12px">
-        <div style="font-weight:700;margin-bottom:7px;color:var(--text-muted)">DATA DITEMUKAN — Pastikan data benar</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-          <div><span style="color:var(--text-muted)">Nama:</span> <strong>Rumiah Ny</strong></div>
-          <div><span style="color:var(--text-muted)">No.RM:</span> <strong>009001461</strong></div>
-          <div><span style="color:var(--text-muted)">TTL:</span> <strong>02/06/1958</strong></div>
-          <div><span style="color:var(--text-muted)">Alamat:</span> <strong>JL Raya Cilegon KM 08</strong></div>
+        <div style="display:flex;gap:7px;margin-bottom:10px"><input id="reg-name" class="fc" placeholder="Masukkan Nama Pasien..."><button class="btn btn-p btn-sm" onclick="searchPatient()">🔍 Cari</button></div>
+        <div id="search-result" style="display:none; background:var(--bg);border-radius:8px;padding:11px;margin-bottom:13px;font-size:12px">
+          <div style="font-weight:700;margin-bottom:7px;color:var(--text-muted)">DATA DITEMUKAN</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+            <div><span style="color:var(--text-muted)">Nama:</span> <strong id="res-name"></strong></div>
+            <div><span style="color:var(--text-muted)">No.RM:</span> <strong id="res-rm"></strong></div>
+          </div>
         </div>
       </div>
       <div class="fr">
-        <div class="fg"><label class="fl">Poli Tujuan</label><select class="fc"><option>-- Pilih Poli --</option><option>Anak</option><option>Bedah Umum</option><option>Gigi</option><option selected>Jantung</option><option>Kandungan</option><option>Mata</option><option>Penyakit Dalam</option></select></div>
-        <div class="fg"><label class="fl">Dokter</label><select class="fc"><option>Dr. Taka Mehi, Sp.JP, FIHA</option></select></div>
+        <div class="fg"><label class="fl">Poli Tujuan</label><select id="reg-poli" class="fc" onchange="loadDoctorOptions(this.value)"><option value="">— Pilih Poli —</option></select></div>
+        <div class="fg"><label class="fl">Dokter</label><select id="reg-dokter" class="fc"><option value="">— Pilih Dokter —</option></select></div>
       </div>
       <div class="fr">
         <div class="fg"><label class="fl">Jadwal</label><select class="fc"><option>Siang 13:00 – 15:00</option></select></div>
@@ -703,7 +536,7 @@
     </div>
     <div class="mf">
       <button class="btn btn-o" onclick="hideM('mdl-daftar')">Batal</button>
-      <button class="btn btn-p" onclick="hideM('mdl-daftar');alert('✅ Pasien berhasil didaftarkan!\n\nNo. Booking: 49T32860\nNo. Registrasi: 974193\nNo. Antrian: T-49\nPoli: Jantung')">✅ Daftar &amp; Ambil Nomor Antrian</button>
+      <button class="btn btn-p" onclick="submitRegistration()">✅ Daftar &amp; Ambil Nomor Antrian</button>
     </div>
   </div>
 </div>
@@ -767,7 +600,13 @@
   </div>
 </div>
 
-<script src="js/shared-state.js"></script>
-<script src="js/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/shared-state.js?v=3"></script>
+<script src="js/index.js?v=3"></script>
+<script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
 </body>
 </html>
