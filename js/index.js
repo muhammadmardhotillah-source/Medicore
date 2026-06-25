@@ -1,6 +1,6 @@
 /**
  * index.js
- * Main Dashboard Logic for ICHA SIM Rumah Sakit
+ * Main Dashboard Logic for MediCore SIMRS
  */
 
 const titles = {
@@ -22,8 +22,25 @@ const titles = {
     pengaturan: 'Pengaturan'
 };
 
+const ROLE_MENUS = {
+  'Administrator': ['dashboard','antrian','pendaftaran','rawatjalan','rawatinap','ugd','rekammedis','laboratorium','radiologi','farmasi','operasi','kasir','tagihan','laporan','sdm','pengaturan'],
+  'Kasir': ['dashboard','kasir','tagihan','laporan'],
+  'Apoteker': ['dashboard','farmasi'],
+  'Petugas': ['dashboard','antrian','pendaftaran','rawatjalan','rawatinap','ugd','rekammedis'],
+  'Dokter': ['dashboard','rekammedis','operasi'],
+};
+
 function go(name, el) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // Role guard
+  const user = window.medicoreUser;
+  if (user) {
+    const allowed = ROLE_MENUS[user.role] || [];
+    if (!allowed.includes(name)) {
+      alert('⛔ Anda tidak memiliki akses ke menu ini');
+      return;
+    }
+  }
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
     
     const pg = document.getElementById('pg-' + name);
@@ -47,6 +64,7 @@ function go(name, el) {
     if (name === 'kasir') loadKasir();
     if (name === 'tagihan') loadTagihan();
     if (name === 'laporan') loadLaporan();
+    if (name === 'pengaturan') { loadConfig(); loadUsers(); }
     
     if (el) {
         el.classList.add('active');
@@ -55,6 +73,33 @@ function go(name, el) {
             if (n.getAttribute('onclick')?.includes(`'${name}'`)) n.classList.add('active');
         });
     }
+}
+
+/**
+ * Filter sidebar menus based on user role
+ */
+function filterSidebar(role) {
+  const allowed = ROLE_MENUS[role] || [];
+  document.querySelectorAll('.sidebar .s-sec').forEach(sec => {
+    const buttons = sec.querySelectorAll('.ni[data-page]');
+    let visibleCount = 0;
+    buttons.forEach(btn => {
+      const page = btn.getAttribute('data-page');
+      if (allowed.includes(page)) {
+        btn.style.display = '';
+        visibleCount++;
+      } else {
+        btn.style.display = 'none';
+      }
+    });
+    // Hide section title + whole section if no buttons visible
+    const title = sec.querySelector('.s-title');
+    if (visibleCount === 0) {
+      sec.style.display = 'none';
+    } else {
+      sec.style.display = '';
+    }
+  });
 }
 
 // MODAL UTILS
@@ -382,7 +427,7 @@ async function panggilPasien(regId) {
 async function loadEMR(regId) {
     const { data: reg } = await window.__sb
         .from('registrations')
-        .select('*, patients!inner(no_rm, nama, tgl_lahir, jk), poli!inner(nama_poli)')
+        .select('*, patients!inner(no_rm, nama, tgl_lahir, jk), poli(nama_poli)')
         .eq('id', regId)
         .single();
 
@@ -395,9 +440,12 @@ async function loadEMR(regId) {
     document.getElementById('rj-emr-patient').innerHTML = `
         <div class="pc" style="margin-bottom:10px;cursor:default"><div class="p-av">${inisial}</div><div><div class="p-name">${p.nama}</div><div class="p-meta">No.RM: ${p.no_rm || '—'} • ${umur}th • ${p.jk || '—'}</div><div class="p-meta">${reg.penjamin || '—'} • Antrian ${reg.no_antrian}</div></div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:12px">
-            <div><span style="color:var(--text-muted)">Poli:</span> <strong>${reg.poli?.nama_poli || '—'}</strong></div>
+            <div><span style="color:var(--text-muted)">Poli:</span> <strong>${reg.poli?.nama_poli || 'UGD'}</strong></div>
             <div><span style="color:var(--text-muted)">Dokter:</span> <strong>${SharedState.getDokterByPoli(reg.poli_id) || '—'}</strong></div>
         </div>`;
+
+    const titleEl = document.getElementById('mdl-emr-title');
+    if (titleEl) titleEl.textContent = `📝 Input EMR — ${p.nama} (${reg.no_antrian || '—'})`;
 
     document.getElementById('rx-pasien-nama').textContent = p.nama || '—';
     window._activeRegId = regId;
@@ -496,7 +544,7 @@ async function loadUGD() {
         const rows = ugdRegs.map((r, i) => {
             const pat = pMap[r.patient_id];
             const cls = r.status === 'URGENT' ? 'row-u' : '';
-            return `<tr class="${cls}"><td>${i+1}</td><td><strong>${pat?.nama || '—'}</strong></td><td>${r.no_antrian || '—'}</td><td><span class="b ${r.status === 'URGENT' ? 'bd' : 'bw'}">${r.status}</span></td><td><button class="btn btn-p btn-xs" onclick="showM('mdl-emr')">EMR</button></td></tr>`;
+            return `<tr class="${cls}"><td>${i+1}</td><td><strong>${pat?.nama || '—'}</strong></td><td>${r.no_antrian || '—'}</td><td><span class="b ${r.status === 'URGENT' ? 'bd' : 'bw'}">${r.status}</span></td><td><button class="btn btn-p btn-xs" onclick="loadEMR('${r.id}');showM('mdl-emr')">EMR</button></td></tr>`;
         }).join('');
         document.querySelector('#ugd-table tbody').innerHTML = rows;
     }
@@ -590,7 +638,7 @@ async function loadRM() {
         const umur = p.tgl_lahir ? Math.floor((new Date() - new Date(p.tgl_lahir)) / 31557600000) : '?';
         const inisial = p.nama ? p.nama.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '--';
         resultsDiv.innerHTML += `
-            <div class="pc" onclick="viewRMPatient(${p.id})" style="cursor:pointer">
+            <div class="pc" onclick="viewRMPatient('${p.id}')" style="cursor:pointer">
                 <div class="p-av">${inisial}</div>
                 <div>
                     <div class="p-name">${p.nama}</div>
@@ -635,7 +683,7 @@ async function searchRM() {
         const umur = p.tgl_lahir ? Math.floor((new Date() - new Date(p.tgl_lahir)) / 31557600000) : '?';
         const inisial = p.nama ? p.nama.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '--';
         resultsDiv.innerHTML += `
-            <div class="pc" onclick="viewRMPatient(${p.id})" style="cursor:pointer">
+            <div class="pc" onclick="viewRMPatient('${p.id}')" style="cursor:pointer">
                 <div class="p-av">${inisial}</div>
                 <div>
                     <div class="p-name">${p.nama}</div>
@@ -812,6 +860,87 @@ async function loadSDM() {
         </div>`;
 }
 
+// ===== DETAIL MODAL FUNCTIONS =====
+function showDetail(title, html) {
+    document.getElementById('dtl-title').textContent = title;
+    document.getElementById('dtl-body').innerHTML = html;
+    showM('mdl-detail');
+}
+
+async function showLabDetail(id) {
+    showDetail('🔍 Detail Lab', '<div style="padding:20px;text-align:center">⏳ Memuat...</div>');
+    const { data: r } = await window.__sb.from('lab_requests').select('*, patients!inner(no_rm, nama)').eq('id', id).single();
+    if (!r) return showDetail('🔍 Detail Lab', '<div style="padding:20px;text-align:center;color:var(--danger)">Data tidak ditemukan</div>');
+    const p = r.patients;
+    const cls = r.status === 'Selesai' ? 'bs' : r.status === 'Diproses' ? 'bp' : r.status === 'Diterima' ? 'bi' : 'bw';
+    showDetail('🧪 Detail Lab — ' + p.nama, `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;background:var(--bg);padding:11px;border-radius:8px;margin-bottom:11px">
+            <div><span style="color:var(--text-muted)">No. Lab</span><div style="font-weight:700;font-family:monospace">${r.no_lab||'—'}</div></div>
+            <div><span style="color:var(--text-muted)">Pasien</span><div style="font-weight:700">${p.nama}</div></div>
+            <div><span style="color:var(--text-muted)">No. RM</span><div style="font-weight:700">${p.no_rm||'—'}</div></div>
+            <div><span style="color:var(--text-muted)">Asal</span><div style="font-weight:700">${r.asal||'—'}</div></div>
+            <div><span style="color:var(--text-muted)">Sampel</span><div style="font-weight:700">${r.sampel_status||'Belum'}</div></div>
+            <div><span style="color:var(--text-muted)">Status</span><div><span class="b ${cls}">${r.status||'—'}</span></div></div>
+        </div>
+        <div><strong>Jenis Pemeriksaan:</strong> ${r.jenis_pemeriksaan||'—'}</div>
+        ${r.catatan ? `<div style="margin-top:6px"><strong>Catatan:</strong> ${r.catatan}</div>` : ''}
+        ${r.hasil ? `<div style="margin-top:6px;background:var(--bg);padding:8px;border-radius:6px"><strong>Hasil:</strong> ${r.hasil}</div>` : ''}`);
+}
+
+async function showRadDetail(id) {
+    showDetail('🔍 Detail Radiologi', '<div style="padding:20px;text-align:center">⏳ Memuat...</div>');
+    const { data: r } = await window.__sb.from('radiology_requests').select('*, patients!inner(no_rm, nama)').eq('id', id).single();
+    if (!r) return showDetail('🔍 Detail Radiologi', '<div style="padding:20px;text-align:center;color:var(--danger)">Data tidak ditemukan</div>');
+    const p = r.patients;
+    const cls = r.status === 'Selesai' || r.status === 'Hasil Siap' ? 'bs' : r.status === 'Diproses' ? 'bp' : 'bw';
+    showDetail('🔬 Detail Radiologi — ' + p.nama, `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;background:var(--bg);padding:11px;border-radius:8px;margin-bottom:11px">
+            <div><span style="color:var(--text-muted)">No. Rad</span><div style="font-weight:700;font-family:monospace">${r.no_rad||'—'}</div></div>
+            <div><span style="color:var(--text-muted)">Pasien</span><div style="font-weight:700">${p.nama}</div></div>
+            <div><span style="color:var(--text-muted)">No. RM</span><div style="font-weight:700">${p.no_rm||'—'}</div></div>
+            <div><span style="color:var(--text-muted)">Asal</span><div style="font-weight:700">${r.asal||'—'}</div></div>
+            <div><span style="color:var(--text-muted)">Status</span><div><span class="b ${cls}">${r.status||'—'}</span></div></div>
+        </div>
+        <div><strong>Jenis Pemeriksaan:</strong> ${r.jenis_pemeriksaan||'—'}</div>
+        ${r.catatan ? `<div style="margin-top:6px"><strong>Catatan:</strong> ${r.catatan}</div>` : ''}
+        ${r.hasil ? `<div style="margin-top:6px;background:var(--bg);padding:8px;border-radius:6px"><strong>Hasil:</strong> ${r.hasil}</div>` : ''}`);
+}
+
+async function showFarmasiDetail(id) {
+    showDetail('🔍 Detail Resep', '<div style="padding:20px;text-align:center">⏳ Memuat...</div>');
+    const { data: r } = await window.__sb.from('prescriptions').select('*, patients!inner(no_rm, nama)').eq('id', id).single();
+    if (!r) return showDetail('🔍 Detail Resep', '<div style="padding:20px;text-align:center;color:var(--danger)">Data tidak ditemukan</div>');
+    const p = r.patients;
+    const sCls = r.status === 'Siap Ambil' || r.status === 'Selesai' ? 'bs' : r.status === 'Diproses' ? 'bp' : 'bw';
+    showDetail('💊 Detail Resep — ' + p.nama, `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;background:var(--bg);padding:11px;border-radius:8px;margin-bottom:11px">
+            <div><span style="color:var(--text-muted)">No. Resep</span><div style="font-weight:700;font-family:monospace">${r.no_resep||'—'}</div></div>
+            <div><span style="color:var(--text-muted)">Pasien</span><div style="font-weight:700">${p.nama}</div></div>
+            <div><span style="color:var(--text-muted)">No. RM</span><div style="font-weight:700">${p.no_rm||'—'}</div></div>
+            <div><span style="color:var(--text-muted)">Status</span><div><span class="b ${sCls}">${r.status||'—'}</span></div></div>
+            <div><span style="color:var(--text-muted)">Total</span><div style="font-weight:700;color:var(--primary)">Rp ${(r.total||0).toLocaleString()}</div></div>
+        </div>
+        ${r.catatan ? `<div style="margin-top:6px"><strong>Catatan:</strong> ${r.catatan}</div>` : ''}`);
+}
+
+async function showOKDetail(id) {
+    showDetail('🔍 Detail Operasi', '<div style="padding:20px;text-align:center">⏳ Memuat...</div>');
+    const { data: s } = await window.__sb.from('surgery_schedule').select('*, patients!inner(no_rm, nama)').eq('id', id).single();
+    if (!s) return showDetail('🔍 Detail Operasi', '<div style="padding:20px;text-align:center;color:var(--danger)">Data tidak ditemukan</div>');
+    const p = s.patients;
+    const sCls = s.status === 'Selesai' ? 'bs' : s.status === 'Berjalan' ? 'bp' : s.status === 'Dijadwalkan' ? 'bw' : 'bd';
+    showDetail('🩺 Detail Operasi — ' + p.nama, `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;background:var(--bg);padding:11px;border-radius:8px;margin-bottom:11px">
+            <div><span style="color:var(--text-muted)">No. OK</span><div style="font-weight:700;font-family:monospace">${s.no_ok||'—'}</div></div>
+            <div><span style="color:var(--text-muted)">Pasien</span><div style="font-weight:700">${p.nama}</div></div>
+            <div><span style="color:var(--text-muted)">No. RM</span><div style="font-weight:700">${p.no_rm||'—'}</div></div>
+            <div><span style="color:var(--text-muted)">Tindakan</span><div style="font-weight:700">${s.tindakan||'—'}</div></div>
+            <div><span style="color:var(--text-muted)">Dokter</span><div style="font-weight:700">${s.dokter||'—'}</div></div>
+            <div><span style="color:var(--text-muted)">Status</span><div><span class="b ${sCls}">${s.status||'—'}</span></div></div>
+        </div>
+        ${s.catatan ? `<div style="margin-top:6px"><strong>Catatan:</strong> ${s.catatan}</div>` : ''}`);
+}
+
 // ===== LABORATORIUM — from lab_requests table =====
 async function loadLab() {
     const statsDiv = document.getElementById('lab-stats');
@@ -862,7 +991,7 @@ async function loadLab() {
             <td>${r.asal || '—'}</td>
             <td><span class="b ${sampelCls}">${sampelLabel}</span></td>
             <td><span class="b ${statusCls}">${r.status || '—'}</span></td>
-            <td><button class="btn btn-o btn-xs" onclick="alert('Lihat lab ${r.id}')">Detail</button></td>
+            <td><button class="btn btn-o btn-xs" onclick="showLabDetail('${r.id}')">Detail</button></td>
         </tr>`;
     });
 
@@ -873,7 +1002,91 @@ async function loadLab() {
     tableDiv.innerHTML = `<table class="t"><thead><tr><th>No.Lab</th><th>Nama Pasien</th><th>Jenis Pemeriksaan</th><th>Asal</th><th>Sampel</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
-// ===== RADIOLOGI — from radiology_requests table =====
+// ===== LAB REGISTRATION =====
+let _labPatientId = null;
+
+function searchLabPatient() {
+    const q = document.getElementById('lab-search-input')?.value.trim();
+        if (!q) return;
+        SharedState.waitReady().then(() => {
+            const ps = (SharedState.cache.patients||[]).filter(p => p.nama?.toLowerCase().includes(q.toLowerCase()) || p.no_rm?.includes(q) || p.nik?.includes(q));
+            const r = document.getElementById('lab-search-results');
+            if (!ps.length) { r.innerHTML = '<div style="padding:8px;color:var(--text-muted)">Pasien tidak ditemukan</div>'; return; }
+            r.innerHTML = ps.slice(0,6).map(p => `<div style="padding:8px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between" onclick="selectLabPatient('${p.id}','${p.nama.replace(/'/g,"\\'")}')"><strong>${p.nama}</strong><span style="color:var(--text-muted)">${p.no_rm||'—'}</span></div>`).join('');
+        });
+    }
+
+    function selectLabPatient(id, nama) {
+        _labPatientId = id;
+        document.getElementById('lab-selected-patient').innerHTML = `<strong>${nama}</strong>`;
+        document.getElementById('lab-search-results').innerHTML = '';
+        document.getElementById('lab-search-input').value = nama;
+    }
+
+    async function submitLabReg() {
+        const btn = document.getElementById('btn-lab-submit');
+        if (!_labPatientId) { alert('Pilih pasien terlebih dahulu!'); return; }
+        const asal = document.getElementById('lab-asal').value;
+        const checked = [...document.querySelectorAll('#lab-checkbox-group input:checked')].map(c => c.value);
+        if (!checked.length) { alert('Pilih minimal satu jenis pemeriksaan!'); return; }
+        const catatan = document.getElementById('lab-catatan').value.trim();
+        btn.disabled = true; btn.textContent = '⏳ Mendaftarkan...';
+        const noLab = 'LAB-' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '-' + String(Date.now() % 10000).padStart(4,'0');
+        const { error } = await window.__sb.from('lab_requests').insert({
+            no_lab: noLab, patient_id: _labPatientId, jenis_pemeriksaan: checked.join(', '),
+            asal, catatan, status: 'Menunggu', sampel_status: 'Belum'
+        });
+        if (error) { alert('Gagal: ' + error.message); btn.disabled = false; btn.textContent = '✅ Daftarkan Pemeriksaan'; return; }
+        alert('✅ ' + noLab + ' — Registrasi berhasil!');
+        hideM('mdl-lab-reg');
+        _labPatientId = null;
+        document.getElementById('lab-search-input').value = '';
+        document.getElementById('lab-selected-patient').innerHTML = '—';
+        loadLab();
+    }
+
+// ===== RADIOLOGI REGISTRATION =====
+let _radPatientId = null;
+
+function searchRadPatient() {
+    const q = document.getElementById('rad-search-input')?.value.trim();
+    if (!q) return;
+    SharedState.waitReady().then(() => {
+        const ps = (SharedState.cache.patients||[]).filter(p => p.nama?.toLowerCase().includes(q.toLowerCase()) || p.no_rm?.includes(q));
+        const r = document.getElementById('rad-search-results');
+        if (!ps.length) { r.innerHTML = '<div style="padding:8px;color:var(--text-muted)">Pasien tidak ditemukan</div>'; return; }
+        r.innerHTML = ps.slice(0,6).map(p => `<div style="padding:8px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between" onclick="selectRadPatient('${p.id}','${p.nama}')"><strong>${p.nama}</strong><span style="color:var(--text-muted)">${p.no_rm||'—'}</span></div>`).join('');
+    });
+}
+
+function selectRadPatient(id, nama) {
+    _radPatientId = id;
+    document.getElementById('rad-selected-patient').innerHTML = `<strong>${nama}</strong>`;
+    document.getElementById('rad-search-results').innerHTML = '';
+    document.getElementById('rad-search-input').value = nama;
+}
+
+async function submitRadReg() {
+    const btn = document.getElementById('btn-rad-submit');
+    if (!_radPatientId) { alert('Pilih pasien terlebih dahulu!'); return; }
+    const asal = document.getElementById('rad-asal').value;
+    const jenis = document.getElementById('rad-jenis').value;
+    const catatan = document.getElementById('rad-catatan').value.trim();
+    btn.disabled = true; btn.textContent = '⏳ Mendaftarkan...';
+    const noRad = 'RAD-' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '-' + String(Date.now() % 10000).padStart(4,'0');
+    const { error } = await window.__sb.from('radiology_requests').insert({
+        no_rad: noRad, patient_id: _radPatientId, jenis_pemeriksaan: jenis + (catatan ? ' — ' + catatan : ''),
+        asal, catatan, status: 'Menunggu'
+    });
+    if (error) { alert('Gagal: ' + error.message); btn.disabled = false; btn.textContent = '✅ Daftarkan Pemeriksaan'; return; }
+    alert('✅ ' + noRad + ' — Registrasi berhasil!');
+    hideM('mdl-rad-reg');
+    _radPatientId = null;
+    document.getElementById('rad-search-input').value = '';
+    document.getElementById('rad-selected-patient').innerHTML = '—';
+    loadRad();
+}
+
 async function loadRad() {
     const statsDiv = document.getElementById('rad-stats');
     const tableDiv = document.getElementById('rad-table');
@@ -919,7 +1132,7 @@ async function loadRad() {
             <td>${r.jenis_pemeriksaan || '—'}</td>
             <td>${r.dokter || '—'}</td>
             <td><span class="b ${statusCls}">${r.status || '—'}</span></td>
-            <td><button class="btn btn-o btn-xs" onclick="alert('Lihat rad ${r.id}')">Detail</button></td>
+            <td><button class="btn btn-o btn-xs" onclick="showRadDetail('${r.id}')">Detail</button></td>
         </tr>`;
     });
 
@@ -1012,7 +1225,7 @@ async function loadFarRx() {
             <td>${itemInfo.count}</td>
             <td>${totalStr}</td>
             <td><span class="b ${statusCls}">${r.status || '—'}</span></td>
-            <td><button class="btn btn-o btn-xs" onclick="alert('Detail resep ${r.id}')">Detail</button></td>
+            <td><button class="btn btn-o btn-xs" onclick="showFarmasiDetail('${r.id}')">Detail</button></td>
         </tr>`;
     });
 
@@ -1138,7 +1351,7 @@ async function loadOK() {
             <td><span class="b ${klasCls}">${s.klasifikasi || '—'}</span></td>
             <td>${s.dokter_operator || '—'}</td>
             <td><span class="b ${statusCls}">${s.status || '—'}</span></td>
-            <td><button class="btn btn-o btn-xs" onclick="alert('Detail operasi ${s.id}')">Detail</button></td>
+            <td><button class="btn btn-o btn-xs" onclick="showOKDetail('${s.id}')">Detail</button></td>
         </tr>`;
     });
 
@@ -1210,6 +1423,65 @@ async function loadKasir() {
         </div>`;
     }
 
+    // === Render SEP & Nota from first payment ===
+    const sepDiv = document.getElementById('kasir-sep');
+    const notaDiv = document.getElementById('kasir-nota');
+    if (payments.length > 0) {
+        const first = payments[0];
+        const nama = first.patients?.nama || '—';
+        const total = Number(first.total_tagihan || 0);
+        const bayar = Number(first.bayar || 0);
+        const kembalian = bayar > total ? bayar - total : 0;
+        const sepNum = first.no_reg ? first.no_reg.replace(/[^0-9]/g,'').slice(0,20) : '0222R00060322V001210';
+        if (sepDiv) {
+            sepDiv.innerHTML = `<div class="sep-box">
+                <div class="sep-tit">Surat Eligibilitas Peserta (SEP) — BPJS Kesehatan</div>
+                <div class="sep-num">${sepNum}</div>
+                <div class="sep-g">
+                    <div class="sep-item"><div class="lbl">Nama Peserta</div><div class="val">${nama}</div></div>
+                    <div class="sep-item"><div class="lbl">No. Kartu</div><div class="val">${first.patients?.no_rm || '00021635356338'}</div></div>
+                    <div class="sep-item"><div class="lbl">Jenis Rawat</div><div class="val">Rawat Jalan</div></div>
+                    <div class="sep-item"><div class="lbl">Poli</div><div class="val">Penyakit Dalam</div></div>
+                    <div class="sep-item"><div class="lbl">Kelas Hak</div><div class="val">Kelas 3</div></div>
+                    <div class="sep-item"><div class="lbl">Tgl SEP</div><div class="val">${new Date(first.created_at).toLocaleDateString('id-ID')}</div></div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:11px">
+                    <button class="btn" style="flex:1;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:12px" onclick="printSEP()">🖨️ Print SEP</button>
+                    <button class="btn" style="flex:1;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:12px" onclick="sepPDF()">📄 SEP PDF</button>
+                </div>
+            </div>`;
+        }
+        if (notaDiv) {
+            notaDiv.innerHTML = `<div class="nota">
+                <div class="nota-h"><div style="font-weight:700;font-size:13px">EDOY HOSPITAL MANAGEMENT</div><div style="font-size:11px;opacity:.8">Nota Pembayaran</div></div>
+                <div class="nota-b">
+                    <div class="rec">
+                        <div class="rr"><span>No. Reg</span><span>${first.no_reg || '—'}</span></div>
+                        <div class="rr"><span>Nama</span><span>${nama}</span></div>
+                        <div class="rr"><span>Penjamin</span><span>${first.penjamin || 'Umum'}</span></div>
+                        <hr class="rs">
+                        <div class="rr"><span>Jasa Dokter</span><span>Rp ${Math.round(total * 0.43).toLocaleString()}</span></div>
+                        <div class="rr"><span>Biaya Poli</span><span>Rp ${Math.round(total * 0.09).toLocaleString()}</span></div>
+                        <div class="rr"><span>Obat</span><span>Rp ${Math.round(total * 0.45).toLocaleString()}</span></div>
+                        <div class="rr"><span>Administrasi</span><span>Rp ${Math.round(total * 0.03).toLocaleString()}</span></div>
+                        <hr class="rs">
+                        <div class="rr" style="font-size:13px;font-weight:700"><span>TOTAL</span><span style="color:var(--primary)">Rp ${total.toLocaleString()}</span></div>
+                        <hr class="rs">
+                        <div class="rr"><span>Bayar (${first.metode || 'Tunai'})</span><span>Rp ${bayar.toLocaleString()}</span></div>
+                        <div class="rr"><span style="color:var(--success);font-weight:700">Kembali</span><span style="color:var(--success);font-weight:700">Rp ${kembalian.toLocaleString()}</span></div>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:11px">
+                        <button class="btn btn-p" style="flex:1" onclick="prosesBayar()">✅ Proses Bayar</button>
+                        <button class="btn btn-o btn-sm" onclick="cetakKwitansi()">🖨️ Kwitansi</button>
+                    </div>
+                </div>
+            </div>`;
+        }
+    } else {
+        if (sepDiv) sepDiv.innerHTML = '<div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">Belum ada transaksi hari ini</div>';
+        if (notaDiv) notaDiv.innerHTML = '<div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">Belum ada transaksi hari ini</div>';
+    }
+
     // === Render Table ===
     if (tableDiv) {
         let rows = '';
@@ -1229,7 +1501,7 @@ async function loadKasir() {
                 <td>Rp ${Number(p.total_tagihan || 0).toLocaleString()}</td>
                 <td><span class="b ${metodeCls}">${p.metode || '—'}</span></td>
                 <td><span class="b ${statusCls}">${p.status || '—'}</span></td>
-                <td><button class="btn btn-o btn-xs">Kwitansi</button></td>
+                <td><button class="btn btn-o btn-xs" onclick="showDetailKwitansi('${(p.no_reg||'').replace(/'/g,"\\'")}','${nama.replace(/'/g,"\\'")}','${(p.penjamin||'Umum').replace(/'/g,"\\'")}',${p.total_tagihan||0},'${(p.metode||'').replace(/'/g,"\\'")}','${(p.status||'').replace(/'/g,"\\'")}')">Kwitansi</button></td>
             </tr>`;
         });
         if (!rows) {
@@ -1317,7 +1589,7 @@ async function loadLaporan() {
     // Query payments — hitung total pendapatan (Lunas)
     const { data: payments } = await window.__sb
         .from('payments')
-        .select('*')
+        .select('total_tagihan,penjamin,created_at')
         .eq('status', 'Lunas');
 
     if (!payments) {
@@ -1326,52 +1598,784 @@ async function loadLaporan() {
         return;
     }
 
+    const fmt = (v) => 'Rp ' + Number(v).toLocaleString();
+
     // Total pendapatan
     const totalPendapatan = payments.reduce((s, p) => s + Number(p.total_tagihan || 0), 0);
     const finM = document.getElementById('fin-m');
-    if (finM) finM.textContent = 'Rp ' + totalPendapatan.toLocaleString();
+    if (finM) finM.textContent = totalPendapatan > 0 ? fmt(totalPendapatan) : 'Rp 0';
+
+    // fin-g: group by penjamin
+    const byPenjamin = {};
+    payments.forEach(p => {
+        const pen = p.penjamin || 'Umum';
+        byPenjamin[pen] = (byPenjamin[pen] || 0) + Number(p.total_tagihan || 0);
+    });
+
+    const finG = document.getElementById('fin-g');
+    if (finG) {
+        const labels = { 'Umum': 'Rawat Jalan', 'BPJS': 'Rawat Inap', 'Asuransi': 'Farmasi' };
+        const icons = { 'Umum': '🏃', 'BPJS': '🛏️', 'Asuransi': '💊' };
+        finG.innerHTML = Object.entries(labels).map(([pen, label]) => `
+            <div class="fin-i"><div class="lbl">${icons[pen]||''} ${label}</div><div class="val">${fmt(byPenjamin[pen] || 0)}</div></div>
+        `).join('');
+    }
+
+    // Tabel ringkasan layanan
+    const tbody = document.getElementById('ringkasan-layanan');
+    if (tbody) {
+        // Query registrations untuk hitung kunjungan
+        const { data: regs } = await window.__sb
+            .from('registrations')
+            .select('jenis_rawat,poli_id,status,penjamin');
+
+        const regList = regs || [];
+
+        const rows = [
+            {
+                layanan: 'Rawat Jalan',
+                kunjungan: regList.filter(r => r.jenis_rawat === 'RJ' || (!r.jenis_rawat && r.poli_id)).length,
+                total: byPenjamin['Umum'] || 0
+            },
+            {
+                layanan: 'Rawat Inap',
+                kunjungan: regList.filter(r => r.jenis_rawat === 'RI' || r.status === 'Opname').length,
+                total: byPenjamin['BPJS'] || 0
+            },
+            {
+                layanan: 'Farmasi',
+                kunjungan: regList.filter(r => r.jenis_rawat === 'UGD' || (!r.jenis_rawat && !r.poli_id && r.status !== 'Opname')).length,
+                total: byPenjamin['Asuransi'] || 0
+            },
+        ];
+        const grandTotal = rows.reduce((s, r) => s + r.total, 0) || 1;
+        tbody.innerHTML = rows.map(r => {
+            const pct = Math.round((r.total / grandTotal) * 100);
+            const hasData = r.total > 0 || r.kunjungan > 0;
+            if (!hasData) {
+                return `<tr><td>${r.layanan}</td><td>Belum ada data</td><td>${fmt(r.total)}</td><td><span class="b bw">0%</span></td></tr>`;
+            }
+            const cls = pct > 50 ? 'bp' : pct > 25 ? 'bi' : 'bw';
+            return `<tr><td>${r.layanan}</td><td>${r.kunjungan.toLocaleString()}</td><td>${fmt(r.total)}</td><td><span class="b ${cls}">${pct}%</span></td></tr>`;
+        }).join('');
+    }
 
     // Per penjamin — untuk progress bars
-    const bpjs = payments.filter(p => p.penjamin === 'BPJS').reduce((s, p) => s + Number(p.total_tagihan || 0), 0);
-    const umum = payments.filter(p => p.penjamin === 'Umum' || !p.penjamin).reduce((s, p) => s + Number(p.total_tagihan || 0), 0);
-    const asuransi = payments.filter(p => p.penjamin === 'Asuransi').reduce((s, p) => s + Number(p.total_tagihan || 0), 0);
+    const bpjs = byPenjamin['BPJS'] || 0;
+    const umum = byPenjamin['Umum'] || 0;
+    const asuransi = byPenjamin['Asuransi'] || 0;
 
     const maxVal = Math.max(bpjs, umum, asuransi, 1);
     const bpjsPct = Math.round((bpjs / maxVal) * 100);
     const umumPct = Math.round((umum / maxVal) * 100);
     const asuransiPct = Math.round((asuransi / maxVal) * 100);
 
-    const fmt = (v) => 'Rp ' + Number(v).toLocaleString();
-
-    // Find progress bar containers — there are 3 existing ones with specific class structure
-    const pbContainer = document.querySelector('#pg-laporan .card .pb');
-    // Replace the progress bars directly
+    // Find progress bar containers
     const pbItems = document.querySelectorAll('#pg-laporan .card .pb');
     if (pbItems && pbItems.length >= 3) {
-        // BPJS
         pbItems[0].previousElementSibling.innerHTML = `<span style="font-weight:600">BPJS Kesehatan</span><span style="color:var(--text-muted)">${fmt(bpjs)}</span>`;
         pbItems[0].querySelector('.pf').style.width = bpjsPct + '%';
-        // Umum
         pbItems[1].previousElementSibling.innerHTML = `<span style="font-weight:600">Umum</span><span style="color:var(--text-muted)">${fmt(umum)}</span>`;
         pbItems[1].querySelector('.pf').style.width = umumPct + '%';
-        // Asuransi
         pbItems[2].previousElementSibling.innerHTML = `<span style="font-weight:600">Asuransi Swasta</span><span style="color:var(--text-muted)">${fmt(asuransi)}</span>`;
         pbItems[2].querySelector('.pf').style.width = asuransiPct + '%';
     }
 
-    // Also update the fin-g items (rawat jalan, rawat inap, farmasi) — keep static as instructed
+    // Chart pendapatan harian (7 hari terakhir)
+    const chartW = document.getElementById('chart-w');
+    if (chartW) {
+        const days = {};
+        const today = new Date();
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            const key = d.toISOString().slice(0, 10);
+            days[key] = 0;
+        }
+        payments.forEach(p => {
+            if (p.created_at) {
+                const key = String(p.created_at).slice(0, 10);
+                if (days[key] !== undefined) days[key] += Number(p.total_tagihan || 0);
+            }
+        });
+        const maxValChart = Math.max(...Object.values(days), 1);
+        const labels_map = { '0': 'Min', '1': 'Sen', '2': 'Sel', '3': 'Rab', '4': 'Kam', '5': 'Jum', '6': 'Sab' };
+        const bars = Object.entries(days).map(([date, val]) => {
+            const pct = Math.round((val / maxValChart) * 100);
+            const day = new Date(date).getDay();
+            return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                <div style="font-size:10px;color:var(--text-muted)">${fmt(val)}</div>
+                <div style="width:100%;max-width:36px;height:80px;background:var(--bg);border-radius:6px;display:flex;align-items:flex-end;overflow:hidden">
+                    <div style="width:100%;height:${pct}%;background:var(--primary);border-radius:6px 6px 0 0;transition:height 0.3s"></div>
+                </div>
+                <div style="font-size:10px;color:var(--text-muted)">${labels_map[day] || date.slice(5)}</div>
+            </div>`;
+        }).join('');
+        chartW.innerHTML = `<div style="display:flex;gap:4px;align-items:flex-end;padding:8px 0;min-height:130px">${bars}</div>`;
+    }
 }
+
+// ===== ADMIT PASIEN RAWAT INAP =====
+let _admitPatientId = null;
+
+function admitPasien() {
+    _admitPatientId = null;
+    document.getElementById('admit-search').value = '';
+    document.getElementById('admit-search-result').style.display = 'none';
+    document.getElementById('admit-search-result').innerHTML = '';
+    document.getElementById('admit-diagnosa').value = '';
+    document.getElementById('btn-admit-submit').disabled = true;
+    
+    // Load available beds
+    const bedSelect = document.getElementById('admit-bed');
+    bedSelect.innerHTML = '<option value="">⏳ Memuat bed...</option>';
+    window.__sb.from('beds').select('id, nomor, kelas').eq('status', 'Tersedia').order('nomor').then(({ data, error }) => {
+        if (error) { bedSelect.innerHTML = '<option value="">Gagal muat bed</option>'; return; }
+        bedSelect.innerHTML = '<option value="">— Pilih Kamar / Bed —</option>';
+        if (data.length === 0) {
+            bedSelect.innerHTML += '<option value="" disabled>⚠️ Tidak ada bed tersedia</option>';
+        }
+        data.forEach(b => bedSelect.innerHTML += `<option value="${b.id}">${b.nomor} (${b.kelas})</option>`);
+    });
+    
+    // Load doctors
+    const dpjpSelect = document.getElementById('admit-dpjp');
+    const doctors = SharedState.cache && SharedState.cache.doctors;
+    dpjpSelect.innerHTML = '<option value="">— Pilih DPJP —</option>';
+    (doctors || []).forEach(d => dpjpSelect.innerHTML += `<option value="${d.id}">${d.nama_dokter}</option>`);
+    
+    showM('mdl-admit');
+}
+
+async function searchAdmitPatient() {
+    const q = document.getElementById('admit-search').value.trim();
+    const res = document.getElementById('admit-search-result');
+    if (!q) { res.style.display = 'none'; return; }
+    res.style.display = 'block';
+    res.innerHTML = '<div style="padding:8px;color:var(--text-muted)">🔍 Mencari...</div>';
+    
+    const { data, error } = await window.__sb.from('patients')
+        .select('id, no_rm, nama, jk, tgl_lahir, nik')
+        .or(`nama.ilike.%${q}%,no_rm.ilike.%${q}%,nik.ilike.%${q}%`)
+        .limit(10);
+    
+    if (error || !data || data.length === 0) {
+        res.innerHTML = '<div style="padding:8px;color:var(--text-muted)">❌ Pasien tidak ditemukan</div>';
+        return;
+    }
+    
+    let html = '<div style="display:grid;gap:5px">';
+    data.forEach(p => {
+        const umur = Math.floor((new Date() - new Date(p.tgl_lahir)) / 31557600000);
+        html += `<div class="rr" style="cursor:pointer;padding:8px;border-radius:6px;border:1px solid var(--border)" onclick="selectAdmitPatient('${p.id}','${p.nama}','${p.no_rm}')">
+            <strong>${p.nama}</strong> <span style="color:var(--text-muted)">${p.no_rm}</span>
+            <span style="float:right;color:var(--text-muted)">${umur} th · ${p.jk}</span>
+        </div>`;
+    });
+    html += '</div>';
+    res.innerHTML = html;
+}
+
+function selectAdmitPatient(id, nama, rm) {
+    _admitPatientId = id;
+    document.getElementById('admit-search-result').innerHTML = 
+        `<div style="padding:8px;border-radius:6px;background:var(--success-bg, #d4edda);border:1px solid var(--success, #28a745)">
+            ✅ ${nama} <span style="color:var(--text-muted)">${rm}</span>
+        </div>`;
+    document.getElementById('btn-admit-submit').disabled = !document.getElementById('admit-bed').value;
+}
+
+// Enable submit when bed selected too
+document.addEventListener('change', function(e) {
+    if (e.target.id === 'admit-bed') {
+        document.getElementById('btn-admit-submit').disabled = !_admitPatientId || !e.target.value;
+    }
+});
+
+async function submitAdmit() {
+    const btn = document.getElementById('btn-admit-submit');
+    const patientId = _admitPatientId;
+    const bedId = document.getElementById('admit-bed').value;
+    const dpjpId = document.getElementById('admit-dpjp').value;
+    
+    if (!patientId || !bedId) { alert('Pilih pasien dan bed!'); return; }
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Memproses...';
+    
+    try {
+        // Get patient name
+        const { data: patient } = await window.__sb.from('patients').select('nama').eq('id', patientId).single();
+        const patientName = patient?.nama || 'Pasien';
+        
+        // Generate RI number
+        const { data: lastReg } = await window.__sb.from('registrations')
+            .select('no_antrian').ilike('no_antrian', 'RI-%').order('created_at', { ascending: false }).limit(1);
+        const lastNum = lastReg && lastReg.length > 0 ? parseInt(lastReg[0].no_antrian.replace('RI-', '')) : 0;
+        const newNo = 'RI-' + String(lastNum + 1).padStart(3, '0');
+        
+        // Create registration
+        const { error: regErr } = await window.__sb.from('registrations').insert({
+            patient_id: patientId,
+            status: 'Opname',
+            no_antrian: newNo,
+            penjamin: 'BPJS',
+            doctor_id: dpjpId || null
+        });
+        
+        if (regErr) { alert('Gagal: ' + regErr.message); btn.disabled = false; btn.textContent = '✅ Konfirmasi Admit'; return; }
+        
+        // Update bed status
+        await window.__sb.from('beds').update({ status: 'Terpakai' }).eq('id', bedId);
+        
+        hideM('mdl-admit');
+        alert(`✅ ${patientName} berhasil di-admit\nNo. Antrian: ${newNo}`);
+        loadRawatInap();
+    } catch (e) {
+        alert('Error: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = '✅ Konfirmasi Admit';
+    }
+}
+
+// ===== UGD INPUT =====
+let _ugdPatientId = null;
+
+function searchUGDPatient() {
+    const q = document.getElementById('ugd-search').value.trim();
+    const res = document.getElementById('ugd-search-result');
+    if (!q) { res.style.display = 'none'; return; }
+    res.style.display = 'block';
+    res.innerHTML = '<div style="padding:8px;color:var(--text-muted)">🔍 Mencari...</div>';
+    
+    // Load doctors in the UGD modal
+    const dSel = document.getElementById('ugd-dokter');
+    if (dSel.options.length <= 1) {
+        const docs = (SharedState.cache && SharedState.cache.doctors) || [];
+        dSel.innerHTML = '<option value="">— Pilih Dokter —</option>';
+        docs.forEach(d => dSel.innerHTML += `<option value="${d.id}">${d.nama_dokter}</option>`);
+    }
+    
+    window.__sb.from('patients')
+        .select('id, no_rm, nama, jk, tgl_lahir')
+        .or(`nama.ilike.%${q}%,no_rm.ilike.%${q}%`)
+        .limit(10).then(({ data, error }) => {
+        if (error || !data || data.length === 0) {
+            res.innerHTML = '<div style="padding:8px;color:var(--text-muted)">❌ Pasien tidak ditemukan</div>';
+            return;
+        }
+        let html = '<div style="display:grid;gap:5px">';
+        data.forEach(p => {
+            const umur = Math.floor((new Date() - new Date(p.tgl_lahir)) / 31557600000);
+            html += `<div class="rr" style="cursor:pointer;padding:8px;border-radius:6px;border:1px solid var(--border)" onclick="selectUGDPatient('${p.id}','${p.nama}','${p.no_rm}')">
+                <strong>${p.nama}</strong> <span style="color:var(--text-muted)">${p.no_rm}</span>
+                <span style="float:right;color:var(--text-muted)">${umur} th · ${p.jk}</span>
+            </div>`;
+        });
+        html += '</div>';
+        res.innerHTML = html;
+    });
+}
+
+function selectUGDPatient(id, nama, rm) {
+    _ugdPatientId = id;
+    document.getElementById('ugd-search-result').innerHTML = 
+        `<div style="padding:8px;border-radius:6px;background:#d4edda;border:1px solid #28a745">
+            ✅ ${nama} <span style="color:#666">${rm}</span>
+        </div>`;
+}
+
+async function submitUGD() {
+    const patientId = _ugdPatientId;
+    if (!patientId) { alert('Cari dan pilih pasien dulu!'); return; }
+    
+    const triase = document.getElementById('ugd-triase').value;
+    const dokterId = document.getElementById('ugd-dokter').value;
+    const gcs = document.getElementById('ugd-gcs').value.trim() || '-';
+    const td = document.getElementById('ugd-td').value.trim() || '-';
+    const nadi = document.getElementById('ugd-nadi').value.trim() || '-';
+    const keluhan = document.getElementById('ugd-keluhan').value.trim();
+    
+    if (!keluhan) { alert('Isi keluhan utama pasien!'); return; }
+    
+    const btn = document.querySelector('#mdl-ugd .btn-p');
+    btn.disabled = true;
+    btn.textContent = '⏳ Mendaftarkan...';
+    
+    try {
+        // Generate UGD number
+        const { data: last } = await window.__sb.from('registrations')
+            .select('no_antrian').ilike('no_antrian', 'UGD-%').order('created_at', { ascending: false }).limit(1);
+        const lastNum = last && last.length > 0 ? parseInt(last[0].no_antrian.replace('UGD-', '')) : 0;
+        const newNo = 'UGD-' + String(lastNum + 1).padStart(3, '0');
+        
+        const { error } = await window.__sb.from('registrations').insert({
+            patient_id: patientId,
+            status: triase === 'Merah' ? 'Kritis' : triase === 'Kuning' ? 'Urgent' : 'Urgent',
+            no_antrian: newNo,
+            penjamin: 'Umum',
+            doctor_id: dokterId || null
+        });
+        
+        if (error) { alert('Gagal: ' + error.message); btn.disabled = false; btn.textContent = '✅ Daftarkan Pasien UGD'; return; }
+        
+        hideM('mdl-ugd');
+        alert(`✅ Pasien UGD terdaftar\nNo. Antrian: ${newNo}`);
+        loadUGD();
+    } catch (e) { alert('Error: ' + e.message); btn.disabled = false; btn.textContent = '✅ Daftarkan Pasien UGD'; }
+}
+
+// ===== TRANSAKSI KASIR =====
+function showMdlTransaksi() {
+    SharedState.waitReady().then(() => {
+        const sel = document.getElementById('trx-pasien');
+        if (sel.options.length <= 1) {
+            (SharedState.cache.patients || []).forEach(p => {
+                sel.innerHTML += `<option value="${p.id}">${p.nama} (${p.no_rm || '—'})</option>`;
+            });
+        }
+    });
+    showM('mdl-transaksi');
+}
+
+function showMdlTagihan() {
+    SharedState.waitReady().then(() => {
+        const sel = document.getElementById('tag-pasien');
+        if (sel.options.length <= 1) {
+            (SharedState.cache.patients || []).forEach(p => {
+                sel.innerHTML += `<option value="${p.id}">${p.nama} (${p.no_rm || '—'})</option>`;
+            });
+        }
+    });
+    showM('mdl-tagihan');
+}
+
+async function submitTransaksi() {
+    const btn = document.querySelector('button[onclick*="submitTransaksi"]');
+    const patId = document.getElementById('trx-pasien').value;
+    const noReg = document.getElementById('trx-no-reg').value.trim();
+    const penjamin = document.getElementById('trx-penjamin').value;
+    const total = parseInt(document.getElementById('trx-total').value) || 0;
+    const metode = document.getElementById('trx-metode').value;
+    const bayar = parseInt(document.getElementById('trx-bayar').value) || 0;
+
+    if (!patId || !noReg || total <= 0) { alert('Isi pasien, No.Reg, dan Total Tagihan!'); return; }
+
+    if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
+
+    try {
+        const { error } = await window.__sb.from('payments').insert({
+            no_reg: noReg,
+            patient_id: patId,
+            penjamin,
+            total_tagihan: total,
+            metode,
+            status: metode === 'Tunai' || metode === 'Transfer' || metode === 'QRIS' ? 'Lunas' : 'Belum Bayar',
+            bayar,
+            kembalian: bayar > total ? bayar - total : 0
+        });
+        if (error) throw error;
+        alert('✅ Transaksi berhasil!');
+        hideM('mdl-transaksi');
+        loadKasir();
+        document.getElementById('trx-no-reg').value = '';
+        document.getElementById('trx-total').value = '';
+        document.getElementById('trx-bayar').value = '';
+    } catch (e) { alert('❌ ' + e.message); }
+    if (btn) { btn.disabled = false; btn.textContent = '✅ Proses Bayar'; }
+}
+
+// ===== JADWAL OPERASI =====
+function showMdlOperasi() {
+    SharedState.waitReady().then(() => {
+        const sel = document.getElementById('ok-pasien');
+        if (sel.options.length <= 1) {
+            (SharedState.cache.patients || []).forEach(p => {
+                sel.innerHTML += `<option value="${p.id}">${p.nama} (${p.no_rm || '—'})</option>`;
+            });
+        }
+    });
+    showM('mdl-operasi');
+}
+
+async function submitOperasi() {
+    const btn = document.querySelector('[onclick="submitOperasi()"]');
+    const patId = document.getElementById('ok-pasien').value;
+    const noOp = document.getElementById('ok-no').value.trim();
+    const kamar = document.getElementById('ok-kamar').value;
+    const klasifikasi = document.getElementById('ok-klasifikasi').value;
+    const tindakan = document.getElementById('ok-tindakan').value.trim();
+    const diagnosa = document.getElementById('ok-diagnosa').value.trim();
+    const operator = document.getElementById('ok-operator').value.trim();
+    const anastesi = document.getElementById('ok-anastesi').value.trim();
+    const mulai = document.getElementById('ok-mulai').value;
+
+    if (!patId || !noOp || !tindakan) { alert('Isi pasien, No.Operasi, dan Tindakan!'); return; }
+
+    if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
+
+    try {
+        const { error } = await window.__sb.from('surgery_schedule').insert({
+            no_operasi: noOp,
+            patient_id: patId,
+            kamar_ok: kamar,
+            tindakan, klasifikasi, diagnosa,
+            dokter_operator: operator,
+            dokter_anastesi: anastesi,
+            waktu_mulai: mulai || null,
+            status: 'Menunggu'
+        });
+        if (error) throw error;
+        alert('✅ Jadwal operasi berhasil disimpan!');
+        hideM('mdl-operasi');
+        loadOK();
+        document.getElementById('ok-no').value = '';
+        document.getElementById('ok-tindakan').value = '';
+        document.getElementById('ok-diagnosa').value = '';
+        document.getElementById('ok-operator').value = '';
+        document.getElementById('ok-anastesi').value = '';
+        document.getElementById('ok-mulai').value = '';
+    } catch (e) { alert('❌ ' + e.message); }
+    if (btn) { btn.disabled = false; btn.textContent = '✅ Simpan Jadwal'; }
+}
+
+// ===== RETUR OBAT (client-side only) =====
+function submitRetur() {
+    const pasien = document.getElementById('retur-pasien').value;
+    const obat = document.getElementById('retur-obat').value.trim();
+    const jumlah = document.getElementById('retur-jumlah').value.trim();
+    const kondisi = document.getElementById('retur-kondisi').value;
+    const alasan = document.getElementById('retur-alasan').value.trim();
+    if (!obat || !jumlah) { alert('Isi nama obat dan jumlah!'); return; }
+    alert('✅ Retur diajukan: ' + obat + ' (' + jumlah + ') — ' + pasien + '\nAlasan: ' + (alasan || kondisi));
+    hideM('mdl-retur');
+    document.getElementById('retur-obat').value = '';
+    document.getElementById('retur-jumlah').value = '';
+    document.getElementById('retur-alasan').value = '';
+}
+
 function tick() {
     const n = new Date();
     document.getElementById('clk').textContent = n.toLocaleTimeString('id-ID');
     document.getElementById('pgd').textContent = n.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-// INIT
+// ===== KASIR HELPER FUNCTIONS =====
+function printSEP() { window.print(); }
+function sepPDF() { window.open(window.location.href, '_blank'); }
+function prosesBayar() { alert('✅ Pembayaran diproses'); loadKasir(); }
+function cetakKwitansi() { window.print(); }
+
+function showDetailKwitansi(noReg, nama, penjamin, total, metode, status) {
+    const statusCls = status === 'Lunas' ? 'bs'
+        : status === 'Belum Bayar' || status === 'Menunggu' ? 'bw'
+        : 'bg';
+    showDetail('🧾 Kwitansi — ' + nama, `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--bg);padding:13px;border-radius:8px">
+            <div><span style="color:var(--text-muted)">No. Reg</span><div style="font-weight:700">${noReg || '—'}</div></div>
+            <div><span style="color:var(--text-muted)">Nama</span><div style="font-weight:700">${nama}</div></div>
+            <div><span style="color:var(--text-muted)">Penjamin</span><div style="font-weight:700">${penjamin}</div></div>
+            <div><span style="color:var(--text-muted)">Total Tagihan</span><div style="font-weight:700;color:var(--primary)">Rp ${Number(total || 0).toLocaleString()}</div></div>
+            <div><span style="color:var(--text-muted)">Metode</span><div style="font-weight:700">${metode || '—'}</div></div>
+            <div><span style="color:var(--text-muted)">Status</span><div><span class="b ${statusCls}">${status || '—'}</span></div></div>
+        </div>
+    `);
+}
+
+async function submitTagihan() {
+    const btn = document.querySelector('[onclick="submitTagihan()"]');
+    const patId = document.getElementById('tag-pasien').value;
+    const noTag = document.getElementById('tag-no').value.trim();
+    const penjamin = document.getElementById('tag-penjamin').value;
+    const total = parseInt(document.getElementById('tag-total').value) || 0;
+    const jatuhTempo = document.getElementById('tag-jatuh-tempo').value;
+    const keterangan = document.getElementById('tag-keterangan').value.trim();
+    if (!patId || !noTag || total <= 0) { alert('Isi pasien, No. Tagihan, dan Total Tagihan!'); return; }
+    if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
+    try {
+        const { error } = await window.__sb.from('invoices').insert({
+            no_invoice: noTag,
+            patient_id: patId,
+            penjamin,
+            total,
+            jatuh_tempo: jatuhTempo || null,
+            keterangan,
+            status: 'Belum Bayar'
+        });
+        if (error) throw error;
+        alert('✅ Tagihan berhasil dibuat!');
+        hideM('mdl-tagihan');
+        loadTagihan();
+        document.getElementById('tag-no').value = '';
+        document.getElementById('tag-total').value = '';
+        document.getElementById('tag-keterangan').value = '';
+        document.getElementById('tag-jatuh-tempo').value = '';
+    } catch (e) { alert('❌ ' + e.message); }
+    if (btn) { btn.disabled = false; btn.textContent = '✅ Buat Tagihan'; }
+}
+
+// ===== TAMBAH DOKTER =====
+function showMdlAddDokter() {
+    ['dr-nama','dr-spesialis','dr-jadwal','dr-sip','dr-str','dr-telp'].forEach(id => document.getElementById(id).value = '');
+    SharedState.waitReady().then(() => {
+        const sel = document.getElementById('dr-poli');
+        sel.innerHTML = '<option value="">— Pilih Poli —</option>';
+        (SharedState.cache.poli||[]).forEach(p => {
+            sel.innerHTML += `<option value="${p.id}">${p.nama_poli}</option>`;
+        });
+    });
+    showM('mdl-add-dokter');
+}
+
+async function submitAddDokter() {
+    const nama = document.getElementById('dr-nama').value.trim();
+    if (!nama) { alert('Nama dokter wajib diisi!'); return; }
+    const poliId = document.getElementById('dr-poli').value;
+    if (!poliId) { alert('Poli wajib dipilih!'); return; }
+    
+    const payload = {
+        nama_dokter: nama,
+        spesialis: document.getElementById('dr-spesialis').value.trim() || null,
+        poli_id: poliId,
+        jadwal_praktik: document.getElementById('dr-jadwal').value.trim() || null,
+        no_sip: document.getElementById('dr-sip').value.trim() || null,
+        no_str: document.getElementById('dr-str').value.trim() || null,
+        telepon: document.getElementById('dr-telp').value.trim() || null,
+    };
+    
+    const { data, error } = await window.__sb.from('doctors').insert(payload).select().single();
+    if (error) { alert('❌ Gagal menyimpan: ' + error.message); return; }
+    
+    SharedState.cache.doctors.push(data);
+    hideM('mdl-add-dokter');
+    loadSDM();
+}
+
+// ===== TAMBAH KARYAWAN =====
+function showMdlAddKaryawan() {
+    ['kar-username','kar-password','kar-nama'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('kar-role').value = '';
+    document.getElementById('kar-unit').value = '';
+    showM('mdl-add-karyawan');
+}
+
+async function submitAddKaryawan() {
+    const username = document.getElementById('kar-username').value.trim();
+    const password = document.getElementById('kar-password').value.trim();
+    const nama = document.getElementById('kar-nama').value.trim();
+    const role = document.getElementById('kar-role').value;
+    const unit = document.getElementById('kar-unit').value;
+    
+    if (!username || !password || !nama || !role) { alert('Username, password, nama, dan role wajib diisi!'); return; }
+    
+    // Try insert to Supabase users table
+    const { data, error } = await window.__sb.from('users').insert({
+        username, password, nama, role, unit: unit || 'Semua', status: 'Aktif'
+    }).select().maybeSingle();
+    
+    if (error) {
+        // Fallback: table doesn't exist yet — use array
+        if (!window._appUsers) window._appUsers = [];
+        if (window._appUsers.find(u => u.username === username)) {
+            alert('❌ Username sudah terdaftar!');
+            return;
+        }
+        window._appUsers.push({ username, nama, role, unit: unit || 'Semua', status: 'Aktif' });
+        renderUsersTable();
+        hideM('mdl-add-karyawan');
+        alert('✅ Akun karyawan berhasil ditambahkan (local)');
+    } else {
+        // Success — reload users table from DB
+        hideM('mdl-add-karyawan');
+        loadUsers();
+    }
+}
+
+async function loadUsers() {
+    const tbody = document.querySelector('#pg-pengaturan .t tbody');
+    if (!tbody) return;
+    
+    const { data: users, error } = await window.__sb.from('users').select('*').order('username');
+    if (error || !users || users.length === 0) {
+        // Fallback to array
+        if (!window._appUsers) window._appUsers = [
+            { username: 'admin', nama: 'Admin RS', role: 'Administrator', unit: 'Semua', status: 'Aktif' },
+            { username: 'kasir01', nama: 'Sari Dewi', role: 'Kasir', unit: 'Kasir', status: 'Aktif' },
+            { username: 'farmasi01', nama: 'Budi Santoso', role: 'Apoteker', unit: 'Farmasi', status: 'Aktif' },
+            { username: 'pendaftaran01', nama: 'Rini Yuliani', role: 'Petugas', unit: 'Pendaftaran', status: 'Aktif' },
+        ];
+        renderUsersTable();
+        return;
+    }
+    window._appUsers = users;
+    renderUsersTable();
+}
+
+function renderUsersTable() {
+    const tbody = document.querySelector('#pg-pengaturan .t tbody');
+    if (!tbody || !window._appUsers) return;
+    tbody.innerHTML = window._appUsers.map(u => `
+        <tr><td>${u.username}</td><td>${u.nama}</td><td><span class="b ${roleClass(u.role)}">${u.role}</span></td><td>${u.unit || 'Semua'}</td><td><span class="b bs">${u.status || 'Aktif'}</span></td></tr>
+    `).join('');
+}
+
+function roleClass(role) {
+    return role === 'Administrator' ? 'bd' : role === 'Kasir' ? 'bi' : role === 'Apoteker' ? 'bw' : 'bg';
+}
+
+// ===== KONFIGURASI RS =====
+
+function simpanConfig() {
+    const cfg = {
+        nama: document.getElementById('cfg-nama').value,
+        alamat: document.getElementById('cfg-alamat').value,
+        telp: document.getElementById('cfg-telp').value,
+        email: document.getElementById('cfg-email').value,
+        kodeBpjs: document.getElementById('cfg-kode-bpjs').value,
+    };
+    localStorage.setItem('rs_config', JSON.stringify(cfg));
+    alert('✅ Konfigurasi berhasil disimpan!');
+}
+
+function loadConfig() {
+    const saved = localStorage.getItem('rs_config');
+    const cfg = saved ? JSON.parse(saved) : {
+        nama: 'Edoy Hospital Management',
+        alamat: 'Jl. Raya Cilegon KM 8, Serang, Banten',
+        telp: '0254-226000',
+        email: '',
+        kodeBpjs: '0401R001',
+    };
+    document.getElementById('cfg-nama').value = cfg.nama;
+    document.getElementById('cfg-alamat').value = cfg.alamat;
+    document.getElementById('cfg-telp').value = cfg.telp;
+    document.getElementById('cfg-email').value = cfg.email;
+    document.getElementById('cfg-kode-bpjs').value = cfg.kodeBpjs;
+}
+
+// ===== AUTH =====
+let medicoreUser = null;
+
+function initAuth() {
+  const saved = localStorage.getItem('medicore_user');
+  if (saved) {
+    try {
+      window.medicoreUser = JSON.parse(saved);
+      updateUserChip();
+      document.getElementById('login-overlay').classList.remove('active');
+      document.getElementById('app-shell').classList.add('active');
+    } catch(e) {
+      localStorage.removeItem('medicore_user');
+      document.getElementById('login-overlay').classList.add('active');
+      document.getElementById('app-shell').classList.remove('active');
+    }
+  } else {
+    document.getElementById('login-overlay').classList.add('active');
+    document.getElementById('app-shell').classList.remove('active');
+  }
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value.trim();
+  const btn = document.querySelector('.login-btn');
+  const err = document.getElementById('login-error');
+  
+  if (!username || !password) {
+    err.textContent = 'Isi username dan password';
+    err.style.display = 'block';
+    return;
+  }
+  
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Memproses...';
+  err.style.display = 'none';
+  
+  let data, error;
+  try {
+    const result = await window.__sb.from('users')
+      .select('username,nama,role,unit,status')
+      .eq('username', username)
+      .eq('password', password)
+      .eq('status', 'Aktif')
+      .single();
+    data = result.data;
+    error = result.error;
+  } catch(e) {
+    error = e;
+  }
+  
+  btn.disabled = false;
+  btn.innerHTML = '🔐 Masuk';
+  
+  if (error || !data) {
+    err.textContent = '❌ Username atau password salah';
+    err.style.display = 'block';
+    return;
+  }
+  
+  window.medicoreUser = data;
+  localStorage.setItem('medicore_user', JSON.stringify(data));
+  updateUserChip();
+  document.getElementById('login-overlay').classList.remove('active');
+  document.getElementById('app-shell').classList.add('active');
+  
+  // Render dashboard after login
+  renderDashboard();
+}
+
+function doLogout() {
+  localStorage.removeItem('medicore_user');
+  window.medicoreUser = null;
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('user-menu').style.display = 'none';
+  document.getElementById('login-overlay').classList.add('active');
+  document.getElementById('app-shell').classList.remove('active');
+  // Reset all sidebar items to visible
+  document.querySelectorAll('.sidebar .ni').forEach(btn => btn.style.display = '');
+  document.querySelectorAll('.sidebar .s-sec').forEach(sec => sec.style.display = '');
+}
+
+function updateUserChip() {
+  const u = window.medicoreUser;
+  if (!u) return;
+  const initials = u.nama.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const av = document.querySelector('.u-av');
+  const nm = document.querySelector('.u-nm');
+  const rl = document.querySelector('.u-rl');
+  if (av) av.textContent = initials || u.nama.slice(0, 2).toUpperCase();
+  if (nm) nm.textContent = u.nama;
+  if (rl) rl.textContent = u.role;
+  filterSidebar(u.role);
+}
+
+function toggleUserMenu() {
+  const menu = document.getElementById('user-menu');
+  if (!menu) return;
+  const isVisible = menu.style.display !== 'none';
+  // Hide all other dropdowns
+  document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+  menu.style.display = isVisible ? 'none' : 'block';
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.u-chip') && !e.target.closest('.dropdown-menu')) {
+    document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+  }
+});
+
+// ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
+    initAuth();
     tick();
     setInterval(tick, 1000);
     renderDashboard();
+
+    // Init users from DB (fallback to array)
+    loadUsers();
 
     // Listen for real-time updates
     SharedState.onUpdate((key) => {
