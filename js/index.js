@@ -242,9 +242,59 @@ async function loadPendaftaran() {
             <td><span class="b ${r.penjamin === 'BPJS' ? 'bi' : r.penjamin === 'Asuransi' ? 'bw' : 'bp'}">${r.penjamin || 'Umum'}</span></td>
             <td><strong>${r.no_antrian || '—'}</strong></td>
             <td><span class="b ${statusClass}">${r.status}</span></td>
-            <td><button class="btn btn-o btn-xs">Detail</button></td>
+            <td><button class="btn btn-o btn-xs" onclick="showPendaftaranDetail('${r.id}')">Detail</button></td>
         </tr>`;
     });
+}
+
+// Detail kunjungan di Pendaftaran
+async function showPendaftaranDetail(regId) {
+    showDetail('⏳ Memuat detail...', '<div style="padding:30px;text-align:center;color:var(--text-muted)">Memuat data...</div>');
+    showM('mdl-detail');
+    
+    const { data: r } = await window.__sb
+        .from('registrations')
+        .select('*, patients(no_rm, nama, nik, jk, tgl_lahir, alamat, no_hp), poli(nama_poli)')
+        .eq('id', regId)
+        .single();
+    
+    if (!r) return showDetail('❌ Error', '<div style="padding:30px;text-align:center;color:var(--danger)">Data tidak ditemukan</div>');
+    
+    const p = r.patients;
+    const usia = p?.tgl_lahir 
+        ? Math.floor((new Date() - new Date(p.tgl_lahir)) / 31557600000) + ' tahun'
+        : '—';
+    const gender = p?.jk === 'L' ? 'Laki-laki' : p?.jk === 'P' ? 'Perempuan' : '—';
+    const cr = r.created_at ? new Date(r.created_at).toLocaleString('id-ID') : '—';
+    const statClass = r.status === 'Selesai' ? 'bs' 
+        : r.status === 'Proses' ? 'bp'
+        : r.status === 'calling' ? 'bi'
+        : r.status === 'URGENT' ? 'bd'
+        : r.status === 'Opname' ? 'bi'
+        : 'bw';
+
+    showDetail('📋 Detail Kunjungan — ' + (p?.nama || 'Unknown'), `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;background:var(--bg);padding:11px;border-radius:8px;margin-bottom:11px">
+            <div><span style="color:var(--text-muted)">No. Antrian</span><div style="font-weight:700;font-family:monospace;font-size:16px">${r.no_antrian || '—'}</div></div>
+            <div><span style="color:var(--text-muted)">Status</span><div><span class="b ${statClass}">${r.status}</span></div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;background:var(--bg);padding:11px;border-radius:8px;margin-bottom:11px">
+            <div style="grid-column:1/-1;font-weight:700;color:var(--text-muted);margin-bottom:2px">👤 DATA PASIEN</div>
+            <div><span style="color:var(--text-muted)">Nama</span><div style="font-weight:700">${p?.nama || '—'}</div></div>
+            <div><span style="color:var(--text-muted)">No. RM</span><div style="font-weight:700;font-family:monospace">${p?.no_rm || '—'}</div></div>
+            <div><span style="color:var(--text-muted)">NIK</span><div>${p?.nik || '—'}</div></div>
+            <div><span style="color:var(--text-muted)">JK / Usia</span><div>${gender} / ${usia}</div></div>
+            <div><span style="color:var(--text-muted)">Tgl Lahir</span><div>${p?.tgl_lahir || '—'}</div></div>
+            <div><span style="color:var(--text-muted)">No. HP</span><div>${p?.no_hp || '—'}</div></div>
+            <div style="grid-column:1/-1"><span style="color:var(--text-muted)">Alamat</span><div>${p?.alamat || '—'}</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;background:var(--bg);padding:11px;border-radius:8px">
+            <div style="grid-column:1/-1;font-weight:700;color:var(--text-muted);margin-bottom:2px">📋 DATA KUNJUNGAN</div>
+            <div><span style="color:var(--text-muted)">Poli</span><div style="font-weight:700">${r.poli?.nama_poli || 'UGD'}</div></div>
+            <div><span style="color:var(--text-muted)">Penjamin</span><div><span class="b ${r.penjamin === 'BPJS' ? 'bi' : r.penjamin === 'Asuransi' ? 'bw' : 'bp'}">${r.penjamin || 'Umum'}</span></div></div>
+            <div style="grid-column:1/-1"><span style="color:var(--text-muted)">Didaftarkan</span><div>${cr}</div></div>
+        </div>
+    `);
 }
 
 // PENDAFTARAN — Dynamic dropdowns from Supabase
@@ -293,27 +343,93 @@ async function searchPatient() {
     window._regPatientRM = data[0].no_rm;
 }
 
+// Toggle tab Pendaftaran: baru vs cari
+function swTabDaftar(mode) {
+  document.getElementById('daftar-tab-baru').style.display = mode === 'baru' ? 'block' : 'none';
+  document.getElementById('daftar-tab-cari').style.display = mode === 'cari' ? 'block' : 'none';
+  document.getElementById('tg-daftar-baru').className = 'tgb' + (mode === 'baru' ? ' active' : '');
+  document.getElementById('tg-daftar-cari').className = 'tgb' + (mode === 'cari' ? ' active' : '');
+  window._regPatientId = null;
+  window._regPatientRM = null;
+}
+
 // Submit registrasi ke Supabase
 async function submitRegistration() {
-    const patientId = window._regPatientId;
+    const penjamin = window.selectedPenjamin || 'Umum';
     const poliId = document.getElementById('reg-poli')?.value;
     const dokterId = document.getElementById('reg-dokter')?.value;
-    const penjamin = window.selectedPenjamin || 'Umum';
-    
-    if (!patientId) return alert('Cari pasien terlebih dahulu!');
+    const mode = document.getElementById('daftar-tab-baru')?.style.display !== 'none' ? 'baru' : 'cari';
+
     if (!poliId) return alert('Pilih poli tujuan!');
-    
+
+    let patientId = window._regPatientId;
+
+    // MODE BARU: create pasien baru
+    if (mode === 'baru') {
+        const nama = document.getElementById('reg-nama').value.trim();
+        if (!nama) return alert('Nama pasien wajib diisi!');
+
+        const nik = document.getElementById('reg-nik').value.trim();
+        const jk = document.getElementById('reg-jk').value;
+        const tglLahir = document.getElementById('reg-tgl-lahir').value;
+        const alamat = document.getElementById('reg-alamat').value.trim();
+        const hp = document.getElementById('reg-hp').value.trim();
+
+        // Cek dulu apakah pasien dengan NIK ini sudah ada
+        if (nik) {
+            const { data: existing } = await window.__sb
+                .from('patients')
+                .select('id, no_rm, nama')
+                .eq('nik', nik)
+                .limit(1);
+            if (existing && existing.length > 0) {
+                patientId = existing[0].id;
+                window._regPatientRM = existing[0].no_rm;
+                // Lanjut registrasi
+            }
+        }
+
+        if (!patientId) {
+            // Generate No.RM otomatis
+            const { count } = await window.__sb
+                .from('patients')
+                .select('id', { count: 'exact', head: true });
+            const noRm = '009' + String((count || 0) + 1).padStart(6, '0');
+
+            const { data: newPatient, error } = await window.__sb
+                .from('patients')
+                .insert({
+                    no_rm: noRm,
+                    nama: nama,
+                    nik: nik || null,
+                    jk: jk || null,
+                    tgl_lahir: tglLahir || null,
+                    alamat: alamat || null,
+                    no_hp: hp || null
+                })
+                .select()
+                .single();
+
+            if (error) return alert('❌ Gagal simpan pasien: ' + error.message);
+            patientId = newPatient.id;
+            window._regPatientRM = newPatient.no_rm;
+        }
+    } else {
+        // MODE CARI: pastikan sudah cari pasien
+        if (!patientId) return alert('Cari pasien terlebih dahulu!');
+    }
+
     // Generate nomor antrian
     const hariIni = new Date().toISOString().slice(0,10);
     const { count } = await window.__sb
         .from('registrations')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', hariIni);
-    
+
     const noUrut = (count || 0) + 1;
-    const prefix = poliId === '8' ? 'T' : 'A'; // T-xxx for poli, A-xxx for umum
+    const prefix = poliId === '8' ? 'T' : 'A';
     const noAntrian = `${prefix}-${String(noUrut).padStart(2, '0')}`;
-    
+
     const { error } = await window.__sb
         .from('registrations')
         .insert({
@@ -323,10 +439,18 @@ async function submitRegistration() {
             status: 'Menunggu',
             no_antrian: noAntrian
         });
-    
+
     if (error) return alert('❌ Gagal: ' + error.message);
-    
-    alert(`✅ Berhasil! No. Antrian: ${noAntrian}`);
+
+    // Create invoice automatically
+    await window.__sb.from('invoices').insert({
+        registration_id: null,
+        patient_id: patientId,
+        status: 'Belum Dibayar',
+        total: 0
+    });
+
+    alert(`✅ Berhasil! Pasien terdaftar. No. Antrian: ${noAntrian}`);
     hideM('mdl-daftar');
     loadPendaftaran();
 }

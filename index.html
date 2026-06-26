@@ -182,7 +182,7 @@
 
   <!-- ===== PENDAFTARAN ===== -->
   <div id="pg-pendaftaran" class="page">
-    <div class="sh"><div><div class="st">Pendaftaran Pasien</div><div class="ss">Registrasi kunjungan rawat jalan &amp; rawat inap</div></div><div class="sa"><button class="btn btn-o btn-sm" onclick="document.getElementById('import-file').click()">📥 Import</button><button class="btn btn-p" onclick="showM('mdl-daftar');loadPoliOptions();document.getElementById('reg-name').value='';document.getElementById('search-result').style.display='none';window._regPatientId=null">+ Daftarkan Pasien</button></div></div>
+    <div class="sh"><div><div class="st">Pendaftaran Pasien</div><div class="ss">Registrasi kunjungan rawat jalan &amp; rawat inap</div></div><div class="sa"><button class="btn btn-o btn-sm" onclick="document.getElementById('import-file').click()">📥 Import</button><button class="btn btn-p" onclick="showM('mdl-daftar');loadPoliOptions();swTabDaftar('baru');document.getElementById('reg-nama').value='';document.getElementById('reg-nik').value='';document.getElementById('reg-jk').value='';document.getElementById('reg-tgl-lahir').value='';document.getElementById('reg-alamat').value='';document.getElementById('reg-hp').value='';document.getElementById('reg-name').value='';document.getElementById('search-result').style.display='none';window._regPatientId=null;window._regPatientRM=null">+ Daftarkan Pasien</button></div></div>
     <div class="sg"><div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="sv" id="stat-kunjungan-total" style="color:var(--primary)">0</div><div class="sl">Total Kunjungan</div></div><div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="sv" id="stat-kunjungan-menunggu" style="color:var(--warning)">0</div><div class="sl">Menunggu</div></div><div class="sc"><div class="sb" style="background:var(--info)"></div><div class="sv" id="stat-kunjungan-proses" style="color:var(--info)">0</div><div class="sl">Dalam Proses</div></div><div class="sc"><div class="sb" style="background:var(--success)"></div><div class="sv" id="stat-kunjungan-selesai" style="color:var(--success)">0</div><div class="sl">Selesai</div></div></div>
     <div class="srch"><input class="fc" style="max-width:260px" placeholder="🔍 Cari No.RM / Nama / NIK..."><select class="fc" style="max-width:130px"><option>Semua Penjamin</option><option>Umum</option><option>BPJS</option><option>Asuransi</option></select><select class="fc" style="max-width:130px"><option>Semua Status</option><option>Menunggu</option><option>Proses</option><option>Selesai</option></select><input class="fc" type="date" style="max-width:130px" value="2026-05-17"><button class="btn btn-p btn-sm">Cari</button><span style="margin-left:auto;font-size:12px;color:var(--text-muted)" id="stat-kunjungan-count">0 kunjungan</span></div>
     <div class="card"><div class="ch"><div class="ct">Daftar Kunjungan</div><div style="display:flex;gap:7px"><button class="btn btn-o btn-sm">🖨️ Print</button><button class="btn btn-o btn-sm" onclick="SharedState.exportData()">📥 Export</button></div></div>
@@ -495,24 +495,56 @@
         <div class="pj" onclick="selectPenjamin('BPJS', this)">BPJS</div>
         <div class="pj" onclick="selectPenjamin('Asuransi', this)">ASURANSI</div>
       </div></div>
-      <div class="fg"><label class="fl">Data Pasien</label>
-        <div style="display:flex;gap:7px;margin-bottom:7px"><button class="btn btn-p btn-sm">NIK</button><button class="btn btn-o btn-sm">No. RM</button><button class="btn btn-o btn-sm">No. BPJS</button></div>
-        <div style="display:flex;gap:7px;margin-bottom:10px"><input id="reg-name" class="fc" placeholder="Masukkan Nama Pasien..."><button class="btn btn-p btn-sm" onclick="searchPatient()">🔍 Cari</button></div>
-        <div id="search-result" style="display:none; background:var(--bg);border-radius:8px;padding:11px;margin-bottom:13px;font-size:12px">
-          <div style="font-weight:700;margin-bottom:7px;color:var(--text-muted)">DATA DITEMUKAN</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-            <div><span style="color:var(--text-muted)">Nama:</span> <strong id="res-name"></strong></div>
-            <div><span style="color:var(--text-muted)">No.RM:</span> <strong id="res-rm"></strong></div>
+
+      <!-- Toggle: Cari Existing vs Input Baru -->
+      <div class="tg" style="margin-bottom:11px">
+        <button class="tgb active" id="tg-daftar-baru" onclick="swTabDaftar('baru')">➕ Pasien Baru</button>
+        <button class="tgb" id="tg-daftar-cari" onclick="swTabDaftar('cari')">🔍 Cari Existing</button>
+      </div>
+
+      <!-- TAB: INPUT PASIEN BARU -->
+      <div id="daftar-tab-baru">
+        <div class="fr">
+          <div class="fg"><label class="fl">Nama Lengkap <span style="color:var(--danger)">*</span></label><input id="reg-nama" class="fc" placeholder="Nama pasien..." required></div>
+          <div class="fg"><label class="fl">NIK</label><input id="reg-nik" class="fc" placeholder="16 digit NIK"></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label class="fl">Jenis Kelamin</label>
+            <select id="reg-jk" class="fc">
+              <option value="">— Pilih —</option>
+              <option value="L">Laki-laki</option>
+              <option value="P">Perempuan</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Tanggal Lahir</label><input id="reg-tgl-lahir" class="fc" type="date"></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label class="fl">Alamat</label><input id="reg-alamat" class="fc" placeholder="Alamat lengkap"></div>
+          <div class="fg"><label class="fl">No. HP</label><input id="reg-hp" class="fc" placeholder="08xxxxxxxxxx"></div>
+        </div>
+      </div>
+
+      <!-- TAB: CARI EXISTING -->
+      <div id="daftar-tab-cari" style="display:none">
+        <div class="fg"><label class="fl">Data Pasien</label>
+          <div style="display:flex;gap:7px;margin-bottom:10px"><input id="reg-name" class="fc" placeholder="Nama / NIK / No.RM..."><button class="btn btn-p btn-sm" onclick="searchPatient()">🔍 Cari</button></div>
+          <div id="search-result" style="display:none; background:var(--bg);border-radius:8px;padding:11px;margin-bottom:13px;font-size:12px">
+            <div style="font-weight:700;margin-bottom:7px;color:var(--text-muted)">DATA DITEMUKAN</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+              <div><span style="color:var(--text-muted)">Nama:</span> <strong id="res-name"></strong></div>
+              <div><span style="color:var(--text-muted)">No.RM:</span> <strong id="res-rm"></strong></div>
+            </div>
           </div>
         </div>
       </div>
+
       <div class="fr">
-        <div class="fg"><label class="fl">Poli Tujuan</label><select id="reg-poli" class="fc" onchange="loadDoctorOptions(this.value)"><option value="">— Pilih Poli —</option></select></div>
+        <div class="fg"><label class="fl">Poli Tujuan <span style="color:var(--danger)">*</span></label><select id="reg-poli" class="fc" onchange="loadDoctorOptions(this.value)"><option value="">— Pilih Poli —</option></select></div>
         <div class="fg"><label class="fl">Dokter</label><select id="reg-dokter" class="fc"><option value="">— Pilih Dokter —</option></select></div>
       </div>
       <div class="fr">
         <div class="fg"><label class="fl">Jadwal</label><select class="fc"><option>Siang 13:00 – 15:00</option></select></div>
-        <div class="fg"><label class="fl">Catatan</label><input class="fc" placeholder="Opsional..."></div>
+        <div class="fg"><label class="fl">Catatan</label><input id="reg-catatan" class="fc" placeholder="Opsional..."></div>
       </div>
     </div>
     <div class="mf">

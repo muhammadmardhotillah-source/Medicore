@@ -103,20 +103,25 @@ const SharedState = {
     
     async getDashboardData() {
         try {
-            const [regRes, bedRes] = await Promise.all([
+            const today = new Date().toISOString().slice(0, 10);
+            const [regRes, bedRes, payRes] = await Promise.all([
                 window.__sb.from('registrations').select('*, patients(no_rm, nama), poli(nama_poli)'),
-                window.__sb.from('beds').select('*')
+                window.__sb.from('beds').select('*'),
+                window.__sb.from('payments').select('total').gte('created_at', today)
             ]);
 
             const regs = regRes.data || [];
             const beds = bedRes.data || [];
+            const payments = payRes.data || [];
+
+            const totalIncome = payments.reduce((s, p) => s + (p.total || 0), 0);
 
             return {
                 stats: {
                     rawatJalan: regs.filter(r => r.poli_id && r.status !== 'Selesai' && r.status !== 'Opname').length,
                     rawatInap: regs.filter(r => r.status === 'Opname').length,
                     ugd: regs.filter(r => r.poli_id === null && r.status !== 'Selesai' && r.status !== 'Opname' && r.status !== 'calling').length,
-                    income: regs.length * 150000,
+                    income: totalIncome || regs.length * 150000,
                     beds: {
                         tersedia: beds.filter(b => b.status === 'Tersedia').length,
                         terpakai: beds.filter(b => b.status === 'Terpakai').length,

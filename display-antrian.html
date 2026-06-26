@@ -324,66 +324,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#072a4a;color:#fff;he
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/shared-state.js"></script>
-<script>
-// CLOCK
-function tick(){
-  const n=new Date();
-  const t=n.toLocaleTimeString('id-ID');
-  const d=n.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  ['clk','pd-clk','aq-clk'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t;});
-  ['dt','pd-dt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=d;});
-}
-tick();setInterval(tick,1000);
-
-// MODE SWITCH
-function setMode(mode, event){
-  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
-  if (event && event.currentTarget) {
-    event.currentTarget.classList.add('active');
-  }
-  const modeKunjungan = document.getElementById('mode-kunjungan');
-  const modePoli = document.getElementById('mode-poli');
-  const modeSemua = document.getElementById('mode-semua');
-  if (modeKunjungan) modeKunjungan.style.display='none';
-  if (modePoli) modePoli.classList.remove('active');
-  if (modeSemua) modeSemua.classList.remove('active');
-  if(mode==='kunjungan' && modeKunjungan){ modeKunjungan.style.display='flex'; }
-  else if(mode==='poli' && modePoli){ modePoli.classList.add('active'); }
-  else if(mode==='semua' && modeSemua){ modeSemua.classList.add('active'); }
-}
-
-// RENDER QUEUES
-function renderQueues(){
-  const queues = SharedState.getQueues();
-  const stats = SharedState.getStats();
-  const beds = SharedState.getData('icha_beds');
-
-  // Loket mapping from ID in shared-state to LN ID in HTML
-  if(queues.qa1) document.getElementById('ln1').textContent = queues.qa1.current;
-  if(queues.qa2) document.getElementById('ln2').textContent = queues.qa2.current;
-  if(queues.qa3) document.getElementById('ln3').textContent = queues.qa3.current;
-  if(queues.far) document.getElementById('ln5').textContent = queues.far.current;
-  if(queues.kasir) document.getElementById('ln6').textContent = queues.kasir.current;
-
-  // Stats
-  if(document.getElementById('stat-rj')) document.getElementById('stat-rj').textContent = stats.rawatJalan;
-  if(document.getElementById('stat-ri')) document.getElementById('stat-ri').textContent = stats.rawatInap;
-  if(document.getElementById('stat-tt')) document.getElementById('stat-tt').textContent = beds.tersedia;
-}
-
-// INIT
-document.addEventListener('DOMContentLoaded', () => {
-  // Render initial
-  renderQueues();
-
-  // Listen for updates
-  if (window.SharedState) {
-    SharedState.onUpdate(() => {
-      console.log('SharedState updated, re-rendering...');
-      renderQueues();
-    });
-  }
-});
-</script>
+<script src="js/display-antrian.js"></script>
 </body>
 </html>
