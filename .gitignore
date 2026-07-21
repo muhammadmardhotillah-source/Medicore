@@ -1,1 +1,17 @@
+# Vercel
 .vercel
+.vercel-token
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Node / Dependencies
+node_modules/
+package-lock.json
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
