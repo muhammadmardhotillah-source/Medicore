@@ -1,0 +1,263 @@
+/* ============================================================
+   MEDICORE DESIGN SYSTEM — Unified Design Tokens
+   v2.5 — "Pro Max"
+   ============================================================
+   Cara pakai: Setiap file CSS wajib @import ini di baris pertama
+   @import url('variables.css');
+   ============================================================ */
+
+:root {
+  /* ===== COLOR PALETTE ===== */
+
+  /* Primary — Corporate Navy Blue */
+  --primary-50: #eef2f7;
+  --primary-100: #d8e3ef;
+  --primary-200: #b3c8df;
+  --primary-300: #8aadcf;
+  --primary-400: #5a8bbf;
+  --primary-500: #0A5C99;       /* Unified primary */
+  --primary-600: #074a7a;
+  --primary-700: #073d66;
+  --primary-800: #052b4a;
+  --primary-900: #041e33;
+  --primary-dark: #0A2540;      /* Sidebar / dark bg */
+  --primary-light: #eef2f6;
+
+  /* Accent — Cyan */
+  --accent-50: #e0f7ff;
+  --accent-100: #b3ecff;
+  --accent-200: #80e0ff;
+  --accent-300: #4dd4ff;
+  --accent-400: #26c8ff;
+  --accent-500: #00B8D9;        /* Sidebar active / highlight */
+  --accent-600: #0093b3;
+  --accent-700: #006e8c;
+  --accent-800: #004d66;
+
+  /* Danger / Alert — Red */
+  --danger-50: #fef2f2;
+  --danger-100: #fee2e2;
+  --danger-200: #fecaca;
+  --danger-300: #fca5a5;
+  --danger-500: #e8192c;        /* Used in kiosk, display antrian */
+  --danger-600: #c0132a;
+  --danger-700: #991b1b;
+
+  /* Success — Green */
+  --success-50: #f0fdf4;
+  --success-100: #dcfce7;
+  --success-200: #bbf7d0;
+  --success-400: #4ade80;
+  --success-500: #10b981;
+  --success-600: #065f46;
+
+  /* Warning — Amber */
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --warning-200: #fde68a;
+  --warning-500: #f59e0b;
+  --warning-600: #92400e;
+
+  /* Info — Sky Blue */
+  --info-50: #e0f2fe;
+  --info-100: #bae6fd;
+  --info-500: #0891b2;
+  --info-600: #075985;
+
+  /* Neutrals */
+  --white: #FFFFFF;
+  --bg: #F8FAFC;
+  --bg-dark: #f1f5f9;
+  --text: #1E293B;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-light: #94a3b8;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  --border-dark: #cbd5e1;
+
+  /* ===== SIDEBAR ===== */
+  --sidebar-bg: #0A2540;
+  --sidebar-bg-end: #061526;
+  --sidebar-hover: #122d4a;
+  --sidebar-active: #00B8D9;
+  --sidebar-text: rgba(255,255,255,0.6);
+  --sidebar-text-hover: #fff;
+  --sidebar-title: rgba(255,255,255,0.25);
+  --sidebar-width: 260px;
+
+  /* ===== SPACING SCALE ===== */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* ===== TYPE SCALE ===== */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  --text-4xl: 40px;
+
+  /* ===== FONT FAMILY ===== */
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* ===== SHADOW ELEVATION ===== */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.10), 0 10px 10px -5px rgba(0,0,0,0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.25);
+
+  /* ===== BORDER RADIUS ===== */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* ===== TRANSITION ===== */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ===== SEMANTIC SHORTHANDS — backward compatible ===== */
+  --primary: var(--primary-500);
+  --accent: var(--accent-500);
+  --success: var(--success-500);
+  --warning: var(--warning-500);
+  --danger: var(--danger-500);
+  --info: var(--info-500);
+  --shadow: var(--shadow-md);
+  --shadow-lg: var(--shadow-xl);
+  --radius: var(--radius-md);
+  --sw: var(--sidebar-width);
+}
+
+/* ============================================================
+   DARK MODE
+   ============================================================ */
+[data-theme="dark"] {
+  --primary-50: #1a2a3e;
+  --primary-100: #1e3450;
+  --primary-200: #2a4a6a;
+  --primary-300: #3a5a7a;
+  --primary-400: #4a7aaa;
+  --primary-500: #6a9fda;
+  --primary-600: #5892d0;
+  --primary-700: #4a7fc0;
+  --primary-800: #3a6aa0;
+  --primary-900: #2a5580;
+  --primary-dark: #1a2a3e;
+  --primary-light: #1e3450;
+
+  --bg: #0f172a;
+  --bg-dark: #1e293b;
+  --white: #1e293b;
+  --text: #e2e8f0;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
+  --border: #334155;
+  --border-light: #1e293b;
+  --border-dark: #475569;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -1px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.5), 0 10px 10px -5px rgba(0,0,0,0.4);
+  --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.6);
+
+  --sidebar-bg: #0a1628;
+  --sidebar-bg-end: #061020;
+  --sidebar-hover: #1a2a4a;
+  --sidebar-active: #3a7aaa;
+  --sidebar-text: rgba(255,255,255,0.5);
+  --sidebar-text-hover: #fff;
+  --sidebar-title: rgba(255,255,255,0.2);
+}
+[data-theme="dark"] .ch { background: #1a2a3e; }
+[data-theme="dark"] .card { border-color: var(--border); }
+[data-theme="dark"] .modal { background: #1e293b; }
+[data-theme="dark"] .mh, [data-theme="dark"] .mf { background: #1e293b; }
+[data-theme="dark"] .fc { background: #0f172a; color: var(--text); }
+[data-theme="dark"] .login-card { background: #1e293b; }
+[data-theme="dark"] .topbar { background: #1e293b; }
+[data-theme="dark"] .sc, [data-theme="dark"] .qb { background: #1e293b; }
+[data-theme="dark"] .t th { background: #1a2a3e; }
+[data-theme="dark"] .t tr:hover td { background: #1a2a3e; }
+[data-theme="dark"] .tgb.active { background: #2a4a6a; color: #fff; }
+[data-theme="dark"] .btn-o { background: transparent; border-color: var(--border); }
+[data-theme="dark"] .search-dropdown { background: #1e293b; }
+[data-theme="dark"] .bottom-nav { background: #1a2a3e; }
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: var(--radius-full); }
+::-webkit-scrollbar-track { background: transparent; }
+* { scrollbar-width: thin; scrollbar-color: var(--border-dark) transparent; }
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   FOCUS STYLES
+   ============================================================ */
+:focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ============================================================
+   FADE IN ANIMATION (shared)
+   ============================================================ */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { transform: scale(0.9) translateY(20px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

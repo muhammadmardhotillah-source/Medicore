@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEDICORE — SIM Rumah Sakit</title>
+<link rel="icon" type="image/png" href="MediCore.png">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="MEDICORE">
+<link rel="stylesheet" href="css/index.css?v=77">
+</head>
+<body>
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="login-top"></div>
+    <div class="login-inner">
+      <img src="MediCore.png" class="login-logo" alt="MediCore">
+      <div class="login-title">MEDICORE SIMRS</div>
+      <div class="login-sub">Edoy Hospital Management</div>
+      <form id="login-form" onsubmit="event.preventDefault(); doLogin();">
+        <div class="login-input-wrap">
+          <span class="login-input-icon">👤</span>
+          <input id="login-user" class="login-input" type="text" placeholder="Username" onkeydown="if(event.key==='Enter') doLogin()" autocomplete="username">
+        </div>
+        <div class="login-input-wrap">
+          <span class="login-input-icon">🔒</span>
+          <input id="login-pass" class="login-input" type="password" placeholder="Password" onkeydown="if(event.key==='Enter') doLogin()" autocomplete="current-password">
+        </div>
+        <div id="login-error" class="login-error" style="display:none">❌ Username atau password salah</div>
+        <button type="submit" class="login-btn">🔐 Masuk</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP SHELL (hidden until login) ===== -->
+<div id="app-shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo-wrap">
+    <img src="MediCore.png" class="logo-img" alt="MediCore">
+    <div><div class="logo-name">MEDICORE</div><div class="logo-sub">Edoy Hospital Management</div></div>
+  </div>
+  <div class="s-sec">
+    <div class="s-title">Utama</div>
+    <button class="ni active" data-page="dashboard" onclick="go('dashboard',this)"><span class="ni-icon">🏠</span>Dashboard</button>
+  </div>
+  <div class="s-sec flow-sec">
+    <div class="s-title">🗺️ Alur Pasien</div>
+    <button class="ni" data-page="booking" onclick="go('booking',this)"><span class="ni-icon">📅</span>Booking<span class="ni-step">1</span></button>
+    <button class="ni" data-page="ambilantrian" onclick="go('ambilantrian',this)"><span class="ni-icon">🎫</span>Ambil Antrian<span class="nb">12</span><span class="ni-step">2</span></button>
+    <button class="ni" data-page="pendaftaran" onclick="go('pendaftaran',this)"><span class="ni-icon">📋</span>Registrasi<span class="ni-step">3</span></button>
+    <button class="ni" data-page="rawatjalan" onclick="go('rawatjalan',this)"><span class="ni-icon">🏃</span>Poli<span class="ni-step">4</span></button>
+    <button class="ni" data-page="kasir" onclick="go('kasir',this)"><span class="ni-icon">💳</span>Kasir<span class="ni-step">5</span></button>
+    <button class="ni" data-page="farmasi" onclick="go('farmasi',this)"><span class="ni-icon">💊</span>Farmasi<span class="ni-step">6</span></button>
+  </div>
+  <div class="s-sec">
+    <div class="s-title">💊 Farmasi</div>
+    <button class="ni" data-page="penggunaan-obat" onclick="go('penggunaan-obat',this)"><span class="ni-icon">💊</span>Penggunaan Obat</button>
+    <button class="ni" data-page="permintaan-medis" onclick="go('permintaan-medis',this)"><span class="ni-icon">📋</span>Permintaan Medis</button>
+  </div>
+  <div class="s-sec">
+    <div class="s-title">Pelayanan</div>
+    <button class="ni" data-page="rawatinap" onclick="go('rawatinap',this)"><span class="ni-icon">🛏️</span>Rawat Inap</button>
+    <button class="ni" data-page="ugd" onclick="go('ugd',this)"><span class="ni-icon">🚨</span>UGD<span class="nb">3</span></button>
+    <button class="ni" data-page="rekammedis" onclick="go('rekammedis',this)"><span class="ni-icon">📁</span>Rekam Medis</button>
+  </div>
+  <div class="s-sec">
+    <div class="s-title">Penunjang Medis</div>
+    <button class="ni" data-page="laboratorium" onclick="go('laboratorium',this)"><span class="ni-icon">🧪</span>Laboratorium</button>
+    <button class="ni" data-page="radiologi" onclick="go('radiologi',this)"><span class="ni-icon">🔬</span>Radiologi</button>
+    <button class="ni" data-page="operasi" onclick="go('operasi',this)"><span class="ni-icon">🩺</span>Kamar Operasi</button>
+  </div>
+  <div class="s-sec">
+    <div class="s-title">Keuangan</div>
+    <button class="ni" data-page="tagihan" onclick="go('tagihan',this)"><span class="ni-icon">🧾</span>Tagihan</button>
+    <button class="ni" data-page="laporan" onclick="go('laporan',this)"><span class="ni-icon">📊</span>Laporan Keuangan</button>
+    <button class="ni" data-page="kas-bank" onclick="go('kas-bank',this)"><span class="ni-icon">💰</span>Kas &amp; Bank</button>
+    <button class="ni" data-page="penjualan" onclick="go('penjualan',this)"><span class="ni-icon">🧾</span>Penjualan</button>
+    <button class="ni" data-page="akuntansi" onclick="go('akuntansi',this)"><span class="ni-icon">📒</span>Akuntansi</button>
+  </div>
+  <div class="s-sec">
+    <div class="s-title">📦 Inventaris</div>
+    <button class="ni" data-page="stok" onclick="go('stok',this)"><span class="ni-icon">📦</span>Stok &amp; Inventory</button>
+    <button class="ni" data-page="pembelian" onclick="go('pembelian',this)"><span class="ni-icon">📥</span>Pembelian</button>
+    <button class="ni" data-page="logistik" onclick="go('logistik',this)"><span class="ni-icon">📦</span>Logistik</button>
+    <button class="ni" data-page="fixed-asset" onclick="go('fixed-asset',this)"><span class="ni-icon">🏛️</span>Fixed Asset</button>
+  </div>
+  <div class="s-sec">
+    <div class="s-title">Sistem</div>
+    <button class="ni" data-page="sdm" onclick="go('sdm',this)"><span class="ni-icon">👥</span>SDM &amp; Dokter</button>
+    <button class="ni" data-page="security" onclick="go('security',this)"><span class="ni-icon">🔒</span>Security</button>
+    <button class="ni" data-page="masterdata" onclick="go('masterdata',this)"><span class="ni-icon">📋</span>Master Data</button>
+    <button class="ni" data-page="pengaturan" onclick="go('pengaturan',this)"><span class="ni-icon">⚙️</span>Pengaturan</button>
+    <button class="ni" data-page="audit-trail" onclick="go('audit-trail',this)"><span class="ni-icon">📋</span>Audit Trail</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div><div class="tb-title" id="pgt">Dashboard</div><div class="tb-date" id="pgd"></div></div>
+    <div class="tb-right">
+      <div class="ib">🔔<div class="nd"></div></div>
+      <div class="ib">🔍</div>
+      <div class="u-chip" onclick="toggleUserMenu()"><div class="u-av">AD</div><div><div class="u-nm">Admin RS</div><div class="u-rl">Administrator</div></div></div>
+      <div id="user-menu" class="dropdown-menu" style="display:none">
+        <div class="dropdown-item">👤 Profil</div>
+        <div class="dropdown-item" onclick="doLogout()">🚪 Keluar</div>
+      </div>
+    </div>
+  </div>
+  <div class="sbar">
+    <span><span class="sdot"></span>Sistem Online</span>
+    <span>Server: MEDICORE-SRV</span><span>v2.4.1</span>
+    <span id="clk">--:--:--</span>
+    <span style="margin-left:auto">Edoy Hospital Management — Banten</span>
+  </div>
+
+  <!-- ===== DASHBOARD ===== -->
+  <div id="pg-dashboard" class="page active">
+    <div class="sg">
+      <div class="sc" onclick="go('rawatjalan')"><div class="sb" style="background:var(--primary)"></div><div class="si" style="background:#dbeeff">🏃</div><div class="sv" id="stat-rj" style="color:var(--primary)">127</div><div class="sl">Pasien Rawat Jalan</div><div class="sc-chg up">▲ 12% dari kemarin</div></div>
+      <div class="sc" onclick="go('rawatinap')"><div class="sb" style="background:var(--success)"></div><div class="si" style="background:#d1fae5">🛏️</div><div class="sv" id="stat-ri" style="color:var(--success)">84</div><div class="sl">Pasien Rawat Inap</div><div class="sc-chg up">▲ 5% dari kemarin</div></div>
+      <div class="sc" onclick="go('ugd')"><div class="sb" style="background:var(--accent)"></div><div class="si" style="background:#fee2e2">🚨</div><div class="sv" id="stat-ugd" style="color:var(--accent)">18</div><div class="sl">Kunjungan UGD</div><div class="sc-chg dn">▼ 3% dari kemarin</div></div>
+      <div class="sc" onclick="go('laporan')"><div class="sb" style="background:var(--warning)"></div><div class="si" style="background:#fef3c7">💰</div><div class="sv" id="stat-income" style="color:var(--warning);font-size:20px">Rp 89,4jt</div><div class="sl">Pendapatan Hari Ini</div><div class="sc-chg up">▲ 8% dari kemarin</div></div>
+    </div>
+    <div class="g3">
+      <div>
+        <div class="card">
+          <div class="ch"><div><div class="ct">🎫 Antrian Aktif</div><div class="csub">Semua loket hari ini</div></div><button class="cl" onclick="go('antrian')">Kelola →</button></div>
+          <div class="qg">
+            <div class="qb on"><div class="ql">Loket 1</div><div class="qn" id="q-qa1">A-47</div><div class="qt">Umum</div></div>
+            <div class="qb"><div class="ql">Loket 2</div><div class="qn" id="q-qa2">B-23</div><div class="qt">BPJS</div></div>
+            <div class="qb"><div class="ql">Loket 3</div><div class="qn" id="q-qa3">C-11</div><div class="qt">Asuransi</div></div>
+            <div class="qb"><div class="ql">Farmasi</div><div class="qn" id="q-far">F-38</div><div class="qt">Obat</div></div>
+            <div class="qb"><div class="ql">Lab</div><div class="qn">L-09</div><div class="qt">Sampel</div></div>
+            <div class="qb"><div class="ql">Kasir</div><div class="qn" id="q-kasir">K-15</div><div class="qt">Bayar</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div><div class="ct">📋 Kunjungan Terbaru</div></div><button class="cl" onclick="go('pendaftaran')">+ Daftarkan</button></div>
+            <table class="t" id="latest-patients-table">
+            <thead><tr><th>No.RM</th><th>Nama</th><th>Poli</th><th>Penjamin</th><th>Status</th></tr></thead>
+            <tbody>
+              <!-- Data diisi otomatis oleh Supabase via index.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:13px">
+        <div class="card" style="margin-bottom:0">
+          <div class="ch"><div class="ct">🛏️ Tempat Tidur</div></div>
+          <div style="padding:11px 13px">
+            <div style="display:flex;gap:7px;margin-bottom:10px">
+              <div style="flex:1;text-align:center;padding:8px;background:#d1fae5;border-radius:7px"><div id="bed-tersedia" style="font-size:19px;font-weight:800;color:#065f46">38</div><div style="font-size:10px;color:#065f46">Tersedia</div></div>
+              <div style="flex:1;text-align:center;padding:8px;background:#fee2e2;border-radius:7px"><div id="bed-terpakai" style="font-size:19px;font-weight:800;color:#991b1b">84</div><div style="font-size:10px;color:#991b1b">Terpakai</div></div>
+              <div style="flex:1;text-align:center;padding:8px;background:#fef3c7;border-radius:7px"><div id="bed-reservasi" style="font-size:19px;font-weight:800;color:#92400e">6</div><div style="font-size:10px;color:#92400e">Reservasi</div></div>
+            </div>
+            <div style="font-size:11px;font-weight:600;margin-bottom:3px">Kelas 1 (22 TT) — 75%</div><div class="pb"><div class="pf" style="width:75%;background:var(--danger)"></div></div>
+            <div style="font-size:11px;font-weight:600;margin:8px 0 3px">Kelas 2 (40 TT) — 60%</div><div class="pb"><div class="pf" style="width:60%;background:var(--warning)"></div></div>
+            <div style="font-size:11px;font-weight:600;margin:8px 0 3px">Kelas 3 (66 TT) — 45%</div><div class="pb"><div class="pf" style="width:45%;background:var(--success)"></div></div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="ch"><div class="ct">🩺 Jadwal Operasi</div></div>
+          <div class="ok-i"><div class="ok-t"><div class="hr">07:00</div>OK 2</div><div><div style="font-size:13px;font-weight:600">Appendektomi</div><div style="font-size:11px;color:var(--text-muted)">Dr. Zainuri • Tn. Bakri</div></div><span class="b bs" style="margin-left:auto">Selesai</span></div>
+          <div class="ok-i"><div class="ok-t" style="background:var(--warning)"><div class="hr">10:00</div>OK 3</div><div><div style="font-size:13px;font-weight:600">SC Elektif</div><div style="font-size:11px;color:var(--text-muted)">Dr. Budi H. • Ny. Sari</div></div><span class="b bw" style="margin-left:auto">Berjalan</span></div>
+          <div class="ok-i"><div class="ok-t" style="background:var(--text-muted)"><div class="hr">13:00</div>OK 1</div><div><div style="font-size:13px;font-weight:600">Laparotomi</div><div style="font-size:11px;color:var(--text-muted)">Dr. Ahmad Y. • Tn. Joko</div></div><span class="b bg" style="margin-left:auto">Menunggu</span></div>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="ch"><div class="ct">⚡ Akses Cepat</div></div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px">
+            <button onclick="go('pendaftaran')" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:.2s;font-family:inherit" onmouseover="this.style.background='var(--primary)';this.style.color='#fff'" onmouseout="this.style.background='var(--bg)';this.style.color='var(--text)'"><div style="font-size:20px;margin-bottom:5px">📋</div><div style="font-size:12px;font-weight:600">Daftar Pasien</div></button>
+            <button onclick="go('farmasi')" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:.2s;font-family:inherit" onmouseover="this.style.background='var(--primary)';this.style.color='#fff'" onmouseout="this.style.background='var(--bg)';this.style.color='var(--text)'"><div style="font-size:20px;margin-bottom:5px">💊</div><div style="font-size:12px;font-weight:600">Farmasi</div></button>
+            <button onclick="go('kasir')" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:.2s;font-family:inherit" onmouseover="this.style.background='var(--primary)';this.style.color='#fff'" onmouseout="this.style.background='var(--bg)';this.style.color='var(--text)'"><div style="font-size:20px;margin-bottom:5px">💳</div><div style="font-size:12px;font-weight:600">Kasir</div></button>
+            <button onclick="go('laporan')" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:.2s;font-family:inherit" onmouseover="this.style.background='var(--primary)';this.style.color='#fff'" onmouseout="this.style.background='var(--bg)';this.style.color='var(--text)'"><div style="font-size:20px;margin-bottom:5px">📊</div><div style="font-size:12px;font-weight:600">Laporan</div></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BOOKING ===== -->
+  <div id="pg-booking" class="page">
+    <div class="sh"><div><div class="st">📅 Booking Pasien</div><div class="ss">Pendaftaran mandiri dan janji temu pasien</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="window.open('daftar-mandiri.html','_blank','width=1024,height=768')"><span class="ni-icon">🖥️</span> Mode Kiosk</button></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="card" style="cursor:pointer" onclick="window.open('daftar-mandiri.html','_blank','width=1024,height=768')">
+        <div style="text-align:center;padding:32px">
+          <div style="font-size:56px;margin-bottom:12px">🖥️</div>
+          <div style="font-size:18px;font-weight:700;margin-bottom:6px">Kiosk Mandiri</div>
+          <div style="font-size:13px;color:var(--text-muted)">Pasien daftar sendiri melalui layar sentuh</div>
+        </div>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="go('pendaftaran')">
+        <div style="text-align:center;padding:32px">
+          <div style="font-size:56px;margin-bottom:12px">👨‍⚕️</div>
+          <div style="font-size:18px;font-weight:700;margin-bottom:6px">Daftar oleh Petugas</div>
+          <div style="font-size:13px;color:var(--text-muted)">Petugas mendaftarkan pasien secara manual</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><div class="ct">📋 Booking Hari Ini</div></div>
+      <div id="booking-today">
+        <table class="t"><thead><tr><th>No.Booking</th><th>Nama</th><th>Poli</th><th>Dokter</th><th>Jadwal</th><th>Status</th><th>Aksi</th></tr></thead>
+          <tbody id="booking-tbody">
+            <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat data booking...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== AMBIL ANTRIAN ===== -->
+  <div id="pg-ambilantrian" class="page">
+    <div class="sh"><div><div class="st">🎫 Ambil Antrian</div><div class="ss">Monitoring antrian seluruh loket dan unit</div></div><div class="sa"><button class="btn btn-o btn-sm" onclick="window.print()">🖨️ Print Server</button><button class="btn btn-p btn-sm" onclick="window.open('display-antrian.html','_blank','width=1280,height=720')">📺 Mode Display</button></div></div>
+    <div class="g33" id="antrian-queue-container">
+      <!-- Queue cards diisi dinamis oleh loadAntrian() -->
+      <div class="loader" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data antrian...</div>
+    </div>
+    <div class="card">
+      <div class="ch"><div class="ct">🛏️ Monitoring Tempat Tidur</div><div style="display:flex;gap:10px;font-size:11px"><span style="color:var(--success)">🟢 Tersedia</span><span style="color:var(--danger)">🔴 Terpakai</span><span style="color:var(--warning)">🟡 Reservasi</span></div></div>
+      <div class="bg-g" id="bed-container">
+        <!-- Data diisi dinamis oleh index.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PENDAFTARAN ===== -->
+  <div id="pg-pendaftaran" class="page">
+    <div class="sh"><div><div class="st">Pendaftaran Pasien</div><div class="ss">Registrasi kunjungan rawat jalan &amp; rawat inap</div></div><div class="sa"><button class="btn btn-o btn-sm" onclick="document.getElementById('import-file').click()">📥 Import</button><button class="btn btn-p" onclick="showM('mdl-daftar');loadPoliOptions();swTabDaftar('baru');document.getElementById('reg-nama').value='';document.getElementById('reg-nik').value='';document.getElementById('reg-jk').value='';document.getElementById('reg-tgl-lahir').value='';document.getElementById('reg-alamat').value='';document.getElementById('reg-hp').value='';document.getElementById('reg-name').value='';document.getElementById('search-result').style.display='none';window._regPatientId=null;window._regPatientRM=null">+ Daftarkan Pasien</button></div></div>
+    <div class="sg"><div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="sv" id="stat-kunjungan-total" style="color:var(--primary)">0</div><div class="sl">Total Kunjungan</div></div><div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="sv" id="stat-kunjungan-menunggu" style="color:var(--warning)">0</div><div class="sl">Menunggu</div></div><div class="sc"><div class="sb" style="background:var(--info)"></div><div class="sv" id="stat-kunjungan-proses" style="color:var(--info)">0</div><div class="sl">Dalam Proses</div></div><div class="sc"><div class="sb" style="background:var(--success)"></div><div class="sv" id="stat-kunjungan-selesai" style="color:var(--success)">0</div><div class="sl">Selesai</div></div></div>
+    <div class="srch"><input class="fc" style="max-width:260px" placeholder="🔍 Cari No.RM / Nama / NIK..."><select class="fc" style="max-width:130px"><option>Semua Penjamin</option><option>Umum</option><option>BPJS</option><option>Asuransi</option></select><select class="fc" style="max-width:130px"><option>Semua Status</option><option>Menunggu</option><option>Proses</option><option>Selesai</option></select><input class="fc" type="date" style="max-width:130px" value="2026-05-17"><button class="btn btn-p btn-sm">Cari</button><span style="margin-left:auto;font-size:12px;color:var(--text-muted)" id="stat-kunjungan-count">0 kunjungan</span></div>
+    <div class="card"><div class="ch"><div class="ct">Daftar Kunjungan</div><div style="display:flex;gap:7px"><button class="btn btn-o btn-sm">🖨️ Print</button><button class="btn btn-o btn-sm" onclick="SharedState.exportData()">📥 Export</button></div></div>
+      <table class="t" id="pendaftaran-table">
+        <thead><tr><th>No.Reg</th><th>No.RM</th><th>Nama</th><th>Usia</th><th>Poli</th><th>Dokter</th><th>Penjamin</th><th>No.Antrian</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody id="pendaftaran-tbody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== RAWAT JALAN + EMR ===== -->
+  <div id="pg-rawatjalan" class="page">
+    <div class="sh"><div><div class="st">Rawat Jalan</div><div class="ss">Poliklinik &amp; rekam medis elektronik</div></div><div class="sa"><div class="tg"><button class="tgb active" onclick="swTab(this,'rj-q')">Antrian Poli</button><button class="tgb" onclick="swTab(this,'rj-emr')">Input EMR</button><button class="tgb" onclick="swTab(this,'rj-rx')">Resep</button></div></div></div>
+    <div id="rj-q">
+      <div class="g33" id="rj-queue-container">
+        <div class="loader" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data antrian...</div>
+      </div>
+    </div>
+    <div id="rj-emr" style="display:none">
+      <div class="g3r">
+        <div style="display:flex;flex-direction:column;gap:13px">
+          <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">👤 Pasien Aktif</div></div>
+            <div id="rj-emr-patient" style="padding:13px">
+              <div style="text-align:center;padding:30px;color:var(--text-muted)">Pilih pasien dari antrian untuk memulai EMR</div>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">❤️ Tanda Vital</div></div>
+            <div id="rj-emr-vitals" style="padding:11px">
+              <div class="vg">
+                <div class="vb"><div style="font-size:18px">🩸</div><div class="vv">—</div><div class="vu">mmHg</div><div class="vl">TD</div></div>
+                <div class="vb"><div style="font-size:18px">💓</div><div class="vv">—</div><div class="vu">bpm</div><div class="vl">Nadi</div></div>
+                <div class="vb"><div style="font-size:18px">🌡️</div><div class="vv">—</div><div class="vu">°C</div><div class="vl">Suhu</div></div>
+                <div class="vb"><div style="font-size:18px">🫁</div><div class="vv">—</div><div class="vu">SpO₂</div><div class="vl">Oksigen</div></div>
+              </div>
+              <div class="fr" style="margin-top:9px">
+                <div class="fg" style="margin-bottom:0"><label class="fl">BB (kg)</label><input class="fc" id="vit-bb" value=""></div>
+                <div class="fg" style="margin-bottom:0"><label class="fl">TB (cm)</label><input class="fc" id="vit-tb" value=""></div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">📚 Riwayat</div></div>
+            <div id="rj-emr-history" style="padding:13px;color:var(--text-muted);font-size:12px;text-align:center">
+              Pilih pasien untuk melihat riwayat
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">📝 Rekam Medis Elektronik</div></div>
+          <div style="padding:13px">
+            <div class="tabs">
+              <div class="tab active" onclick="swSub(this,'emr-s')">Subjektif</div>
+              <div class="tab" onclick="swSub(this,'emr-o')">Objektif</div>
+              <div class="tab" onclick="swSub(this,'emr-a')">Asesmen</div>
+              <div class="tab" onclick="swSub(this,'emr-p')">Plan</div>
+            </div>
+            <div id="emr-s">
+              <div class="fg"><label class="fl">Keluhan Utama</label><textarea class="fc" id="emr-keluhan" placeholder="Keluhan utama pasien..."></textarea></div>
+              <div class="fg"><label class="fl">Riwayat Penyakit Sekarang</label><textarea class="fc" id="emr-rps" placeholder="Uraikan riwayat penyakit..."></textarea></div>
+              <div class="fg"><label class="fl">Riwayat Penyakit Dahulu</label><input class="fc" id="emr-rpd" placeholder="Hipertensi, DM, dll"></div>
+              <div class="fg"><label class="fl">Riwayat Alergi</label><input class="fc" id="emr-alergi" placeholder="Tidak ada alergi yang diketahui"></div>
+            </div>
+            <div id="emr-o" style="display:none">
+              <div class="fg"><label class="fl">Pemeriksaan Fisik Umum</label><textarea class="fc" id="emr-fisik" placeholder="KU, Kesadaran, TD, HR, RR, T..."></textarea></div>
+              <div class="fg"><label class="fl">Pemeriksaan Khusus</label><textarea class="fc" id="emr-khusus" placeholder="Jantung, Paru, Abdomen, Ekstremitas..."></textarea></div>
+            </div>
+            <div id="emr-a" style="display:none">
+              <div class="fg"><label class="fl">Diagnosis Utama (ICD-10)</label><input class="fc" id="emr-dx1" placeholder="Kode — Nama diagnosis"></div>
+              <div class="fg"><label class="fl">Diagnosis Sekunder</label><input class="fc" id="emr-dx2" placeholder="Kode — Nama diagnosis"></div>
+              <div class="fg"><label class="fl">Catatan Asesmen</label><textarea class="fc" id="emr-asesmen" placeholder="Catatan asesmen..."></textarea></div>
+            </div>
+            <div id="emr-p" style="display:none">
+              <div class="fg"><label class="fl">Rencana Tatalaksana</label><textarea class="fc" id="emr-plan" placeholder="1. ...\n2. ..."></textarea></div>
+              <div class="fg"><label class="fl">Tindakan</label>
+                <div style="display:flex;flex-wrap:wrap;gap:8px">
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="act-konsul"> Konsul</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="act-ranap"> Rawat Inap</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="act-resep"> Resep Obat</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="act-rujuk"> Rujukan</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="act-lab"> Lab</label>
+                </div>
+              </div>
+              <div class="fg"><label class="fl">Surat Kontrol</label>
+                <div style="display:flex;gap:8px"><select class="fc" id="emr-kontrol"><option value="">Pilih...</option><option value="2m">2 minggu lagi</option><option value="1b">1 bulan lagi</option><option value="3b">3 bulan lagi</option></select><button class="btn btn-o btn-sm" onclick="printKontrol()">🖨️ Cetak</button></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:6px">
+              <button class="btn btn-o" style="flex:1" onclick="simpanEMR('draft')">💾 Simpan Draft</button>
+              <button class="btn btn-w" style="flex:1" onclick="lanjutResep()">💊 Resepkan</button>
+              <button class="btn btn-p" style="flex:1" onclick="simpanEMR('selesai')">✅ Selesai</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="rj-rx" style="display:none">
+      <div class="g3r">
+        <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🔍 Cari &amp; Tambah Obat</div></div>
+          <div style="padding:11px"><input class="fc" id="rx-search" placeholder="Ketik nama obat..." style="margin-bottom:9px"></div>
+          <div id="rx-obat-list">
+            <div class="di"><div class="d-icon">💊</div><div><div class="d-name">Amlodipine 5mg</div><div class="d-det">Tab • Rp 850/tab</div></div><div class="d-stock"><div class="d-qty" style="color:var(--success)">240</div><div class="d-unit">tab</div></div><button class="btn btn-p btn-xs" onclick="tambahObat('Amlodipine 5mg')">+ Tambah</button></div>
+            <div class="di"><div class="d-icon">💊</div><div><div class="d-name">Metformin 500mg</div><div class="d-det">Tab • Rp 420/tab</div></div><div class="d-stock"><div class="d-qty" style="color:var(--success)">380</div><div class="d-unit">tab</div></div><button class="btn btn-p btn-xs" onclick="tambahObat('Metformin 500mg')">+ Tambah</button></div>
+            <div class="di"><div class="d-icon">💊</div><div><div class="d-name">Bisoprolol 5mg</div><div class="d-det">Tab • Rp 1.200/tab</div></div><div class="d-stock"><div class="d-qty" style="color:var(--warning)">42</div><div class="d-unit">tab</div></div><button class="btn btn-p btn-xs" onclick="tambahObat('Bisoprolol 5mg')">+ Tambah</button></div>
+            <div class="di"><div class="d-icon">💉</div><div><div class="d-name">Furosemide inj 10mg</div><div class="d-det">Inj • Rp 4.500/amp</div></div><div class="d-stock"><div class="d-qty" style="color:var(--danger)">8</div><div class="d-unit">amp</div></div><button class="btn btn-p btn-xs" onclick="tambahObat('Furosemide inj 10mg')">+ Tambah</button></div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🧾 Resep — <span id="rx-pasien-nama">—</span></div></div>
+          <div style="padding:13px">
+            <table class="t" style="margin-bottom:11px"><thead><tr><th>Nama Obat</th><th>Dosis</th><th>Frek</th><th>Jml</th><th>Ket</th><th></th></tr></thead><tbody id="rx-tbody"></tbody></table>
+            <div style="background:var(--bg);border-radius:7px;padding:11px;font-size:12px;margin-bottom:11px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Subtotal Obat</span><span id="rx-subtotal" style="font-weight:600">Rp 0</span></div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Jasa Apotek</span><span style="font-weight:600">Rp 5.000</span></div>
+              <hr style="border:none;border-top:1px dashed var(--border);margin:6px 0">
+              <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total</span><span id="rx-total" style="color:var(--primary)">Rp 5.000</span></div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-o" style="flex:1" onclick="cetakResep()">🖨️ Cetak Resep</button>
+              <button class="btn btn-p" style="flex:1" onclick="kirimFarmasi()">✅ Kirim ke Farmasi</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== RAWAT INAP ===== -->
+  <div id="pg-rawatinap" class="page">
+    <div class="sh"><div><div class="st">Rawat Inap</div><div class="ss">Manajemen kamar, pasien opname &amp; tindakan</div></div><div class="sa"><button class="btn btn-p" onclick="admitPasien()">+ Admit Pasien</button></div></div>
+    <div class="sg" id="ri-stats">
+      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div>
+    </div>
+    <div class="g2">
+      <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🛏️ Peta Kamar</div><div style="display:flex;gap:8px;font-size:11px"><span style="color:var(--success)">🟢 Tersedia</span><span style="color:var(--danger)">🔴 Terpakai</span><span style="color:var(--warning)">🟡 Reservasi</span></div></div>
+        <div id="ri-bedmap" style="padding:13px;color:var(--text-muted);text-align:center;font-size:12px">⏳ Memuat peta kamar...</div>
+      </div>
+      <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">👥 Pasien Opname Aktif</div></div>
+        <div id="ri-opname-table"><table class="t"><thead><tr><th>Kamar</th><th>Nama</th><th>Diagnosa</th><th>DPJP</th><th>Hari ke-</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== UGD ===== -->
+  <div id="pg-ugd" class="page">
+    <div class="sh"><div><div class="st">Unit Gawat Darurat</div><div class="ss">Triase &amp; penanganan pasien darurat</div></div><div class="sa"><button class="btn btn-d" onclick="showM('mdl-ugd')">🚨 Input Pasien UGD Baru</button></div></div>
+    <div class="sg" id="ugd-stats">
+      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div>
+    </div>
+    <div class="card"><div class="ch"><div class="ct">🆘 Pasien UGD Aktif</div></div>
+      <div id="ugd-table"><table class="t"><thead><tr><th>No</th><th>Nama</th><th>Antrian</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ===== REKAM MEDIS ===== -->
+  <div id="pg-rekammedis" class="page">
+    <div class="sh"><div><div class="st">Rekam Medis</div><div class="ss">Pencarian &amp; pengelolaan berkas rekam medis</div></div></div>
+    <div class="srch"><input id="rm-search" class="fc" style="max-width:340px" placeholder="🔍 Cari No.RM / Nama / NIK..."><button class="btn btn-p btn-sm" onclick="searchRM()">Cari</button></div>
+    <div class="g3r">
+      <div id="rm-results">
+        <div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">🔍 Masukkan kata kunci untuk mencari pasien</div>
+      </div>
+      <div id="rm-detail" style="display:none">
+        <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">📁 Detail Rekam Medis</div><button class="btn btn-o btn-sm" onclick="printRMDetail()">🖨️ Cetak</button></div>
+          <div id="rm-detail-content" style="padding:13px">
+            <div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat detail...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LABORATORIUM ===== -->
+  <div id="pg-laboratorium" class="page">
+    <div class="sh"><div><div class="st">Laboratorium</div><div class="ss">Registrasi, sampel &amp; input hasil lab</div></div><div class="sa"><button class="btn btn-p" onclick="showM('mdl-lab-reg')">+ Registrasi Lab</button></div></div>
+    <div class="sg" id="lab-stats">
+      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div>
+    </div>
+    <div class="card"><div class="ch"><div class="ct">Daftar Pemeriksaan Lab</div></div>
+      <div id="lab-table">
+        <table class="t"><thead><tr><th>No.Lab</th><th>Nama Pasien</th><th>Jenis Pemeriksaan</th><th>Asal</th><th>Dokter</th><th>Sampel</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== RADIOLOGI ===== -->
+  <div id="pg-radiologi" class="page">
+    <div class="sh"><div><div class="st">Radiologi</div><div class="ss">Pemeriksaan radiologi &amp; hasil</div></div><div class="sa"><button class="btn btn-p" onclick="showM('mdl-rad-reg')">+ Registrasi Radiologi</button></div></div>
+    <div class="sg" id="rad-stats">
+      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div>
+    </div>
+    <div class="card"><div class="ch"><div class="ct">Daftar Pemeriksaan Radiologi</div></div>
+      <div id="rad-table">
+        <table class="t"><thead><tr><th>No.Rad</th><th>Nama Pasien</th><th>Jenis Pemeriksaan</th><th>Dokter</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FARMASI ===== -->
+  <div id="pg-farmasi" class="page">
+    <div class="sh"><div><div class="st">Farmasi</div><div class="ss">Resep, racik obat &amp; manajemen stok</div></div><div class="sa"><div class="tg"><button class="tgb active" onclick="swTab(this,'far-rx')">Resep Masuk</button><button class="tgb" onclick="swTab(this,'far-stok')">Stok Obat</button><button class="tgb" onclick="swTab(this,'far-retur')">Retur</button></div></div></div>
+    <div class="sg" id="far-stats"><div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div></div>
+    <div id="far-rx"><div id="far-rx-table"><div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data resep...</div></div></div>
+    <div id="far-stok" style="display:none"><div id="far-stok-table"><div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data stok...</div></div></div>
+    <div id="far-retur" style="display:none"><div class="card"><div class="ch"><div class="ct">Retur Obat</div><button class="btn btn-p btn-sm" onclick="showM('mdl-retur')">+ Retur Baru</button></div>
+      <table class="t"><thead><tr><th>No.Retur</th><th>Pasien</th><th>Obat</th><th>Jumlah</th><th>Alasan</th><th>Status</th></tr></thead><tbody>
+        <tr><td class="mono">RTR-001</td><td>Ahmad Fauzi</td><td>Metformin 500mg</td><td>30 tab</td><td>Pasien pulang lebih awal</td><td><span class="b bs">Diterima</span></td></tr>
+        <tr><td class="mono">RTR-002</td><td>Hendra K.</td><td>Ceftriaxone inj</td><td>2 vial</td><td>Obat diganti</td><td><span class="b bw">Menunggu Approve</span></td></tr>
+      </tbody></table>
+    </div></div>
+  </div>
+
+  <!-- ===== KAMAR OPERASI ===== -->
+  <div id="pg-operasi" class="page">
+    <div class="sh"><div><div class="st">Kamar Operasi</div><div class="ss">Jadwal operasi &amp; monitoring OK</div></div><div class="sa"><button class="btn btn-p"onclick="showMdlOperasi()">+ Jadwal Operasi</button></div></div>
+    <div class="sg" id="ok-stats"><div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div></div>
+    <div class="card"><div class="ch"><div class="ct">Jadwal Operasi</div></div>
+      <div id="ok-table"><div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat jadwal operasi...</div></div>
+    </div>
+  </div>
+
+  <!-- ===== KASIR ===== -->
+  <div id="pg-kasir" class="page">
+    <div class="sh"><div><div class="st">Kasir &amp; Pembayaran</div><div class="ss">Transaksi, SEP BPJS &amp; kwitansi</div></div><div class="sa"><button class="btn btn-p"onclick="showMdlTransaksi()">+ Transaksi Baru</button></div></div>
+    <div class="g3r">
+      <div id="kasir-sidebar"></div>
+      <div style="display:flex;flex-direction:column;gap:13px">
+        <div id="kasir-sep"></div>
+        <div id="kasir-nota"></div>
+      </div>
+    </div>
+    <div id="kasir-table"></div>
+  </div>
+
+  <!-- ===== TAGIHAN ===== -->
+  <div id="pg-tagihan" class="page">
+    <div class="sh"><div><div class="st">Manajemen Tagihan</div><div class="ss">Piutang, INA-CBG &amp; klaim asuransi</div></div><div class="sa"><button class="btn btn-p" onclick="showMdlTagihan()">+ Buat Tagihan</button></div></div>
+    <div class="sg" id="tag-stats"></div>
+    <div id="tag-table"></div>
+  </div>
+
+  <!-- ===== LAPORAN ===== -->
+  <div id="pg-laporan" class="page">
+    <div class="sh"><div><div class="st">Laporan Keuangan</div><div class="ss">Rekapitulasi pendapatan &amp; analisis finansial RS</div></div><div class="sa"><select class="fc" style="max-width:130px"><option>Mei 2026</option><option>April 2026</option></select><button class="btn btn-o btn-sm" onclick="alert('📥 Export data ke Excel/CSV')">📥 Export</button><button class="btn btn-p btn-sm" onclick="window.print()">🖨️ Cetak PDF</button></div></div>
+    <div class="fin">
+      <div class="fin-s">Total Pendapatan Bulan Ini</div>
+      <div class="fin-m" id="fin-m">⏳ Memuat...</div>
+      <div class="fin-s">Mei 2026 • Edoy Hospital Management</div>
+      <div class="fin-g" id="fin-g"></div>
+    </div>
+    <div class="g2">
+      <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">📈 Pendapatan Harian (17 hari terakhir)</div></div>
+        <div style="padding:14px"><div class="c-wrap" id="chart-w"></div><div id="chart-l" style="display:flex;gap:8px;padding:4px 0"></div></div>
+      </div>
+      <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">📊 Rekapitulasi per Penjamin</div></div>
+        <div style="padding:13px">
+          <div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="font-weight:600">BPJS Kesehatan</span><span style="color:var(--text-muted)">Rp 1.420.700.000</span></div><div class="pb"><div class="pf" style="width:72%;background:var(--info)"></div></div></div>
+          <div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="font-weight:600">Umum</span><span style="color:var(--text-muted)">Rp 890.400.000</span></div><div class="pb"><div class="pf" style="width:45%;background:var(--primary)"></div></div></div>
+          <div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="font-weight:600">Asuransi Swasta</span><span style="color:var(--text-muted)">Rp 362.100.000</span></div><div class="pb"><div class="pf" style="width:18%;background:var(--warning)"></div></div></div>
+        </div>
+        <div class="ch" style="border-top:1px solid var(--border)"><div class="ct">Ringkasan Layanan</div></div>
+        <table class="t"><thead><tr><th>Layanan</th><th>Kunjungan</th><th>Pendapatan</th><th>%</th></tr></thead><tbody id="ringkasan-layanan"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SDM ===== -->
+  <div id="pg-sdm" class="page">
+    <div class="sh"><div><div class="st">SDM &amp; Dokter</div><div class="ss">Data kepegawaian &amp; jadwal dokter</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showMdlAddDokter()">+ Tambah Dokter</button><button class="btn btn-o btn-sm" onclick="showMdlAddKaryawan()">+ Tambah Karyawan</button></div></div>
+    <div id="sdm-container">
+      <div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data SDM...</div>
+    </div>
+  </div>
+
+  <!-- ===== PENGATURAN ===== -->
+  <div id="pg-pengaturan" class="page">
+    <div class="sh"><div><div class="st">Pengaturan Sistem</div><div class="ss">Konfigurasi Sistem</div></div></div>
+    <div class="g2">
+      <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">⚙️ Pengaturan Rumah Sakit</div></div>
+        <div style="padding:13px">
+          <div class="fg"><label class="fl">Nama Rumah Sakit</label><input class="fc" id="cfg-nama" value="Edoy Hospital Management"></div>
+          <div class="fg"><label class="fl">Alamat</label><input class="fc" id="cfg-alamat" value="Jl. Raya Cilegon KM 8, Serang, Banten"></div>
+          <div class="fr"><div class="fg"><label class="fl">No. Telp</label><input class="fc" id="cfg-telp" value="0254-226000"></div><div class="fg"><label class="fl">Email</label><input class="fc" id="cfg-email" value=""></div></div>
+          <div class="fg"><label class="fl">Kode RS BPJS</label><input class="fc" id="cfg-kode-bpjs" value="0401R001"></div>
+          <button class="btn btn-p" onclick="simpanConfig()">💾 Simpan</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">👤 Manajemen Pengguna</div><button class="btn btn-p btn-sm" onclick="showMdlAddKaryawan()">+ Tambah User</button></div>
+        <table class="t"><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Unit</th><th>Status</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">📂 Database & Backup</div></div>
+        <div style="padding:13px">
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:13px">Sinkronkan atau cadangkan data sistem ke file JSON eksternal untuk keamanan data.</p>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-p" onclick="SharedState.exportData()">📤 Ekspor Data (Backup)</button>
+            <button class="btn btn-o" onclick="document.getElementById('import-file').click()">📥 Impor Data (Sync)</button>
+            <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleImport(this)">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- ===== MASTER DATA ===== -->
+<div id="pg-masterdata" class="page">
+  <div class="sh"><div><div class="st">📋 Master Data</div><div class="ss">Kelola data referensi rumah sakit</div></div><div class="sa"><div class="tg"><button class="tgb active" onclick="swMdTab(this,'md-poli')">🏥 Poli</button><button class="tgb" onclick="swMdTab(this,'md-tarif')">💰 Tarif</button><button class="tgb" onclick="swMdTab(this,'md-icd')">📖 ICD-10</button><button class="tgb" onclick="swMdTab(this,'md-katobat')">💊 Kat. Obat</button></div></div></div>
+
+  <!-- TAB: POLI -->
+  <div id="md-poli">
+    <div class="card"><div class="ch"><div class="ct">🏥 Data Poliklinik</div><button class="btn btn-p btn-sm" onclick="showMdlPoli()">+ Tambah Poli</button></div>
+      <table class="t" id="md-poli-table"><thead><tr><th>ID</th><th>Nama Poli</th><th>Kode</th><th>Aksi</th></tr></thead>
+        <tbody id="md-poli-tbody"><tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB: TARIF -->
+  <div id="md-tarif" style="display:none">
+    <div class="card"><div class="ch"><div class="ct">💰 Tarif Tindakan & Pelayanan</div><button class="btn btn-p btn-sm" onclick="showMdlTarif()">+ Tambah Tarif</button></div>
+      <div class="srch" style="padding:6px 13px"><input class="fc" id="md-tarif-search" placeholder="🔍 Cari tindakan..." style="max-width:280px" onkeyup="filterTarif(this.value)"></div>
+      <table class="t"><thead><tr><th>Kode</th><th>Nama Tindakan</th><th>Kategori</th><th>Harga</th><th>Aksi</th></tr></thead>
+        <tbody id="md-tarif-tbody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB: ICD-10 -->
+  <div id="md-icd" style="display:none">
+    <div class="card"><div class="ch"><div class="ct">📖 Kode Diagnosis (ICD-10)</div><button class="btn btn-p btn-sm" onclick="showMdlIcd()">+ Tambah ICD-10</button></div>
+      <div class="srch" style="padding:6px 13px"><input class="fc" id="md-icd-search" placeholder="🔍 Cari kode / penyakit..." style="max-width:340px" onkeyup="filterIcd(this.value)"></div>
+      <table class="t"><thead><tr><th>Kode ICD</th><th>Nama Penyakit</th><th>Kategori</th><th>Aksi</th></tr></thead>
+        <tbody id="md-icd-tbody"><tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB: KATEGORI OBAT -->
+  <div id="md-katobat" style="display:none">
+    <div class="card"><div class="ch"><div class="ct">💊 Kategori Obat</div><button class="btn btn-p btn-sm" onclick="showMdlKatObat()">+ Tambah Kategori</button></div>
+      <table class="t"><thead><tr><th>Nama Kategori</th><th>Deskripsi</th><th>Aksi</th></tr></thead>
+        <tbody id="md-katobat-tbody"><tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STOK & INVENTORY ===== -->
+<div id="pg-stok" class="page">
+  <div class="sh"><div><div class="st">📦 Stok & Inventory</div><div class="ss">Manajemen stok obat & perlengkapan medis</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showMdlTambahObat()">+ Tambah Obat</button><button class="btn btn-o btn-sm" onclick="showMdlStokMasuk()">📥 Penerimaan</button><button class="btn btn-o btn-sm" onclick="showMdlStokOpname()">📋 Opname</button></div></div>
+
+  <!-- STAT CARDS -->
+  <div class="sg" id="stok-stats">
+    <div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="si" style="background:var(--primary-light)">💊</div><div class="sv" id="stok-total-items">-</div><div class="sl">Total Item Obat</div></div>
+    <div class="sc"><div class="sb" style="background:var(--info)"></div><div class="si" style="background:#e0f2fe">📦</div><div class="sv" id="stok-total-qty">-</div><div class="sl">Total Stok</div></div>
+    <div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="si" style="background:#fef3c7">⚠️</div><div class="sv" id="stok-low-items">-</div><div class="sl">Item Di Bawah Minimum</div></div>
+    <div class="sc"><div class="sb" style="background:var(--success)"></div><div class="si" style="background:#dcfce7">💰</div><div class="sv" id="stok-total-value">-</div><div class="sl">Nilai Stok</div></div>
+  </div>
+
+  <!-- FILTER + SEARCH -->
+  <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center">
+    <input class="fc" id="stok-search" placeholder="🔍 Cari nama/kode obat..." style="max-width:320px" onkeyup="filterStok(this.value)">
+    <select class="fc" id="stok-filter-kat" style="max-width:180px" onchange="filterStok()">
+      <option value="">Semua Kategori</option>
+    </select>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer">
+      <input type="checkbox" id="stok-only-low" onchange="filterStok()"> Hanya Stok Minimum
+    </label>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card">
+    <table class="t" id="stok-table"><thead><tr>
+      <th>Kode</th><th>Nama Obat</th><th>Kategori</th><th>Stok</th><th>Min.</th><th>Status</th><th>Satuan</th><th>Harga</th><th>Aksi</th>
+    </tr></thead>
+      <tbody id="stok-tbody"><tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== PEMBELIAN (PURCHASE ORDER) ===== -->
+<div id="pg-pembelian" class="page">
+  <div class="sh"><div><div class="st">📥 Pembelian</div><div class="ss">Purchase order & penerimaan barang</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showMdlPOTambah()">+ Buat PO</button><button class="btn btn-o btn-sm" onclick="loadPembelian()">🔄 Refresh</button></div></div>
+  <div class="sg" id="beli-stats">
+    <div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="si" style="background:var(--primary-light)">📋</div><div class="sv" id="beli-total-po">-</div><div class="sl">Total PO</div></div>
+    <div class="sc"><div class="sb" style="background:var(--info)"></div><div class="si" style="background:#e0f2fe">⏳</div><div class="sv" id="beli-po-pending">-</div><div class="sl">Menunggu</div></div>
+    <div class="sc"><div class="sb" style="background:var(--success)"></div><div class="si" style="background:#dcfce7">✅</div><div class="sv" id="beli-po-selesai">-</div><div class="sl">Selesai</div></div>
+    <div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="si" style="background:#fef3c7">🚚</div><div class="sv" id="beli-po-diproses">-</div><div class="sl">Diproses</div></div>
+  </div>
+  <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center">
+    <input class="fc" id="beli-search" placeholder="🔍 Cari no. PO / supplier..." style="max-width:320px" onkeyup="filterPembelian(this.value)">
+    <select class="fc" id="pembelian-filter-status" style="max-width:160px" onchange="filterPembelian()"><option value="">Semua Status</option><option value="draft">Draft</option><option value="dipesan">Dipesan</option><option value="diterima_sebagian">Diterima Sebagian</option><option value="selesai">Selesai</option><option value="dibatalkan">Dibatalkan</option></select>
+  </div>
+  <div class="card">
+    <table class="t" id="beli-table"><thead><tr><th>No. PO</th><th>Supplier</th><th>Tgl. PO</th><th>Jatuh Tempo</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody id="beli-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== KAS & BANK ===== -->
+<div id="pg-kas-bank" class="page">
+  <div class="sh"><div><div class="st">💰 Kas &amp; Bank</div><div class="ss">Manajemen kas, bank & mutasi keuangan</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showKasPemasukan()">+ Pemasukan</button><button class="btn btn-o btn-sm" onclick="showKasPengeluaran()">💸 Pengeluaran</button><button class="btn btn-o btn-sm" onclick="showKasTransfer()">🔄 Transfer</button><button class="btn btn-o btn-sm" onclick="loadKasBank()">🔄 Refresh</button></div></div>
+  <div class="sg" id="kas-stats">
+    <div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="si" style="background:var(--primary-light)">💰</div><div class="sv" id="kas-saldo-total">-</div><div class="sl">Saldo Total</div></div>
+    <div class="sc"><div class="sb" style="background:#22c55e"></div><div class="si" style="background:#dcfce7">📈</div><div class="sv" id="kas-pemasukan-hariini">-</div><div class="sl">Pemasukan Hari Ini</div></div>
+    <div class="sc"><div class="sb" style="background:#ef4444"></div><div class="si" style="background:#fee2e2">📉</div><div class="sv" id="kas-pengeluaran-hariini">-</div><div class="sl">Pengeluaran Hari Ini</div></div>
+    <div class="sc"><div class="sb" style="background:var(--info)"></div><div class="si" style="background:#e0f2fe">🏦</div><div class="sv" id="kas-jml-akun">-</div><div class="sl">Akun Aktif</div></div>
+  </div>
+  <div class="fr" style="gap:8px;margin-bottom:12px">
+    <div class="fg" style="flex:1"><input class="fc" id="kas-search" placeholder="🔍 Cari keterangan / referensi..." onkeyup="filterKas()"></div>
+    <div class="fg" style="flex:0 0 180px">
+      <select class="fc" id="kas-filter-akun" onchange="filterKas()">
+        <option value="">Semua Akun</option>
+      </select>
+    </div>
+    <div class="fg" style="flex:0 0 160px">
+      <select class="fc" id="kas-filter-tipe" onchange="filterKas()">
+        <option value="">Semua Tipe</option>
+        <option value="pemasukan">Pemasukan</option>
+        <option value="pengeluaran">Pengeluaran</option>
+        <option value="transfer">Transfer</option>
+      </select>
+    </div>
+    <div class="fg" style="flex:0 0 180px">
+      <select class="fc" id="kas-filter-kategori" onchange="filterKas()">
+        <option value="">Semua Kategori</option>
+      </select>
+    </div>
+    <div class="fg" style="flex:0 0 170px"><input class="fc" id="kas-tgl-dari" type="date" onchange="filterKas()"></div>
+    <div class="fg" style="flex:0 0 170px"><input class="fc" id="kas-tgl-sampai" type="date" onchange="filterKas()"></div>
+  </div>
+  <div class="card"><table class="t"><thead><tr><th>TANGGAL</th><th>AKUN</th><th>TIPE</th><th>KATEGORI</th><th>KETERANGAN</th><th>REFERENSI</th><th>PEMASUKAN</th><th>PENGELUARAN</th><th>SALDO</th><th>AKSI</th></tr></thead><tbody id="kas-tbody"><tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+</div>
+
+<!-- ===== PENGGUNAAN OBAT ===== -->
+<div id="pg-penggunaan-obat" class="page">
+  <div class="sh"><div><div class="st">💊 Penggunaan Obat</div><div class="ss">Resep & penggunaan obat pasien</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showPenggunaanObatForm()">+ Tambah Resep</button><button class="btn btn-o btn-sm" onclick="loadPenggunaanObat()">🔄 Refresh</button></div></div>
+  <div class="sg" id="obat-stats">
+    <div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="si" style="background:var(--primary-light)">📋</div><div class="sv" id="obat-total-resep">-</div><div class="sl">Total Resep</div></div>
+    <div class="sc"><div class="sb" style="background:#22c55e"></div><div class="si" style="background:#dcfce7">✅</div><div class="sv" id="obat-selesai">-</div><div class="sl">Selesai</div></div>
+    <div class="sc"><div class="sb" style="background:#f59e0b"></div><div class="si" style="background:#fef3c7">⏳</div><div class="sv" id="obat-pending">-</div><div class="sl">Pending</div></div>
+    <div class="sc"><div class="sb" style="background:var(--info)"></div><div class="si" style="background:#e0f2fe">💊</div><div class="sv" id="obat-total-item">-</div><div class="sl">Total Item Obat</div></div>
+  </div>
+  <div class="fr" style="gap:8px;margin-bottom:12px">
+    <div class="fg" style="flex:1"><input class="fc" id="obat-search" placeholder="🔍 Cari no. resep / pasien / dokter..." onkeyup="filterPenggunaanObat()"></div>
+    <div class="fg" style="flex:0 0 160px"><select class="fc" id="obat-filter-status" onchange="filterPenggunaanObat()"><option value="">Semua Status</option><option value="pending">Pending</option><option value="disiapkan">Disiapkan</option><option value="selesai">Selesai</option></select></div>
+    <div class="fg" style="flex:0 0 160px"><select class="fc" id="obat-filter-poli" onchange="filterPenggunaanObat()"><option value="">Semua Poli</option></select></div>
+    <div class="fg" style="flex:0 0 170px"><input class="fc" id="obat-tgl-dari" type="date" onchange="filterPenggunaanObat()"></div>
+    <div class="fg" style="flex:0 0 170px"><input class="fc" id="obat-tgl-sampai" type="date" onchange="filterPenggunaanObat()"></div>
+  </div>
+  <div class="card"><table class="t"><thead><tr><th>NO. RESEP</th><th>TANGGAL</th><th>PASIEN</th><th>DOKTER</th><th>POLI</th><th>STATUS</th><th>TOTAL ITEM</th><th>TOTAL HARGA</th><th>AKSI</th></tr></thead><tbody id="obat-tbody"><tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+</div>
+
+<div id="pg-permintaan-medis" class="page">
+  <div class="sh"><div><div class="st">📋 Permintaan Medis</div><div class="ss">Permintaan obat & supplies dari unit/bangsal</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showM('mdl-pm-buat')">+ Buat Permintaan</button><button class="btn btn-o btn-sm" onclick="loadPermintaanMedis()">🔄 Refresh</button></div></div>
+  <div class="sg" id="pm-stats">
+    <div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="si" style="background:var(--primary-light)">📋</div><div class="sv" id="pm-total">-</div><div class="sl">Total Permintaan</div></div>
+    <div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="si" style="background:#fef3c7">⏳</div><div class="sv" id="pm-menunggu">-</div><div class="sl">Menunggu</div></div>
+    <div class="sc"><div class="sb" style="background:var(--info)"></div><div class="si" style="background:#e0f2fe">🔄</div><div class="sv" id="pm-diproses">-</div><div class="sl">Diproses</div></div>
+    <div class="sc"><div class="sb" style="background:var(--success)"></div><div class="si" style="background:#dcfce7">✅</div><div class="sv" id="pm-selesai">-</div><div class="sl">Selesai</div></div>
+  </div>
+  <div class="fr" style="gap:8px;margin-bottom:12px">
+    <div class="fg" style="flex:1"><input class="fc" id="pm-search" placeholder="🔍 Cari no. permintaan / unit..." onkeyup="filterPermintaanMedis()"></div>
+    <div class="fg" style="flex:0 0 160px"><select class="fc" id="pm-filter-status" onchange="filterPermintaanMedis()"><option value="">Semua Status</option><option value="Menunggu">Menunggu</option><option value="Diproses">Diproses</option><option value="Selesai">Selesai</option><option value="Ditolak">Ditolak</option></select></div>
+    <div class="fg" style="flex:0 0 170px"><input class="fc" id="pm-tgl-dari" type="date" onchange="filterPermintaanMedis()"></div>
+    <div class="fg" style="flex:0 0 170px"><input class="fc" id="pm-tgl-sampai" type="date" onchange="filterPermintaanMedis()"></div>
+  </div>
+  <div class="card"><table class="t"><thead><tr><th>NO. PERMINTAAN</th><th>UNIT</th><th>ITEM</th><th>TOTAL ITEM</th><th>STATUS</th><th>DIBUAT</th><th>AKSI</th></tr></thead><tbody id="pm-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+</div>
+
+<div id="pg-penjualan" class="page">
+  <div class="sh"><div><div class="st">🧾 Penjualan</div><div class="ss">Transaksi penjualan apotek & retail</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showPenjualanBaru()">+ Transaksi Baru</button><button class="btn btn-o btn-sm" onclick="loadPenjualan()">🔄 Refresh</button></div></div>
+  <div class="sg" id="penjualan-stats">
+    <div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="si" style="background:var(--primary-light)">🧾</div><div class="sv" id="penj-total">-</div><div class="sl">Total Transaksi</div></div>
+    <div class="sc"><div class="sb" style="background:#22c55e"></div><div class="si" style="background:#dcfce7">💰</div><div class="sv" id="penj-omzet">-</div><div class="sl">Omzet Hari Ini</div></div>
+    <div class="sc"><div class="sb" style="background:var(--info)"></div><div class="si" style="background:#e0f2fe">📦</div><div class="sv" id="penj-item">-</div><div class="sl">Item Terjual</div></div>
+    <div class="sc"><div class="sb" style="background:#f59e0b"></div><div class="si" style="background:#fef3c7">👥</div><div class="sv" id="penj-customer">-</div><div class="sl">Customer</div></div>
+  </div>
+  <div class="fr" style="gap:8px;margin-bottom:12px">
+    <div class="fg" style="flex:1"><input class="fc" id="penj-search" placeholder="🔍 Cari no. transaksi / customer..." onkeyup="filterPenjualan()"></div>
+    <div class="fg" style="flex:0 0 160px"><select class="fc" id="penj-metode" onchange="filterPenjualan()"><option value="">Semua Metode</option><option value="Tunai">Tunai</option><option value="QRIS">QRIS</option><option value="Debit">Debit</option><option value="Transfer">Transfer</option></select></div>
+    <div class="fg" style="flex:0 0 170px"><input class="fc" id="penj-tgl-dari" type="date" onchange="filterPenjualan()"></div>
+    <div class="fg" style="flex:0 0 170px"><input class="fc" id="penj-tgl-sampai" type="date" onchange="filterPenjualan()"></div>
+  </div>
+  <div class="card"><table class="t"><thead><tr><th>NO. TRANSAKSI</th><th>TANGGAL</th><th>CUSTOMER</th><th>TOTAL</th><th>METODE</th><th>STATUS</th><th>AKSI</th></tr></thead><tbody id="penj-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+</div>
+
+<div id="pg-logistik" class="page">
+  <div class="sh"><div><div class="st">📦 Logistik</div><div class="ss">Non-medical inventory: ATK, kebersihan & supplies</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showLogistikBarang()">+ Tambah Barang</button><button class="btn btn-o btn-sm" onclick="loadLogistik()">🔄 Refresh</button></div></div>
+  <div class="sg" id="logistik-stats">
+    <div class="sc"><div class="sb" style="background:var(--primary)"></div><div class="si" style="background:var(--primary-light)">📦</div><div class="sv" id="log-total">-</div><div class="sl">Total Item</div></div>
+    <div class="sc"><div class="sb" style="background:#22c55e"></div><div class="si" style="background:#dcfce7">✅</div><div class="sv" id="log-ok">-</div><div class="sl">Stok Cukup</div></div>
+    <div class="sc"><div class="sb" style="background:#f59e0b"></div><div class="si" style="background:#fef3c7">⚠️</div><div class="sv" id="log-min">-</div><div class="sl">Stok Minimal</div></div>
+    <div class="sc"><div class="sb" style="background:var(--danger)"></div><div class="si" style="background:#fee2e2">🚨</div><div class="sv" id="log-kosong">-</div><div class="sl">Stok Habis</div></div>
+  </div>
+  <div class="fr" style="gap:8px;margin-bottom:12px">
+    <div class="fg" style="flex:1"><input class="fc" id="log-search" placeholder="🔍 Cari nama / kode barang..." onkeyup="filterLogistik()"></div>
+    <div class="fg" style="flex:0 0 160px"><select class="fc" id="log-kategori" onchange="filterLogistik()"><option value="">Semua Kategori</option><option value="ATK">ATK</option><option value="Kebersihan">Kebersihan</option><option value="Umum">Umum</option></select></div>
+  </div>
+  <div class="card"><table class="t"><thead><tr><th>KODE</th><th>NAMA BARANG</th><th>KATEGORI</th><th>SATUAN</th><th>STOK</th><th>MIN</th><th>STATUS</th><th>AKSI</th></tr></thead><tbody id="log-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+</div>
+
+<div id="pg-akuntansi" class="page">
+  <div class="sh"><div><div class="st">📒 Akuntansi</div><div class="ss">Jurnal Umum, Buku Besar, Neraca Saldo & Laporan</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showJurnalBaru()">+ Jurnal Baru</button><button class="btn btn-o btn-sm" onclick="activeAkunTab()">🔄 Refresh</button></div></div>
+  <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="tab-btn active" data-tab="jurnal" onclick="switchAkunTab('jurnal')">📝 Jurnal Umum</button>
+    <button class="tab-btn" data-tab="bukubesar" onclick="switchAkunTab('bukubesar')">📖 Buku Besar</button>
+    <button class="tab-btn" data-tab="neracasaldo" onclick="switchAkunTab('neracasaldo')">⚖️ Neraca Saldo</button>
+    <button class="tab-btn" data-tab="laba rugi" onclick="switchAkunTab('laba rugi')">📈 Laba Rugi</button>
+    <button class="tab-btn" data-tab="neraca" onclick="switchAkunTab('neraca')">🏛️ Neraca</button>
+  </div>
+  
+  <!-- Jurnal Umum -->
+  <div class="akun-tab" id="tab-jurnal">
+    <div class="fr" style="gap:8px;margin-bottom:12px">
+      <div class="fg" style="flex:1"><input class="fc" id="jurnal-search" placeholder="🔍 Cari no jurnal / keterangan..." onkeyup="filterJurnal()"></div>
+      <div class="fg" style="flex:0 0 170px"><input class="fc" id="jurnal-tgl-dari" type="date" onchange="filterJurnal()"></div>
+      <div class="fg" style="flex:0 0 170px"><input class="fc" id="jurnal-tgl-sampai" type="date" onchange="filterJurnal()"></div>
+    </div>
+    <div class="card"><table class="t"><thead><tr><th>NO. JURNAL</th><th>TANGGAL</th><th>KETERANGAN</th><th>DEBIT</th><th>KREDIT</th><th>AKSI</th></tr></thead><tbody id="jurnal-tbody"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+  </div>
+  
+  <!-- Buku Besar -->
+  <div class="akun-tab" id="tab-bukubesar" style="display:none">
+    <div style="margin-bottom:12px"><label class="fl">Pilih Akun</label>
+      <select class="fc" id="bb-akun" onchange="loadBukuBesar()" style="max-width:400px"></select>
+    </div>
+    <div class="card"><div id="bb-content" style="font-size:13px">Pilih akun untuk melihat Buku Besar</div></div>
+  </div>
+  
+  <!-- Neraca Saldo -->
+  <div class="akun-tab" id="tab-neracasaldo" style="display:none">
+    <div class="card"><table class="t"><thead><tr><th>KODE</th><th>NAMA AKUN</th><th>TIPE</th><th style="text-align:right">DEBIT</th><th style="text-align:right">KREDIT</th></tr></thead><tbody id="ns-tbody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+  </div>
+  
+  <!-- Laba Rugi -->
+  <div class="akun-tab" id="tab-laba rugi" style="display:none">
+    <div class="card"><div id="laba-rugi-content" style="padding:8px 0">Memuat...</div></div>
+  </div>
+  
+  <!-- Neraca -->
+  <div class="akun-tab" id="tab-neraca" style="display:none">
+    <div class="card"><div id="neraca-content" style="padding:8px 0">Memuat...</div></div>
+  </div>
+</div>
+
+<div id="pg-security" class="page">
+  <div class="sh"><div><div class="st">🔒 Security</div><div class="ss">Role-Based Access Control Matrix</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showRoleBaru()">+ Role Baru</button><button class="btn btn-o btn-sm" onclick="loadSecurity()">🔄 Refresh</button></div></div>
+  <div class="card" style="overflow-x:auto;padding:0">
+    <div id="security-matrix" style="font-size:13px;min-width:800px">Memuat matrix permission...</div>
+  </div>
+  </div>
+
+  <div id="pg-fixed-asset" class="page">
+  <div class="sh"><div><div class="st">🏛️ Fixed Asset</div><div class="ss">Manajemen aset tetap perusahaan</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showAssetBaru()">+ Aset Baru</button><button class="btn btn-o btn-sm" onclick="loadFixedAssets()">🔄 Refresh</button></div></div>
+  <div class="fr" style="gap:8px;margin-bottom:12px">
+  <div class="fg" style="flex:1"><input class="fc" id="fa-search" placeholder="🔍 Cari aset..." onkeyup="filterFixedAssets()"></div>
+  <div class="fg" style="flex:0 0 150px"><select class="fc" id="fa-kategori" onchange="filterFixedAssets()"><option value="">Semua Kategori</option><option>Tanah</option><option>Gedung</option><option>Kendaraan</option><option>Peralatan Medis</option><option>Komputer</option><option>Furniture</option><option>Lainnya</option></select></div>
+  </div>
+  <div class="card"><table class="t"><thead><tr><th>KODE</th><th>NAMA ASET</th><th>KATEGORI</th><th>NILAI PEROLEHAN</th><th>LOKASI</th><th>KONDISI</th><th>AKSI</th></tr></thead><tbody id="fa-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+  </div>
+
+  <div id="pg-audit-trail" class="page">
+  <div class="sh"><div><div class="st">📋 Audit Trail</div><div class="ss">Log aktivitas sistem</div></div><div class="sa"><button class="btn btn-o btn-sm" onclick="loadAuditLogs()">🔄 Refresh</button></div></div>
+  <div class="fr" style="gap:8px;margin-bottom:12px">
+  <div class="fg" style="flex:1"><input class="fc" id="audit-search" placeholder="🔍 Cari user/aksi/entitas..." onkeyup="filterAudit()"></div>
+  <div class="fg" style="flex:0 0 170px"><input class="fc" id="audit-tgl" type="date" onchange="filterAudit()"></div>
+  </div>
+  <div class="card"><table class="t"><thead><tr><th>WAKTU</th><th>USER</th><th>AKSI</th><th>ENTITAS</th><th>DETAIL</th></tr></thead><tbody id="audit-tbody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+  </div>
+
+<!-- ===== MODAL PENGGUNAAN OBAT ===== -->
+<div class="ov" id="mdl-penggunaan-obat"><div class="modal" style="max-width:700px">
+  <div class="mh"><div class="mt" id="mdl-obat-title">💊 Tambah Resep</div><button class="mc" onclick="hideM('mdl-penggunaan-obat')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-obat-id">
+    <div class="fr">
+      <div class="fg"><label class="fl">No. Resep <span class="rq">*</span></label><input class="fc" id="mdl-obat-noresep" placeholder="RSP-2026-XXX"></div>
+      <div class="fg"><label class="fl">Tanggal</label><input class="fc" id="mdl-obat-tgl" type="date"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Pasien <span class="rq">*</span></label><select class="fc" id="mdl-obat-pasien"><option value="">Pilih pasien...</option></select></div>
+      <div class="fg"><label class="fl">Dokter</label><select class="fc" id="mdl-obat-dokter"><option value="">Pilih dokter...</option></select></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Poli</label><select class="fc" id="mdl-obat-poli"><option value="">Pilih poli...</option></select></div>
+      <div class="fg"><label class="fl">Status</label><select class="fc" id="mdl-obat-status"><option value="pending">Pending</option><option value="disiapkan">Disiapkan</option><option value="selesai">Selesai</option></select></div>
+    </div>
+    <div style="margin:16px 0 8px;font-weight:700;font-size:14px">Item Obat</div>
+    <div id="obat-items-container"></div>
+    <button class="btn btn-o btn-xs" onclick="addObatItemRow()">+ Tambah Obat</button>
+    <div style="margin-top:12px;text-align:right;font-size:16px;font-weight:700">Total: <span id="obat-total-display">Rp 0</span></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-penggunaan-obat')">Batal</button><button class="btn btn-p" onclick="submitPenggunaanObat()">💾 Simpan Resep</button></div>
+</div></div>
+
+<!-- ===== MODAL PENGGUNAAN OBAT DETAIL ===== -->
+<div class="ov" id="mdl-penggunaan-obat-detail"><div class="modal" style="max-width:650px">
+  <div class="mh"><div class="mt">📋 Detail Resep</div><button class="mc" onclick="hideM('mdl-penggunaan-obat-detail')">✕</button></div>
+  <div class="mb" id="mdl-obat-detail-body"></div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-penggunaan-obat-detail')">Tutup</button><button class="btn btn-p btn-danger" id="mdl-obat-detail-hapus" style="display:none" onclick="hapusPenggunaanObat()">🗑️ Hapus</button></div>
+</div></div>
+
+<!-- ===== MODAL KAS TRANSAKSI ===== -->
+<div class="ov" id="mdl-kas-transaksi"><div class="modal" style="max-width:550px">
+  <div class="mh"><div class="mt" id="mdl-kas-trx-title">💰 Transaksi</div><button class="mc" onclick="hideM('mdl-kas-transaksi')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-kas-trx-id">
+    <input type="hidden" id="mdl-kas-trx-tipe">
+    <div class="fr">
+      <div class="fg"><label class="fl">Akun <span class="rq">*</span></label><select class="fc" id="mdl-kas-akun"><option value="">Pilih akun...</option></select></div>
+      <div class="fg"><label class="fl">Tanggal</label><input class="fc" id="mdl-kas-tgl" type="date"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Jumlah <span class="rq">*</span></label><input class="fc" id="mdl-kas-jumlah" type="number" min="0" placeholder="0"></div>
+      <div class="fg"><label class="fl">Kategori</label><select class="fc" id="mdl-kas-kategori"><option value="">Pilih kategori...</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Keterangan</label><textarea class="fc" id="mdl-kas-ket" rows="2" placeholder="Keterangan transaksi..."></textarea></div>
+    <div class="fg"><label class="fl">Referensi (no. bukti)</label><input class="fc" id="mdl-kas-ref" placeholder="No. referensi / bukti"></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-kas-transaksi')">Batal</button><button class="btn btn-p" id="mdl-kas-trx-btn" onclick="submitKasTransaksi()">✅ Simpan</button></div>
+</div></div>
+
+<!-- ===== MODAL KAS TRANSFER ===== -->
+<div class="ov" id="mdl-kas-transfer"><div class="modal" style="max-width:500px">
+  <div class="mh"><div class="mt">🔄 Transfer Antar Akun</div><button class="mc" onclick="hideM('mdl-kas-transfer')">✕</button></div>
+  <div class="mb">
+    <div class="fr">
+      <div class="fg"><label class="fl">Dari Akun <span class="rq">*</span></label><select class="fc" id="mdl-kas-transfer-dari"><option value="">Pilih...</option></select></div>
+      <div class="fg"><label class="fl">Ke Akun <span class="rq">*</span></label><select class="fc" id="mdl-kas-transfer-ke"><option value="">Pilih...</option></select></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Jumlah <span class="rq">*</span></label><input class="fc" id="mdl-kas-transfer-jumlah" type="number" min="0" placeholder="0"></div>
+      <div class="fg"><label class="fl">Tanggal</label><input class="fc" id="mdl-kas-transfer-tgl" type="date"></div>
+    </div>
+    <div class="fg"><label class="fl">Keterangan</label><textarea class="fc" id="mdl-kas-transfer-ket" rows="2" placeholder="Keterangan transfer..."></textarea></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-kas-transfer')">Batal</button><button class="btn btn-p" onclick="submitKasTransfer()">✅ Transfer</button></div>
+</div></div>
+
+<!-- ===== MODAL KAS DETAIL ===== -->
+<div class="ov" id="mdl-kas-detail"><div class="modal" style="max-width:500px">
+  <div class="mh"><div class="mt">📋 Detail Transaksi</div><button class="mc" onclick="hideM('mdl-kas-detail')">✕</button></div>
+  <div class="mb" id="mdl-kas-detail-body"></div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-kas-detail')">Tutup</button><button class="btn btn-p btn-danger" id="mdl-kas-detail-hapus" style="display:none" onclick="hapusKasTransaksi()">🗑️ Hapus</button></div>
+</div></div>
+
+<!-- ===== MODAL POLI ===== -->
+<div class="ov" id="mdl-poli"><div class="modal" style="max-width:420px">
+  <div class="mh"><div class="mt">🏥 Tambah/Edit Poli</div><button class="mc" onclick="hideM('mdl-poli')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-poli-id">
+    <div class="fg"><label class="fl">Nama Poli <span class="rq">*</span></label><input class="fc" id="mdl-poli-nama" placeholder="e.g. Poli Jantung"></div>
+    <div class="fg"><label class="fl">Kode Poli</label><input class="fc" id="mdl-poli-kode" placeholder="e.g. JNT"></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-poli')">Batal</button><button class="btn btn-p" onclick="submitPoli()">✅ Simpan</button></div>
+</div></div>
+
+<!-- ===== MODAL TAMBAH OBAT ===== -->
+<div class="ov" id="mdl-obat"><div class="modal" style="max-width:500px">
+  <div class="mh"><div class="mt">💊 Tambah/Edit Obat</div><button class="mc" onclick="hideM('mdl-obat')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-obat-id">
+    <div class="fr">
+      <div class="fg"><label class="fl">Kode Obat <span class="rq">*</span></label><input class="fc" id="mdl-obat-kode" placeholder="OBT-XXX"></div>
+      <div class="fg"><label class="fl">Kategori <span class="rq">*</span></label><select class="fc" id="mdl-obat-kategori"><option>Tablet</option><option>Kapsul</option><option>Sirup</option><option>Injeksi</option><option>Infus</option><option>Salep</option><option>Obat Tetes</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Nama Obat <span class="rq">*</span></label><input class="fc" id="mdl-obat-nama" placeholder="e.g. Amlodipine 5mg"></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Stok Awal</label><input class="fc" id="mdl-obat-stok" type="number" min="0" value="0"></div>
+      <div class="fg"><label class="fl">Stok Minimum <span class="rq">*</span></label><input class="fc" id="mdl-obat-min" type="number" min="0" value="10"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Satuan <span class="rq">*</span></label><select class="fc" id="mdl-obat-satuan"><option>tablet</option><option>botol</option><option>strip</option><option>ampul</option><option>kapsul</option><option>vial</option><option>tube</option><option>ml</option></select></div>
+      <div class="fg"><label class="fl">Harga Satuan (Rp)</label><input class="fc" id="mdl-obat-harga" type="number" min="0" placeholder="0"></div>
+    </div>
+    <div class="fg"><label class="fl">Tanggal Kadaluwarsa</label><input class="fc" id="mdl-obat-exp" type="date"></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-obat')">Batal</button><button class="btn btn-p" onclick="submitObat()">✅ Simpan</button></div>
+</div></div>
+
+<!-- ===== MODAL STOK MASUK (PENERIMAAN) ===== -->
+<div class="ov" id="mdl-stok-masuk"><div class="modal" style="max-width:500px">
+  <div class="mh"><div class="mt">📥 Penerimaan Stok</div><button class="mc" onclick="hideM('mdl-stok-masuk')">✕</button></div>
+  <div class="mb">
+    <div class="fg"><label class="fl">Pilih Obat <span class="rq">*</span></label><select class="fc" id="mdl-sm-obat"></select></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Jumlah <span class="rq">*</span></label><input class="fc" id="mdl-sm-qty" type="number" min="1" placeholder="0"></div>
+      <div class="fg"><label class="fl">Harga Satuan (Rp)</label><input class="fc" id="mdl-sm-harga" type="number" min="0" placeholder="0"></div>
+    </div>
+    <div class="fg"><label class="fl">No. Referensi</label><input class="fc" id="mdl-sm-ref" placeholder="e.g. PO-001 / FP-2026-001"></div>
+    <div class="fg"><label class="fl">Keterangan</label><textarea class="fc" id="mdl-sm-ket" rows="2" placeholder="Catatan penerimaan..."></textarea></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-stok-masuk')">Batal</button><button class="btn btn-p" onclick="submitStokMasuk()">✅ Simpan Penerimaan</button></div>
+</div></div>
+
+<!-- ===== MODAL STOK OPNAME ===== -->
+<div class="ov" id="mdl-stok-opname"><div class="modal" style="max-width:500px">
+  <div class="mh"><div class="mt">📋 Stok Opname</div><button class="mc" onclick="hideM('mdl-stok-opname')">✕</button></div>
+  <div class="mb">
+    <div class="fg"><label class="fl">Pilih Obat <span class="rq">*</span></label><select class="fc" id="mdl-so-obat"></select></div>
+    <div class="sg2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="fg"><label class="fl">Stok Saat Ini (Sistem)</label><input class="fc" id="mdl-so-stok-sistem" disabled style="background:#f1f5f9"></div>
+      <div class="fg"><label class="fl">Stok Fisik (Nyata) <span class="rq">*</span></label><input class="fc" id="mdl-so-stok-fisik" type="number" min="0" placeholder="0"></div>
+    </div>
+    <div class="fg"><label class="fl">Keterangan</label><textarea class="fc" id="mdl-so-ket" rows="2" placeholder="Alasan selisih..."></textarea></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-stok-opname')">Batal</button><button class="btn btn-p" onclick="submitStokOpname()">✅ Simpan Opname</button></div>
+</div></div>
+
+<!-- ===== MODAL PO (TAMBAH) ===== -->
+<div class="ov" id="mdl-po"><div class="modal" style="max-width:700px">
+  <div class="mh"><div class="mt">📥 Buat Purchase Order</div><button class="mc" onclick="hideM('mdl-po')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-po-id">
+    <div class="fr">
+      <div class="fg"><label class="fl">No. PO <span class="rq">*</span></label><input class="fc" id="mdl-po-no" placeholder="PO-2026-XXX"></div>
+      <div class="fg"><label class="fl">Supplier <span class="rq">*</span></label><select class="fc" id="mdl-po-supplier"></select></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Tgl. PO</label><input class="fc" id="mdl-po-tgl" type="date"></div>
+      <div class="fg"><label class="fl">Jatuh Tempo</label><input class="fc" id="mdl-po-jt" type="date"></div>
+    </div>
+    <div class="fg"><label class="fl">Keterangan</label><textarea class="fc" id="mdl-po-ket" rows="2" placeholder="Catatan PO..."></textarea></div>
+    <div style="margin:16px 0 8px;font-weight:700;font-size:14px">Item Obat</div>
+    <div id="po-items-container"></div>
+    <button class="btn btn-o btn-xs" onclick="addPoItemRow()">+ Tambah Item</button>
+    <div style="margin-top:12px;text-align:right;font-size:16px;font-weight:700">Total: <span id="po-total-display">Rp 0</span></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-po')">Batal</button><button class="btn btn-p" onclick="submitPO()">💾 Simpan PO</button></div>
+</div></div>
+
+<!-- ===== MODAL PO DETAIL ===== -->
+<div class="ov" id="mdl-po-detail"><div class="modal" style="max-width:650px">
+  <div class="mh"><div class="mt">📋 Detail PO</div><button class="mc" onclick="hideM('mdl-po-detail')">✕</button></div>
+  <div class="mb" id="mdl-po-detail-body">
+    <div id="po-detail-info" style="margin-bottom:16px"></div>
+    <div id="po-detail-items"></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-po-detail')">Tutup</button><button class="btn btn-p" id="btn-terima-po" style="display:none" onclick="terimaPO()">📥 Terima Barang</button></div>
+</div></div>
+
+<!-- ===== MODAL TARIF ===== -->
+<div class="ov" id="mdl-tarif"><div class="modal" style="max-width:500px">
+  <div class="mh"><div class="mt">💰 Tambah/Edit Tarif</div><button class="mc" onclick="hideM('mdl-tarif')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-tarif-id">
+    <div class="fr"><div class="fg"><label class="fl">Kode Tarif <span class="rq">*</span></label><input class="fc" id="mdl-tarif-kode" placeholder="TD-XXX"></div>
+    <div class="fg"><label class="fl">Kategori</label><select class="fc" id="mdl-tarif-kategori"><option>Konsultasi</option><option>Tindakan</option><option>Diagnostik</option><option>Laboratorium</option><option>Rawat Inap</option><option>Operasi</option><option>Farmasi</option></select></div></div>
+    <div class="fg"><label class="fl">Nama Tindakan <span class="rq">*</span></label><input class="fc" id="mdl-tarif-nama" placeholder="e.g. Pemeriksaan Dokter Umum"></div>
+    <div class="fg"><label class="fl">Harga (Rp) <span class="rq">*</span></label><input class="fc" id="mdl-tarif-harga" type="number" min="0" placeholder="0"></div>
+    <div class="fg"><label class="fl">Poli Terkait</label><select class="fc" id="mdl-tarif-poli"><option value="">— Semua Poli —</option></select></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-tarif')">Batal</button><button class="btn btn-p" onclick="submitTarif()">✅ Simpan</button></div>
+</div></div>
+
+<!-- ===== MODAL ICD-10 ===== -->
+<div class="ov" id="mdl-icd"><div class="modal" style="max-width:500px">
+  <div class="mh"><div class="mt">📖 Tambah/Edit ICD-10</div><button class="mc" onclick="hideM('mdl-icd')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-icd-id">
+    <div class="fr"><div class="fg"><label class="fl">Kode ICD <span class="rq">*</span></label><input class="fc" id="mdl-icd-kode" placeholder="e.g. I10"></div>
+    <div class="fg"><label class="fl">Kategori</label><select class="fc" id="mdl-icd-kategori"><option>Kardiovaskular</option><option>Respirasi</option><option>Endokrin</option><option>Nefrologi</option><option>Gastroenterologi</option><option>Muskuloskeletal</option><option>Kebidanan</option><option>Perinatologi</option><option>Umum</option><option>Lainnya</option></select></div></div>
+    <div class="fg"><label class="fl">Nama Penyakit <span class="rq">*</span></label><input class="fc" id="mdl-icd-nama" placeholder="e.g. Essential hypertension"></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-icd')">Batal</button><button class="btn btn-p" onclick="submitIcd()">✅ Simpan</button></div>
+</div></div>
+
+<!-- ===== MODAL KATEGORI OBAT ===== -->
+<div class="ov" id="mdl-katobat"><div class="modal" style="max-width:420px">
+  <div class="mh"><div class="mt">💊 Tambah/Edit Kategori Obat</div><button class="mc" onclick="hideM('mdl-katobat')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-katobat-id">
+    <div class="fg"><label class="fl">Nama Kategori <span class="rq">*</span></label><input class="fc" id="mdl-katobat-nama" placeholder="e.g. Tablet"></div>
+    <div class="fg"><label class="fl">Deskripsi</label><input class="fc" id="mdl-katobat-desk" placeholder="Deskripsi kategori..."></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-katobat')">Batal</button><button class="btn btn-p" onclick="submitKatObat()">✅ Simpan</button></div>
+</div></div>
+
+<!-- ===== MODAL DAFTAR PASIEN ===== -->
+<div class="ov" id="mdl-daftar">
+  <div class="modal">
+    <div class="mh"><div class="mt">📋 Daftarkan Pasien Baru</div><button class="mc" onclick="hideM('mdl-daftar')">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Pilih Penjamin</label><div class="pj-bar">
+        <div class="pj active" onclick="selectPenjamin('Umum', this)">UMUM</div>
+        <div class="pj" onclick="selectPenjamin('BPJS', this)">BPJS</div>
+        <div class="pj" onclick="selectPenjamin('Asuransi', this)">ASURANSI</div>
+      </div></div>
+
+      <!-- Toggle: Cari Existing vs Input Baru -->
+      <div class="tg" style="margin-bottom:11px">
+        <button class="tgb active" id="tg-daftar-baru" onclick="swTabDaftar('baru')">➕ Pasien Baru</button>
+        <button class="tgb" id="tg-daftar-cari" onclick="swTabDaftar('cari')">🔍 Cari Existing</button>
+      </div>
+
+      <!-- TAB: INPUT PASIEN BARU -->
+      <div id="daftar-tab-baru">
+        <div class="fr">
+          <div class="fg"><label class="fl">Nama Lengkap <span style="color:var(--danger)">*</span></label><input id="reg-nama" class="fc" placeholder="Nama pasien..." required></div>
+          <div class="fg"><label class="fl">NIK</label><input id="reg-nik" class="fc" placeholder="16 digit NIK"></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label class="fl">Jenis Kelamin</label>
+            <select id="reg-jk" class="fc">
+              <option value="">— Pilih —</option>
+              <option value="L">Laki-laki</option>
+              <option value="P">Perempuan</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Tanggal Lahir</label><input id="reg-tgl-lahir" class="fc" type="date"></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label class="fl">Alamat</label><input id="reg-alamat" class="fc" placeholder="Alamat lengkap"></div>
+          <div class="fg"><label class="fl">No. HP</label><input id="reg-hp" class="fc" placeholder="08xxxxxxxxxx"></div>
+        </div>
+      </div>
+
+      <!-- TAB: CARI EXISTING -->
+      <div id="daftar-tab-cari" style="display:none">
+        <div class="fg"><label class="fl">Data Pasien</label>
+          <div style="display:flex;gap:7px;margin-bottom:10px"><input id="reg-name" class="fc" placeholder="Nama / NIK / No.RM..."><button class="btn btn-p btn-sm" onclick="searchPatient()">🔍 Cari</button></div>
+          <div id="search-result" style="display:none; background:var(--bg);border-radius:8px;padding:11px;margin-bottom:13px;font-size:12px">
+            <div style="font-weight:700;margin-bottom:7px;color:var(--text-muted)">DATA DITEMUKAN</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+              <div><span style="color:var(--text-muted)">Nama:</span> <strong id="res-name"></strong></div>
+              <div><span style="color:var(--text-muted)">No.RM:</span> <strong id="res-rm"></strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fr">
+        <div class="fg"><label class="fl">Poli Tujuan <span style="color:var(--danger)">*</span></label><select id="reg-poli" class="fc" onchange="loadDoctorOptions(this.value)"><option value="">— Pilih Poli —</option></select></div>
+        <div class="fg"><label class="fl">Dokter</label><select id="reg-dokter" class="fc"><option value="">— Pilih Dokter —</option></select></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Jadwal</label><select class="fc"><option>Siang 13:00 – 15:00</option></select></div>
+        <div class="fg"><label class="fl">Catatan</label><input id="reg-catatan" class="fc" placeholder="Opsional..."></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-daftar')">Batal</button>
+      <button class="btn btn-p" onclick="submitRegistration()">✅ Daftar &amp; Ambil Nomor Antrian</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL EMR ===== -->
+<div class="ov" id="mdl-emr">
+  <div class="modal modal-lg">
+    <div class="mh"><div class="mt" id="mdl-emr-title">📝 Input EMR</div><button class="mc" onclick="hideM('mdl-emr')">✕</button></div>
+    <div class="mb">
+      <div class="ib2 suc">✅ Pasien sudah dipanggil. Silakan isi rekam medis.</div>
+      <div class="vg">
+        <div class="vb"><div style="font-size:17px">🩸</div><div class="vv">120/80</div><div class="vu">mmHg</div><div class="vl">TD</div></div>
+        <div class="vb"><div style="font-size:17px">💓</div><div class="vv">82</div><div class="vu">bpm</div><div class="vl">Nadi</div></div>
+        <div class="vb"><div style="font-size:17px">🌡️</div><div class="vv">36,8°C</div><div class="vu">Suhu</div><div class="vl">Suhu</div></div>
+        <div class="vb"><div style="font-size:17px">🫁</div><div class="vv">98%</div><div class="vu">SpO₂</div><div class="vl">Oksigen</div></div>
+      </div>
+      <div class="fg"><label class="fl">Keluhan Utama</label><textarea class="fc">Dada terasa berdebar, sesak nafas sejak 2 hari</textarea></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Diagnosis (ICD-10)</label><input class="fc" value="I10 — Essential hypertension"></div>
+        <div class="fg"><label class="fl">Tindakan</label><input class="fc" placeholder="Terapi, observasi..."></div>
+      </div>
+      <div class="fg"><label class="fl">Rencana / Instruksi</label><textarea class="fc">Lanjut obat antihipertensi, kontrol 2 minggu lagi</textarea></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-emr')">Batal</button>
+      <button class="btn btn-w">💊 Resepkan Obat</button>
+      <button class="btn btn-p" onclick="hideM('mdl-emr')">✅ Simpan &amp; Selesai</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL TRANSAKSI BARU (KASIR) ===== -->
+<div class="ov" id="mdl-transaksi">
+  <div class="modal" style="max-width:520px">
+    <div class="mh"><div class="mt">💳 Transaksi Pembayaran Baru</div><button class="mc" onclick="hideM('mdl-transaksi')">✕</button></div>
+    <div class="mb" id="mdl-transaksi-body">
+      <div class="ib2 warn">📋 Isi data transaksi</div>
+      <div class="fg"><label class="fl">Pasien</label>
+        <select class="fc" id="trx-pasien"><option value="">— Pilih Pasien —</option></select>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">No. Reg</label><input class="fc" id="trx-no-reg" placeholder="REG-XXX" /></div>
+        <div class="fg"><label class="fl">Penjamin</label>
+          <select class="fc" id="trx-penjamin"><option value="Umum">Umum</option><option value="BPJS">BPJS</option><option value="Asuransi">Asuransi</option></select>
+        </div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Total Tagihan</label><input class="fc" id="trx-total" type="number" placeholder="0" /></div>
+        <div class="fg"><label class="fl">Metode</label>
+          <select class="fc" id="trx-metode"><option value="Tunai">Tunai</option><option value="Transfer">Transfer</option><option value="QRIS">QRIS</option><option value="BPJS">BPJS</option><option value="Asuransi">Asuransi</option></select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Jumlah Bayar</label><input class="fc" id="trx-bayar" type="number" placeholder="0" /></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-transaksi')">Batal</button>
+      <button class="btn btn-p" onclick="submitTransaksi()">✅ Proses Bayar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL TAGIHAN ===== -->
+<div class="ov" id="mdl-tagihan">
+  <div class="modal" style="max-width:520px">
+    <div class="mh"><div class="mt">📋 Buat Tagihan Baru</div><button class="mc" onclick="hideM('mdl-tagihan')">✕</button></div>
+    <div class="mb">
+      <div class="ib2 warn">📋 Isi data tagihan</div>
+      <div class="fg"><label class="fl">Pasien</label>
+        <select class="fc" id="tag-pasien"><option value="">— Pilih Pasien —</option></select>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">No. Tagihan</label><input class="fc" id="tag-no" placeholder="INV-XXX" /></div>
+        <div class="fg"><label class="fl">Penjamin</label>
+          <select class="fc" id="tag-penjamin"><option value="BPJS">BPJS</option><option value="Asuransi">Asuransi</option><option value="Umum">Umum</option></select>
+        </div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Total Tagihan</label><input class="fc" id="tag-total" type="number" placeholder="0" /></div>
+        <div class="fg"><label class="fl">Jatuh Tempo</label><input class="fc" id="tag-jatuh-tempo" type="date" /></div>
+      </div>
+      <div class="fg"><label class="fl">Keterangan</label><textarea class="fc" id="tag-keterangan" rows="2" placeholder="Catatan tagihan..."></textarea></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-tagihan')">Batal</button>
+      <button class="btn btn-p" onclick="submitTagihan()">✅ Buat Tagihan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL JADWAL OPERASI ===== -->
+<div class="ov" id="mdl-operasi">
+  <div class="modal" style="max-width:520px">
+    <div class="mh"><div class="mt">🩺 Tambah Jadwal Operasi</div><button class="mc" onclick="hideM('mdl-operasi')">✕</button></div>
+    <div class="mb" id="mdl-operasi-body">
+      <div class="ib2 warn">📋 Isi detail jadwal operasi baru</div>
+      <div class="fg"><label class="fl">Pasien</label>
+        <select class="fc" id="ok-pasien"><option value="">— Pilih Pasien —</option></select>
+      </div>
+      <div class="fg"><label class="fl">No. Operasi</label><input class="fc" id="ok-no" placeholder="Contoh: OK-240517-001" /></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Kamar OK</label>
+          <select class="fc" id="ok-kamar"><option value="OK 1">OK 1</option><option value="OK 2">OK 2</option><option value="OK 3">OK 3</option></select>
+        </div>
+        <div class="fg"><label class="fl">Klasifikasi</label>
+          <select class="fc" id="ok-klasifikasi"><option value="Elektif">Elektif</option><option value="Elektif Mayor">Elektif Mayor</option><option value="Cito Mayor">Cito Mayor</option><option value="Cito Minor">Cito Minor</option></select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Tindakan</label><input class="fc" id="ok-tindakan" placeholder="Contoh: Laparascopy Kolesistektomi" /></div>
+      <div class="fg"><label class="fl">Diagnosa</label><input class="fc" id="ok-diagnosa" placeholder="Contoh: Cholelithiasis" /></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Dokter Operator</label><input class="fc" id="ok-operator" placeholder="Dr. Sp.B" /></div>
+        <div class="fg"><label class="fl">Dokter Anastesi</label><input class="fc" id="ok-anastesi" placeholder="Dr. Sp.An" /></div>
+      </div>
+      <div class="fg"><label class="fl">Waktu Mulai</label><input class="fc" type="datetime-local" id="ok-mulai" /></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-operasi')">Batal</button>
+      <button class="btn btn-p" onclick="submitOperasi()">✅ Simpan Jadwal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL RETUR OBAT ===== -->
+<div class="ov" id="mdl-retur">
+  <div class="modal" style="max-width:460px">
+    <div class="mh"><div class="mt">↩️ Retur Obat Baru</div><button class="mc" onclick="hideM('mdl-retur')">✕</button></div>
+    <div class="mb">
+      <div class="ib2 warn">📋 Isi detail retur obat</div>
+      <div class="fg"><label class="fl">Pasien</label>
+        <select class="fc" id="retur-pasien">
+          <option value="Ahmad Fauzi">Ahmad Fauzi</option>
+          <option value="Budi Santoso">Budi Santoso</option>
+          <option value="Siti Rahayu">Siti Rahayu</option>
+          <option value="Hendra Kusuma">Hendra Kusuma</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Nama Obat</label><input class="fc" id="retur-obat" placeholder="Contoh: Metformin 500mg" /></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Jumlah</label><input class="fc" id="retur-jumlah" placeholder="10 tab / 2 vial" /></div>
+        <div class="fg"><label class="fl">Kondisi Obat</label>
+          <select class="fc" id="retur-kondisi">
+            <option value="Rusak">Rusak</option>
+            <option value="Kadaluwarsa">Kadaluwarsa</option>
+            <option value="Pasien Pulang">Pasien Pulang</option>
+            <option value="Obat Diganti">Obat Diganti</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Alasan Retur</label><textarea class="fc" id="retur-alasan" rows="2" placeholder="Alasan pengembalian..."></textarea></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-retur')">Batal</button>
+      <button class="btn btn-p" onclick="submitRetur()">✅ Ajukan Retur</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL REGISTRASI LAB ===== -->
+<div class="ov" id="mdl-lab-reg">
+  <div class="modal" style="max-width:540px">
+    <div class="mh"><div class="mt">🧪 Registrasi Lab Baru</div><button class="mc" onclick="hideM('mdl-lab-reg')">✕</button></div>
+    <div class="mb">
+      <div class="ib2 suc">📋 Registrasi pemeriksaan laboratorium</div>
+      <div class="fg">
+        <label class="fl">🔍 Cari Pasien</label>
+        <div style="display:flex;gap:6px">
+          <input class="fc" id="lab-search-input" placeholder="Nama / No.RM / NIK..." style="flex:1">
+          <button class="btn btn-p" onclick="searchLabPatient()">Cari</button>
+        </div>
+        <div id="lab-search-results" style="margin-top:6px"></div>
+      </div>
+      <div class="fg"><label class="fl">Pasien Terpilih</label><div id="lab-selected-patient" class="fc" style="background:var(--bg);cursor:default">—</div></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Asal</label>
+          <select class="fc" id="lab-asal">
+            <option value="RJ">Rawat Jalan</option>
+            <option value="RI">Rawat Inap</option>
+            <option value="UGD">UGD</option>
+            <option value="Rujukan">Rujukan</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Jenis Pemeriksaan</label>
+          <div id="lab-checkbox-group" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px">
+            <label><input type="checkbox" value="Darah Lengkap"> Darah Lengkap</label>
+            <label><input type="checkbox" value="GDS"> GDS</label>
+            <label><input type="checkbox" value="SGOT/SGPT"> SGOT/SGPT</label>
+            <label><input type="checkbox" value="Kolesterol"> Kolesterol</label>
+            <label><input type="checkbox" value="HbA1c"> HbA1c</label>
+            <label><input type="checkbox" value="Widal"> Widal</label>
+            <label><input type="checkbox" value="Urine"> Urine</label>
+            <label><input type="checkbox" value="Feses"> Feses</label>
+          </div>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Catatan</label><textarea class="fc" id="lab-catatan" rows="2" placeholder="Catatan tambahan..."></textarea></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-lab-reg')">Batal</button>
+      <button class="btn btn-p" id="btn-lab-submit" onclick="submitLabReg()">✅ Daftarkan Pemeriksaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL REGISTRASI RADIOLOGI ===== -->
+<div class="ov" id="mdl-rad-reg">
+  <div class="modal" style="max-width:520px">
+    <div class="mh"><div class="mt">🔬 Registrasi Radiologi Baru</div><button class="mc" onclick="hideM('mdl-rad-reg')">✕</button></div>
+    <div class="mb">
+      <div class="ib2 suc">📋 Registrasi pemeriksaan radiologi</div>
+      <div class="fg">
+        <label class="fl">🔍 Cari Pasien</label>
+        <div style="display:flex;gap:6px">
+          <input class="fc" id="rad-search-input" placeholder="Nama / No.RM..." style="flex:1">
+          <button class="btn btn-p" onclick="searchRadPatient()">Cari</button>
+        </div>
+        <div id="rad-search-results" style="margin-top:6px"></div>
+      </div>
+      <div class="fg"><label class="fl">Pasien Terpilih</label><div id="rad-selected-patient" class="fc" style="background:var(--bg);cursor:default">—</div></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Asal</label>
+          <select class="fc" id="rad-asal">
+            <option value="RJ">Rawat Jalan</option>
+            <option value="RI">Rawat Inap</option>
+            <option value="UGD">UGD</option>
+            <option value="Rujukan">Rujukan</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Jenis Pemeriksaan</label>
+          <select class="fc" id="rad-jenis">
+            <option value="X-Ray Thoraks">X-Ray Thoraks</option>
+            <option value="X-Ray Abdomen">X-Ray Abdomen</option>
+            <option value="USG Abdomen">USG Abdomen</option>
+            <option value="USG Kandungan">USG Kandungan</option>
+            <option value="CT Scan Kepala">CT Scan Kepala</option>
+            <option value="CT Scan Abdomen">CT Scan Abdomen</option>
+            <option value="MRI">MRI</option>
+            <option value="Mammografi">Mammografi</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Catatan Klinis</label><textarea class="fc" id="rad-catatan" rows="2" placeholder="Indikasi pemeriksaan..."></textarea></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-rad-reg')">Batal</button>
+      <button class="btn btn-p" id="btn-rad-submit" onclick="submitRadReg()">✅ Daftarkan Pemeriksaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL DETAIL ===== -->
+<div class="ov" id="mdl-detail">
+  <div class="modal modal-lg" style="max-width:600px">
+    <div class="mh"><div class="mt" id="dtl-title">🔍 Detail</div><button class="mc" onclick="hideM('mdl-detail')">✕</button></div>
+    <div class="mb" id="dtl-body" style="font-size:13px">
+      <div style="padding:20px;text-align:center;color:var(--text-muted)">⏳ Memuat...</div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-detail')">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PENERIMAAN STOK OBAT MODAL ===== -->
+<div class="ov" id="mdl-penerimaan-stok">
+  <div class="modal" style="max-width:500px">
+    <div class="mh"><div class="mt">📦 Penerimaan Stok Obat</div><button class="mc" onclick="hideM('mdl-penerimaan-stok')">✕</button></div>
+    <div class="mb">
+      <div class="gform" style="display:grid;gap:10px">
+        <div>
+          <label class="fl">Cari Obat</label>
+          <div style="display:flex;gap:6px">
+            <input class="fc" id="ps-search-input" placeholder="Nama obat / kode..." style="flex:1" onkeydown="if(event.key==='Enter')searchObatPenerimaan()">
+            <button class="btn btn-p" onclick="searchObatPenerimaan()">🔍 Cari</button>
+          </div>
+          <div id="ps-search-results" style="margin-top:6px"></div>
+        </div>
+        <div class="fg"><label class="fl">Obat Terpilih</label><div id="ps-obat-terpilih" class="fc" style="background:var(--bg);cursor:default">—</div></div>
+        <input type="hidden" id="ps-obat-id" />
+        <div class="fr">
+          <div class="fg"><label class="fl">Jumlah Diterima</label><input class="fc" id="ps-qty" type="number" min="0" placeholder="0" /></div>
+          <div class="fg"><label class="fl">Harga Satuan Baru</label><input class="fc" id="ps-harga" type="number" min="0" placeholder="Biarkan kosong jika tidak berubah" /></div>
+        </div>
+        <div class="fg"><label class="fl">Tanggal Expired</label><input class="fc" id="ps-expired" type="date" /></div>
+        <div class="fg"><label class="fl">Keterangan</label><input class="fc" id="ps-keterangan" placeholder="No. batch / supplier / invoice..." /></div>
+      </div>
+    </div>
+    <div class="mf" style="display:flex;gap:6px">
+      <button class="btn btn-o" onclick="hideM('mdl-penerimaan-stok')">Batal</button>
+      <button class="btn btn-p" style="flex:1" onclick="submitPenerimaanStok()">📦 Simpan Penerimaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADMIT PASIEN MODAL ===== -->
+<div class="ov" id="mdl-admit">
+  <div class="modal" style="max-width:550px">
+    <div class="mh"><div class="mt">➕ Admit Pasien Rawat Inap</div><button class="mc" onclick="hideM('mdl-admit')">✕</button></div>
+    <div class="mb">
+      <div class="gform" style="display:grid;gap:10px">
+        <div>
+          <label>Cari Pasien</label>
+          <div style="display:flex;gap:6px">
+            <input id="admit-search" placeholder="Nama / No.RM..." style="flex:1" onkeydown="if(event.key==='Enter')searchAdmitPatient()">
+            <button class="btn btn-p" onclick="searchAdmitPatient()">🔍 Cari</button>
+          </div>
+          <div id="admit-search-result" style="margin-top:6px;display:none"></div>
+        </div>
+        <div>
+          <label>Kamar / Bed</label>
+          <select id="admit-bed" class="fi"></select>
+        </div>
+        <div>
+          <label>DPJP</label>
+          <select id="admit-dpjp" class="fi"></select>
+        </div>
+        <div>
+          <label>Diagnosa</label>
+          <textarea id="admit-diagnosa" class="fi" rows="2" placeholder="Diagnosa masuk..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-admit')">Batal</button>
+      <button class="btn btn-p" onclick="submitAdmit()" id="btn-admit-submit" disabled>✅ Konfirmasi Admit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DISCHARGE PASIEN MODAL ===== -->
+<div class="ov" id="mdl-discharge">
+  <div class="modal" style="max-width:480px">
+    <div class="mh"><div class="mt">🏥 Pulangkan Pasien</div><button class="mc" onclick="hideM('mdl-discharge')">✕</button></div>
+    <div class="mb">
+      <div class="gform" style="display:grid;gap:10px">
+        <div style="background:var(--bg);padding:10px;border-radius:7px">
+          <div style="font-size:12px;color:var(--text-muted)">Pasien</div>
+          <div id="dc-nama" style="font-size:16px;font-weight:700">—</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:var(--bg);padding:10px;border-radius:7px">
+            <div style="font-size:11px;color:var(--text-muted)">No. Registrasi</div>
+            <div id="dc-no-reg" class="mono" style="font-weight:600">—</div>
+          </div>
+          <div style="background:var(--bg);padding:10px;border-radius:7px">
+            <div style="font-size:11px;color:var(--text-muted)">Kamar</div>
+            <div id="dc-kamar" style="font-weight:600">—</div>
+          </div>
+        </div>
+        <div>
+          <label>Tanggal Pulang</label>
+          <input type="date" id="dc-tanggal" class="fi" value="">
+        </div>
+        <div>
+          <label>Diagnosa Akhir</label>
+          <textarea id="dc-diagnosa" class="fi" rows="2" placeholder="Diagnosa akhir / ringkasan pulang..."></textarea>
+        </div>
+        <div>
+          <label>Status Pulang</label>
+          <select id="dc-status" class="fi">
+            <option value="Sembuh">✅ Sembuh / Diijinkan Pulang</option>
+            <option value="Rujuk">🔄 Dirujuk</option>
+            <option value="APS">📋 Atas Permintaan Sendiri</option>
+            <option value="Meninggal">⚠️ Meninggal</option>
+            <option value="Lari">🏃 Lari / Kabur</option>
+          </select>
+        </div>
+        <div>
+          <label>Catatan</label>
+          <textarea id="dc-catatan" class="fi" rows="2" placeholder="Catatan tambahan..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-discharge')">Batal</button>
+      <button class="btn btn-d" onclick="submitDischarge()" id="btn-dc-submit">✅ Konfirmasi Pulang</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== UGD PASIENT MODAL ===== -->
+<div class="ov" id="mdl-ugd">
+  <div class="modal" style="max-width:520px">
+    <div class="mh"><div class="mt">🚨 Input Pasien UGD Baru</div><button class="mc" onclick="hideM('mdl-ugd')">✕</button></div>
+    <div class="mb">
+      <div class="gform" style="display:grid;gap:10px">
+        <div>
+          <label>Cari Pasien</label>
+          <div style="display:flex;gap:6px">
+            <input id="ugd-search" placeholder="Nama / No.RM..." style="flex:1" onkeydown="if(event.key==='Enter')searchUGDPatient()">
+            <button class="btn btn-d" onclick="searchUGDPatient()">🔍 Cari</button>
+          </div>
+          <div id="ugd-search-result" style="margin-top:6px;display:none"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <label>Triase</label>
+            <select id="ugd-triase" class="fi">
+              <option value="Merah">🔴 Merah (Resusitasi)</option>
+              <option value="Kuning">🟡 Kuning (Urgent)</option>
+              <option value="Hijau" selected>🟢 Hijau (Non-Urgent)</option>
+              <option value="Hitam">⚫ Hitam (Meninggal)</option>
+            </select>
+          </div>
+          <div>
+            <label>Dokter</label>
+            <select id="ugd-dokter" class="fi"></select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:8px">
+          <div>
+            <label>GCS</label>
+            <input id="ugd-gcs" class="fi" placeholder="15">
+          </div>
+          <div>
+            <label>TD (mmHg)</label>
+            <input id="ugd-td" class="fi" placeholder="120/80">
+          </div>
+          <div>
+            <label>Nadi (/mnt)</label>
+            <input id="ugd-nadi" class="fi" placeholder="82">
+          </div>
+        </div>
+        <div>
+          <label>Keluhan</label>
+          <textarea id="ugd-keluhan" class="fi" rows="2" placeholder="Keluhan utama..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-ugd')">Batal</button>
+      <button class="btn btn-p" onclick="submitUGD()">✅ Daftarkan Pasien UGD</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL TAMBAH DOKTER ===== -->
+<div class="ov" id="mdl-add-dokter">
+  <div class="modal" style="max-width:480px">
+    <div class="mh"><div class="mt">👨‍⚕️ Tambah Dokter Baru</div><button class="mc" onclick="hideM('mdl-add-dokter')">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Nama Dokter <span class="rq">*</span></label><input class="fc" id="dr-nama" placeholder="Nama lengkap dokter"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Spesialis</label><input class="fc" id="dr-spesialis" placeholder="e.g. Penyakit Dalam"></div>
+        <div class="fg"><label class="fl">Poli <span class="rq">*</span></label><select class="fc" id="dr-poli"><option value="">— Pilih Poli —</option></select></div>
+      </div>
+      <div class="fg"><label class="fl">Jadwal Praktik</label><input class="fc" id="dr-jadwal" placeholder="e.g. 08:00-15:00"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">No. SIP</label><input class="fc" id="dr-sip" placeholder="Surat Izin Praktik"></div>
+        <div class="fg"><label class="fl">No. STR</label><input class="fc" id="dr-str" placeholder="Surat Tanda Registrasi"></div>
+      </div>
+      <div class="fg"><label class="fl">Telepon</label><input class="fc" id="dr-telp" placeholder="No. telepon"></div>
+    </div>
+    <div class="mf" style="justify-content:flex-end">
+      <button class="btn btn-o" onclick="hideM('mdl-add-dokter')">Batal</button>
+      <button class="btn btn-p" onclick="submitAddDokter()">✅ Simpan Dokter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL TAMBAH KARYAWAN ===== -->
+<div class="ov" id="mdl-add-karyawan">
+  <div class="modal" style="max-width:460px">
+    <div class="mh"><div class="mt">👤 Tambah Akun Karyawan</div><button class="mc" onclick="hideM('mdl-add-karyawan')">✕</button></div>
+    <div class="mb">
+      <div class="fr">
+        <div class="fg"><label class="fl">Username <span class="rq">*</span></label><input class="fc" id="kar-username" placeholder="login username"></div>
+        <div class="fg"><label class="fl">Password <span class="rq">*</span></label><input class="fc" id="kar-password" type="password" placeholder="password"></div>
+      </div>
+      <div class="fg"><label class="fl">Nama Lengkap <span class="rq">*</span></label><input class="fc" id="kar-nama" placeholder="Nama lengkap karyawan"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Role <span class="rq">*</span></label><select class="fc" id="kar-role"><option value="">— Pilih Role —</option><option value="Administrator">Administrator</option><option value="Kasir">Kasir</option><option value="Apoteker">Apoteker</option><option value="Petugas">Petugas</option></select></div>
+        <div class="fg"><label class="fl">Unit</label><select class="fc" id="kar-unit"><option value="">— Pilih Unit —</option><option value="Semua">Semua</option><option value="Pendaftaran">Pendaftaran</option><option value="Kasir">Kasir</option><option value="Farmasi">Farmasi</option><option value="Laboratorium">Laboratorium</option><option value="Radiologi">Radiologi</option></select></div>
+      </div>
+    </div>
+    <div class="mf" style="justify-content:flex-end">
+      <button class="btn btn-o" onclick="hideM('mdl-add-karyawan')">Batal</button>
+      <button class="btn btn-p" onclick="submitAddKaryawan()">✅ Simpan Karyawan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL PERMINTAAN MEDIS ===== -->
+<div class="ov" id="mdl-pm-buat"><div class="modal" style="max-width:600px">
+  <div class="mh"><div class="mt">📋 Buat Permintaan Medis</div><button class="mc" onclick="hideM('mdl-pm-buat')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-pm-id">
+    <div class="fr">
+      <div class="fg"><label class="fl">Unit Peminta <span class="rq">*</span></label>
+        <select class="fc" id="mdl-pm-unit">
+          <option value="Apotek">Apotek</option>
+          <option value="Rawat Inap">Rawat Inap</option>
+          <option value="UGD">UGD</option>
+          <option value="Poli Jantung">Poli Jantung</option>
+          <option value="Poli Kandungan">Poli Kandungan</option>
+          <option value="Poli Umum">Poli Umum</option>
+          <option value="Poli Anak">Poli Anak</option>
+          <option value="Poli Penyakit Dalam">Poli Penyakit Dalam</option>
+          <option value="Laboratorium">Laboratorium</option>
+          <option value="Radiologi">Radiologi</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Tanggal</label><input class="fc" id="mdl-pm-tgl" type="date"></div>
+    </div>
+    <div class="fg"><label class="fl">Keterangan</label><textarea class="fc" id="mdl-pm-ket" rows="2" placeholder="Alasan / kebutuhan permintaan..."></textarea></div>
+    <div style="margin:16px 0 8px;font-weight:700;font-size:14px">Item Permintaan</div>
+    <div id="pm-items-container"></div>
+    <button class="btn btn-o btn-xs" onclick="addPMItemRow()">+ Tambah Item</button>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-pm-buat')">Batal</button><button class="btn btn-p" onclick="submitPermintaanMedis()">✅ Simpan Permintaan</button></div>
+</div></div>
+
+<!-- ===== MODAL PROSES PERMINTAAN ===== -->
+<div class="ov" id="mdl-pm-proses"><div class="modal" style="max-width:650px">
+  <div class="mh"><div class="mt">🔄 Proses Permintaan Medis</div><button class="mc" onclick="hideM('mdl-pm-proses')">✕</button></div>
+  <div class="mb" id="mdl-pm-proses-body"></div>
+  <div class="mf">
+    <button class="btn btn-o" onclick="hideM('mdl-pm-proses')">Tutup</button>
+    <button class="btn btn-d" id="btn-pm-tolak" style="display:none" onclick="tolakPermintaanMedis()">✖ Tolak</button>
+    <button class="btn btn-p" id="btn-pm-selesai" onclick="selesaiPermintaanMedis()">✅ Selesai & Kurangi Stok</button>
+  </div>
+</div></div>
+
+<!-- ===== MODAL PENJUALAN ===== -->
+<div class="ov" id="mdl-penjualan"><div class="modal" style="max-width:650px">
+  <div class="mh"><div class="mt">🧾 Transaksi Penjualan Baru</div><button class="mc" onclick="hideM('mdl-penjualan')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-penj-id">
+    <div class="fr">
+      <div class="fg"><label class="fl">Customer</label><input class="fc" id="mdl-penj-customer" value="Umum" placeholder="Nama customer"></div>
+      <div class="fg"><label class="fl">Tanggal</label><input class="fc" id="mdl-penj-tgl" type="date"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Metode Bayar <span class="rq">*</span></label>
+        <select class="fc" id="mdl-penj-metode">
+          <option value="Tunai">Tunai</option>
+          <option value="QRIS">QRIS</option>
+          <option value="Debit">Debit</option>
+          <option value="Transfer">Transfer</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Diskon (Rp)</label><input class="fc" id="mdl-penj-diskon" type="number" min="0" value="0" onchange="penjItemChange()"></div>
+    </div>
+    <div class="fg"><label class="fl">Keterangan</label><input class="fc" id="mdl-penj-ket" placeholder="Catatan transaksi..."></div>
+    <div style="margin:16px 0 8px;font-weight:700;font-size:14px">Item Penjualan</div>
+    <div id="penj-items-container"></div>
+    <button class="btn btn-o btn-xs" onclick="addPenjItemRow()">+ Tambah Item</button>
+    <div style="margin-top:12px;text-align:right;font-size:16px;font-weight:700">Total: <span id="penj-total-display">Rp 0</span></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-penjualan')">Batal</button><button class="btn btn-p" onclick="submitPenjualan()">💰 Bayar</button></div>
+</div></div>
+
+<!-- ===== MODAL DETAIL PENJUALAN ===== -->
+<div class="ov" id="mdl-penjualan-detail"><div class="modal" style="max-width:550px">
+  <div class="mh"><div class="mt">📋 Detail Penjualan</div><button class="mc" onclick="hideM('mdl-penjualan-detail')">✕</button></div>
+  <div class="mb" id="mdl-penj-detail-body"></div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-penjualan-detail')">Tutup</button></div>
+</div></div>
+
+<!-- ===== MODAL LOGISTIK ===== -->
+<div class="ov" id="mdl-logistik-barang"><div class="modal" style="max-width:500px">
+  <div class="mh"><div class="mt">📦 Tambah Barang Logistik</div><button class="mc" onclick="hideM('mdl-logistik-barang')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-log-id">
+    <div class="fr">
+      <div class="fg"><label class="fl">Nama Barang <span class="rq">*</span></label><input class="fc" id="mdl-log-nama" placeholder="Nama barang"></div>
+      <div class="fg"><label class="fl">Kode</label><input class="fc" id="mdl-log-kode" placeholder="Auto"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Kategori <span class="rq">*</span></label>
+        <select class="fc" id="mdl-log-kategori">
+          <option value="ATK">ATK</option>
+          <option value="Kebersihan">Kebersihan</option>
+          <option value="Umum">Umum</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Satuan</label><input class="fc" id="mdl-log-satuan" value="pcs"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Stok Awal</label><input class="fc" id="mdl-log-stok" type="number" min="0" value="0"></div>
+      <div class="fg"><label class="fl">Stok Minimum</label><input class="fc" id="mdl-log-min" type="number" min="0" value="5"></div>
+    </div>
+    <div class="fg"><label class="fl">Keterangan</label><textarea class="fc" id="mdl-log-ket" rows="2"></textarea></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-logistik-barang')">Batal</button><button class="btn btn-p" onclick="submitLogistikBarang()">✅ Simpan</button></div>
+</div></div>
+
+<!-- ===== MODAL LOGISTIK DETAIL + MUTASI ===== -->
+<div class="ov" id="mdl-logistik-detail"><div class="modal" style="max-width:550px">
+  <div class="mh"><div class="mt">📋 Detail Barang</div><button class="mc" onclick="hideM('mdl-logistik-detail')">✕</button></div>
+  <div class="mb">
+    <div id="mdl-log-detail-info" style="margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-p btn-sm" onclick="showLogMutasi('masuk')">📥 Stok Masuk</button>
+      <button class="btn btn-d btn-sm" onclick="showLogMutasi('keluar')">📤 Stok Keluar</button>
+    </div>
+    <div class="fg"><label class="fl">Riwayat Mutasi</label></div>
+    <div id="mdl-log-mutasi-list" style="max-height:250px;overflow-y:auto"></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-logistik-detail')">Tutup</button></div>
+</div></div>
+
+<!-- ===== MODAL LOG MUTASI ===== -->
+<div class="ov" id="mdl-log-mutasi"><div class="modal" style="max-width:450px">
+  <div class="mh"><div class="mt" id="mdl-log-mutasi-title">📥 Stok Masuk</div><button class="mc" onclick="hideM('mdl-log-mutasi')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-log-mutasi-id">
+    <input type="hidden" id="mdl-log-mutasi-tipe">
+    <label class="fl">Jumlah <span class="rq">*</span></label>
+    <input class="fc" id="mdl-log-mutasi-qty" type="number" min="1" value="1">
+    <label class="fl" style="margin-top:8px">Keterangan</label>
+    <textarea class="fc" id="mdl-log-mutasi-ket" rows="2"></textarea>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-log-mutasi')">Batal</button><button class="btn btn-p" onclick="submitLogMutasi()">✅ Simpan</button></div>
+</div></div>
+
+<!-- ===== MODAL JURNAL ===== -->
+<div class="ov" id="mdl-jurnal"><div class="modal" style="max-width:700px">
+  <div class="mh"><div class="mt">📝 Jurnal Baru</div><button class="mc" onclick="hideM('mdl-jurnal')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-jurnal-id">
+    <div class="fr">
+      <div class="fg"><label class="fl">Tanggal <span class="rq">*</span></label><input class="fc" id="mdl-jurnal-tgl" type="date"></div>
+      <div class="fg"><label class="fl">No. Jurnal</label><input class="fc" id="mdl-jurnal-no" placeholder="Auto"></div>
+    </div>
+    <div class="fg"><label class="fl">Keterangan <span class="rq">*</span></label><input class="fc" id="mdl-jurnal-ket" placeholder="Deskripsi jurnal..."></div>
+    <div style="margin:16px 0 8px;font-weight:700;font-size:14px">Entri Debit / Kredit</div>
+    <div id="jurnal-items-container"></div>
+    <button class="btn btn-o btn-xs" onclick="addJurnalItemRow()">+ Tambah Baris</button>
+    <div class="fr" style="margin-top:12px;font-weight:700">
+      <div style="flex:1;text-align:right">Total Debit: <span id="jurnal-total-debit" style="font-family:monospace">Rp 0</span></div>
+      <div style="flex:1;text-align:right">Total Kredit: <span id="jurnal-total-kredit" style="font-family:monospace">Rp 0</span></div>
+    </div>
+    <div id="jurnal-balance-msg" style="text-align:center;margin-top:6px;font-size:13px"></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-jurnal')">Batal</button><button class="btn btn-p" onclick="submitJurnal()">✅ Simpan Jurnal</button></div>
+</div></div>
+
+<!-- ===== MODAL JURNAL DETAIL ===== -->
+<div class="ov" id="mdl-jurnal-detail"><div class="modal" style="max-width:600px">
+  <div class="mh"><div class="mt">📋 Detail Jurnal</div><button class="mc" onclick="hideM('mdl-jurnal-detail')">✕</button></div>
+  <div class="mb" id="mdl-jurnal-detail-body"></div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-jurnal-detail')">Tutup</button></div>
+</div></div>
+
+<!-- ===== MODAL ROLE ===== -->
+<div class="ov" id="mdl-role"><div class="modal" style="max-width:450px">
+  <div class="mh"><div class="mt">➕ Role Baru</div><button class="mc" onclick="hideM('mdl-role')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-role-id">
+    <label class="fl">Nama Role <span class="rq">*</span></label>
+    <input class="fc" id="mdl-role-name" placeholder="Nama role">
+    <label class="fl" style="margin-top:10px">Deskripsi</label>
+    <textarea class="fc" id="mdl-role-desc" rows="2" placeholder="Deskripsi role..."></textarea>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-role')">Batal</button><button class="btn btn-p" onclick="submitRole()">✅ Simpan</button></div>
+</div></div>
+
+<!-- ===== MODAL FIXED ASSET ===== -->
+<div class="ov" id="mdl-fa"><div class="modal" style="max-width:550px">
+  <div class="mh"><div class="mt">🏛️ Aset Baru</div><button class="mc" onclick="hideM('mdl-fa')">✕</button></div>
+  <div class="mb">
+    <input type="hidden" id="mdl-fa-id">
+    <div class="fr">
+      <div class="fg"><label class="fl">Kode Aset <span class="rq">*</span></label><input class="fc" id="mdl-fa-kode" placeholder="ASET-XXX"></div>
+      <div class="fg"><label class="fl">Tanggal Perolehan</label><input class="fc" id="mdl-fa-tgl" type="date"></div>
+    </div>
+    <label class="fl">Nama Aset <span class="rq">*</span></label><input class="fc" id="mdl-fa-nama" placeholder="Nama aset...">
+    <div class="fr">
+      <div class="fg"><label class="fl">Kategori</label><select class="fc" id="mdl-fa-kat"><option>Tanah</option><option>Gedung</option><option>Kendaraan</option><option>Peralatan Medis</option><option>Komputer</option><option>Furniture</option><option>Lainnya</option></select></div>
+      <div class="fg"><label class="fl">Kondisi</label><select class="fc" id="mdl-fa-kondisi"><option>Baik</option><option>Rusak Ringan</option><option>Rusak Berat</option><option>Dihapuskan</option></select></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Harga Perolehan</label><input class="fc" id="mdl-fa-harga" type="number" min="0" placeholder="0"></div>
+      <div class="fg"><label class="fl">Nilai Residu</label><input class="fc" id="mdl-fa-residu" type="number" min="0" placeholder="0"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Umur Manfaat (tahun)</label><input class="fc" id="mdl-fa-umur" type="number" min="1" value="5"></div>
+      <div class="fg"><label class="fl">Lokasi</label><input class="fc" id="mdl-fa-lokasi" placeholder="Lokasi aset..."></div>
+    </div>
+    <label class="fl">Keterangan</label><textarea class="fc" id="mdl-fa-ket" rows="2"></textarea>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="hideM('mdl-fa')">Batal</button><button class="btn btn-p" onclick="submitFixedAsset()">✅ Simpan</button></div>
+</div></div>
+
+</div><!-- end app-shell -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/shared-state.js?v=4"></script>
+<script src="js/index.js?v=71"></script>
+<script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>

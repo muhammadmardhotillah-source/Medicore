@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMR — Rekam Medis Elektronik</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/emr.css">
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-logo">
+    <div class="tb-logo-box">i</div>
+    <div>
+      <div class="tb-logo-name">MediCore — Rekam Medis Elektronik</div>
+      <div class="tb-logo-sub">Edoy Hospital Management</div>
+    </div>
+  </div>
+  <div class="tb-right">
+    <span><span class="sdot"></span>Online</span>
+    <span id="clk-top" style="font-family:'JetBrains Mono',monospace">--:--:--</span>
+    <a href="index.html" class="tb-back">← Kembali ke SIM RS</a>
+  </div>
+</div>
+
+<div class="status-strip">
+  <span><span class="sdot"></span>EMR Aktif</span>
+  <span>Poli: <strong style="color:#fff">Jantung</strong></span>
+  <span>Dokter: <strong style="color:#fff">Dr. Taka Mehi, Sp.JP, FIHA</strong></span>
+  <span>Sesi: <strong style="color:#fff">13:00 – 15:00</strong></span>
+  <span style="margin-left:auto">No. Antrian Dilayani: <strong style="color:#4ade80;font-family:'JetBrains Mono',monospace">T-45</strong></span>
+</div>
+
+<!-- 3 COLUMN LAYOUT -->
+<div class="layout">
+
+  <!-- ======= KIRI: DATA PASIEN ======= -->
+  <div class="panel">
+
+    <!-- Info Pasien -->
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">👤 Identitas Pasien</div>
+          <div class="card-sub">No.Antrian: T-45</div>
+        </div>
+        <span class="b bs">Aktif</span>
+      </div>
+      <div class="card-body">
+        <div class="pasien-header">
+          <div class="pasien-av">RN</div>
+          <div>
+            <div class="pasien-name">Rumiah Ny</div>
+            <div class="pasien-meta">Perempuan • 64 tahun • Gol. Darah: —</div>
+            <div>
+              <span class="pasien-badge" style="background:#dbeeff;color:#073d66">Umum</span>
+              <span class="pasien-badge" style="background:#d1fae5;color:#065f46;margin-left:4px">Kunjungan ke-3</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="info-row"><span class="lbl">No. RM</span><span class="val" style="font-family:'JetBrains Mono',monospace">009001461</span></div>
+          <div class="info-row"><span class="lbl">NIK</span><span class="val" style="font-family:'JetBrains Mono',monospace">3602xxxxxxxxxx</span></div>
+          <div class="info-row"><span class="lbl">Tgl. Lahir</span><span class="val">02 Juni 1958</span></div>
+          <div class="info-row"><span class="lbl">Alamat</span><span class="val" style="max-width:140px;text-align:right;font-size:11px">JL Raya Cilegon KM 08, Kramatwatu</span></div>
+          <div class="info-row"><span class="lbl">No. HP</span><span class="val">085939004395</span></div>
+          <div class="info-row"><span class="lbl">Agama</span><span class="val">Islam</span></div>
+          <div class="info-row"><span class="lbl">Pekerjaan</span><span class="val">Tidak Bekerja/DLL</span></div>
+          <div class="info-row"><span class="lbl">Asuransi</span><span class="val">UMUM</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALERGI -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">⚠️ Alergi & Catatan Khusus</div>
+        <button class="btn btn-o btn-sm">+ Edit</button>
+      </div>
+      <div class="card-body">
+        <div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:7px;padding:8px 11px;font-size:12px;color:#065f46;font-weight:600">
+          ✅ Tidak ada alergi yang diketahui
+        </div>
+        <div style="margin-top:8px">
+          <div class="info-row"><span class="lbl">Riwayat Peny.</span><span class="val">Hipertensi, DM Tipe 2</span></div>
+          <div class="info-row"><span class="lbl">Riwayat Kel.</span><span class="val">Hipertensi (Ayah)</span></div>
+          <div class="info-row"><span class="lbl">Kebiasaan</span><span class="val">Tidak merokok</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TANDA VITAL -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">❤️ Tanda-Tanda Vital</div>
+        <button class="btn btn-p btn-sm" onclick="saveVital()">💾 Simpan</button>
+      </div>
+      <div class="card-body">
+        <div class="vital-grid">
+          <div class="vital-box">
+            <div class="vital-icon">🩸</div>
+            <div class="vital-val"><input class="vital-input" id="v-td" value="120/80"></div>
+            <div class="vital-unit">mmHg</div>
+            <div class="vital-lbl">Tekanan Darah</div>
+            <div class="vital-status-ok" id="vs-td">✓ Normal</div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-icon">💓</div>
+            <div class="vital-val"><input class="vital-input" id="v-nd" value="82"></div>
+            <div class="vital-unit">bpm</div>
+            <div class="vital-lbl">Nadi</div>
+            <div class="vital-status-ok">✓ Normal</div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-icon">🌡️</div>
+            <div class="vital-val"><input class="vital-input" id="v-sh" value="36.8"></div>
+            <div class="vital-unit">°C</div>
+            <div class="vital-lbl">Suhu</div>
+            <div class="vital-status-ok">✓ Normal</div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-icon">🫁</div>
+            <div class="vital-val"><input class="vital-input" id="v-rr" value="20"></div>
+            <div class="vital-unit">x/mnt</div>
+            <div class="vital-lbl">Respirasi</div>
+            <div class="vital-status-ok">✓ Normal</div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-icon">💨</div>
+            <div class="vital-val"><input class="vital-input" id="v-o2" value="98"></div>
+            <div class="vital-unit">%</div>
+            <div class="vital-lbl">SpO₂</div>
+            <div class="vital-status-ok">✓ Normal</div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-icon">🩹</div>
+            <div class="vital-val"><input class="vital-input" id="v-gds" value="142"></div>
+            <div class="vital-unit">mg/dL</div>
+            <div class="vital-lbl">GDS</div>
+            <div class="vital-status-warn" id="vs-gds">⚠ Batas Atas</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">BB (kg)</label>
+            <input class="form-control" value="60" style="text-align:center;font-weight:700">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">TB (cm)</label>
+            <input class="form-control" value="155" style="text-align:center;font-weight:700">
+          </div>
+        </div>
+        <div style="background:var(--bg);border-radius:7px;padding:8px;margin-top:8px;font-size:11px;text-align:center;color:var(--text-muted)">
+          BMI: <strong style="color:var(--primary)">24.97</strong> — Normal
+        </div>
+      </div>
+    </div>
+
+    <!-- RIWAYAT KUNJUNGAN -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">📚 Riwayat Kunjungan</div>
+        <button class="btn btn-o btn-sm">Semua →</button>
+      </div>
+      <div class="tl">
+        <div class="tl-item" onclick="loadRiwayat('2026-04-15')">
+          <div class="tl-dot" style="background:#dbeeff">📋</div>
+          <div class="tl-body">
+            <div class="tl-title">Kontrol Jantung</div>
+            <div class="tl-sub">Dr. Taka Mehi, Sp.JP</div>
+            <div class="tl-date">15 April 2026 — Poli Jantung</div>
+            <div class="tl-dx">I10 — Hipertensi</div>
+          </div>
+        </div>
+        <div class="tl-item" onclick="loadRiwayat('2026-03-12')">
+          <div class="tl-dot" style="background:#d1fae5">💊</div>
+          <div class="tl-body">
+            <div class="tl-title">Kontrol Obat</div>
+            <div class="tl-sub">Dr. Taka Mehi, Sp.JP</div>
+            <div class="tl-date">12 Maret 2026 — Poli Jantung</div>
+            <div class="tl-dx">I10 — Hipertensi</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#fef3c7">🏥</div>
+          <div class="tl-body">
+            <div class="tl-title">Rawat Jalan Pertama</div>
+            <div class="tl-sub">Dr. Taka Mehi, Sp.JP</div>
+            <div class="tl-date">18 Januari 2026 — Poli Jantung</div>
+            <div class="tl-dx">I10 — Hipertensi esensial</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end left panel -->
+
+  <!-- ======= TENGAH: INPUT EMR ======= -->
+  <div class="panel">
+
+    <div class="card" style="flex:1">
+      <div class="card-head" style="position:sticky;top:54px;z-index:20">
+        <div>
+          <div class="card-title">📝 Input Rekam Medis Elektronik</div>
+          <div class="card-sub">SOAP — Subyektif • Obyektif • Asesmen • Plan</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-o btn-sm">💾 Draft</button>
+          <button class="btn btn-p btn-sm" onclick="simpanEMR()">✅ Simpan & Selesai</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="tabs" id="emr-tabs">
+          <div class="tab active" onclick="switchTab(this,'tab-s')"><span class="soap-label soap-s" style="width:20px;height:20px;font-size:10px;margin-right:4px">S</span>Subyektif</div>
+          <div class="tab" onclick="switchTab(this,'tab-o')"><span class="soap-label soap-o" style="width:20px;height:20px;font-size:10px;margin-right:4px">O</span>Obyektif</div>
+          <div class="tab" onclick="switchTab(this,'tab-a')"><span class="soap-label soap-a" style="width:20px;height:20px;font-size:10px;margin-right:4px">A</span>Asesmen</div>
+          <div class="tab" onclick="switchTab(this,'tab-p')"><span class="soap-label soap-p" style="width:20px;height:20px;font-size:10px;margin-right:4px">P</span>Plan</div>
+          <div class="tab" onclick="switchTab(this,'tab-rx')">💊 Resep</div>
+          <div class="tab" onclick="switchTab(this,'tab-surat')">📄 Surat</div>
+        </div>
+
+        <!-- S: SUBYEKTIF -->
+        <div class="tab-content active" id="tab-s">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <div class="soap-label soap-s">S</div>
+            <div style="font-size:13px;font-weight:700">Subyektif — Keluhan Pasien</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Keluhan Utama <span>*</span></label>
+            <textarea class="form-control" id="s-keluhan" placeholder="Keluhan yang mendorong pasien datang berobat...">Dada terasa berdebar-debar dan sesak napas sejak 2 hari yang lalu</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Riwayat Penyakit Sekarang <span>*</span></label>
+            <textarea class="form-control" id="s-rps" placeholder="Onset, kualitas, kuantitas, faktor memperberat/meringankan..." style="min-height:90px">Pasien mengeluh dada berdebar sejak 2 hari yang lalu, terutama saat beraktivitas ringan. Disertai sesak napas ringan. Tidak ada nyeri dada khas. Riwayat HT terkontrol dengan obat rutin.</textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Riwayat Penyakit Dahulu</label>
+              <textarea class="form-control" style="min-height:60px">Hipertensi (5 tahun), DM Tipe 2 (3 tahun)</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Riwayat Keluarga</label>
+              <textarea class="form-control" style="min-height:60px">Ayah: Hipertensi. Ibu: DM.</textarea>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Riwayat Sosial</label>
+              <input class="form-control" value="Tidak merokok, tidak minum alkohol">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Review of System</label>
+              <input class="form-control" placeholder="Keluhan sistem lain...">
+            </div>
+          </div>
+        </div>
+
+        <!-- O: OBYEKTIF -->
+        <div class="tab-content" id="tab-o">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <div class="soap-label soap-o">O</div>
+            <div style="font-size:13px;font-weight:700">Obyektif — Pemeriksaan Fisik</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Keadaan Umum</label>
+            <div class="form-row3">
+              <div>
+                <label class="form-label" style="font-size:10px">KU</label>
+                <select class="form-control"><option>Sedang</option><option>Baik</option><option>Buruk</option></select>
+              </div>
+              <div>
+                <label class="form-label" style="font-size:10px">Kesadaran</label>
+                <select class="form-control"><option>Compos Mentis</option><option>Somnolen</option><option>Stupor</option><option>Koma</option></select>
+              </div>
+              <div>
+                <label class="form-label" style="font-size:10px">GCS</label>
+                <input class="form-control" value="15 (E4V5M6)">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pemeriksaan Kepala & Leher</label>
+            <textarea class="form-control">Kepala: normocephali, tidak ada deformitas. Mata: konjungtiva anemis (-/-), sklera ikterik (-/-). Leher: JVP tidak meningkat, tidak ada pembesaran KGB.</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pemeriksaan Thorax</label>
+            <textarea class="form-control">Jantung: S1 S2 reguler, murmur (-), gallop (-). HR 82x/mnt, irama reguler.&#10;Paru: suara napas vesikuler, ronki (-/-), wheezing (-/-).</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pemeriksaan Abdomen</label>
+            <textarea class="form-control">Datar, supel, BU (+) normal, nyeri tekan (-), hepar lien tidak teraba.</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pemeriksaan Ekstremitas</label>
+            <textarea class="form-control">Akral hangat, CRT < 2 detik, edema (-/-), pulsasi perifer adekuat.</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pemeriksaan Penunjang (jika ada)</label>
+            <textarea class="form-control" placeholder="Hasil lab, EKG, rontgen dari kunjungan ini...">EKG: sinus takikardia HR 82 bpm, tidak ada perubahan ST/T.</textarea>
+          </div>
+        </div>
+
+        <!-- A: ASESMEN -->
+        <div class="tab-content" id="tab-a">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <div class="soap-label soap-a">A</div>
+            <div style="font-size:13px;font-weight:700">Asesmen — Diagnosis</div>
+          </div>
+
+          <!-- DIAGNOSIS UTAMA -->
+          <div class="form-group">
+            <label class="form-label">Diagnosis Utama (ICD-10) <span>*</span></label>
+            <div class="icd-wrap">
+              <input class="form-control" id="icd-utama" value="I10 — Essential (primary) hypertension" onkeyup="searchICD(this,'icd-results-1')" placeholder="Ketik kode atau nama penyakit...">
+              <div class="icd-results" id="icd-results-1">
+                <div class="icd-item" onclick="selectICD('icd-utama','icd-results-1','I10','Essential (primary) hypertension')"><div class="icd-code">I10</div><div class="icd-name">Essential (primary) hypertension</div></div>
+                <div class="icd-item" onclick="selectICD('icd-utama','icd-results-1','I11','Hypertensive heart disease')"><div class="icd-code">I11</div><div class="icd-name">Hypertensive heart disease</div></div>
+                <div class="icd-item" onclick="selectICD('icd-utama','icd-results-1','I50','Heart failure')"><div class="icd-code">I50</div><div class="icd-name">Heart failure</div></div>
+                <div class="icd-item" onclick="selectICD('icd-utama','icd-results-1','I48','Atrial fibrillation and flutter')"><div class="icd-code">I48</div><div class="icd-name">Atrial fibrillation and flutter</div></div>
+                <div class="icd-item" onclick="selectICD('icd-utama','icd-results-1','I25','Chronic ischaemic heart disease')"><div class="icd-code">I25</div><div class="icd-name">Chronic ischaemic heart disease</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DIAGNOSIS SEKUNDER -->
+          <div class="form-group">
+            <label class="form-label">Diagnosis Sekunder / Komorbid</label>
+            <div class="icd-wrap" style="margin-bottom:7px">
+              <input class="form-control" id="icd-sek1" value="E11 — Type 2 diabetes mellitus without complications" onkeyup="searchICD(this,'icd-results-2')" placeholder="Tambah diagnosis sekunder...">
+              <div class="icd-results" id="icd-results-2">
+                <div class="icd-item" onclick="selectICD('icd-sek1','icd-results-2','E11','Type 2 diabetes mellitus without complications')"><div class="icd-code">E11</div><div class="icd-name">Type 2 diabetes mellitus without complications</div></div>
+                <div class="icd-item" onclick="selectICD('icd-sek1','icd-results-2','E78','Disorders of lipoprotein metabolism')"><div class="icd-code">E78</div><div class="icd-name">Disorders of lipoprotein metabolism</div></div>
+                <div class="icd-item" onclick="selectICD('icd-sek1','icd-results-2','Z87','Personal history of other conditions')"><div class="icd-code">Z87</div><div class="icd-name">Personal history of other conditions</div></div>
+              </div>
+            </div>
+            <input class="form-control" placeholder="+ Tambah diagnosis sekunder lainnya...">
+          </div>
+
+          <!-- CATATAN ASESMEN -->
+          <div class="form-group">
+            <label class="form-label">Catatan Asesmen Klinis</label>
+            <textarea class="form-control" style="min-height:90px">Hipertensi grade I terkontrol dengan obat rutin. Berdebar kemungkinan akibat ansietas dan kurang tidur. DM tipe 2 terkompensasi. Perlu kontrol rutin dan optimalisasi gaya hidup.</textarea>
+          </div>
+
+          <!-- SEVERITY -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tingkat Keparahan</label>
+              <select class="form-control">
+                <option>Ringan</option>
+                <option selected>Sedang</option>
+                <option>Berat</option>
+                <option>Mengancam Jiwa</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status Kondisi</label>
+              <select class="form-control">
+                <option selected>Terkontrol</option>
+                <option>Belum Terkontrol</option>
+                <option>Memburuk</option>
+                <option>Membaik</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- P: PLAN -->
+        <div class="tab-content" id="tab-p">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <div class="soap-label soap-p">P</div>
+            <div style="font-size:13px;font-weight:700">Plan — Rencana Tatalaksana</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Rencana Terapi / Pengobatan</label>
+            <textarea class="form-control" style="min-height:80px">1. Lanjutkan Amlodipine 5mg 1x1 pagi&#10;2. Lanjutkan Metformin 500mg 3x1 bersama makan&#10;3. Lanjutkan Bisoprolol 5mg 1x1 pagi&#10;4. Diet rendah garam, rendah lemak, rendah gula</textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tindakan yang Dilakukan</label>
+            <div class="tindakan-list">
+              <div class="tindakan-item">
+                <input type="checkbox" id="t1" checked>
+                <label for="t1">Pemeriksaan fisik lengkap</label>
+              </div>
+              <div class="tindakan-item">
+                <input type="checkbox" id="t2" checked>
+                <label for="t2">EKG (Elektrokardiogram)</label>
+              </div>
+              <div class="tindakan-item">
+                <input type="checkbox" id="t3">
+                <label for="t3">Pemeriksaan laboratorium</label>
+              </div>
+              <div class="tindakan-item">
+                <input type="checkbox" id="t4">
+                <label for="t4">Rontgen thorax</label>
+              </div>
+              <div class="tindakan-item">
+                <input type="checkbox" id="t5">
+                <label for="t5">Echocardiografi</label>
+              </div>
+              <div class="tindakan-item">
+                <input type="checkbox" id="t6" checked>
+                <label for="t6">Konseling & edukasi pasien</label>
+              </div>
+              <div class="tindakan-item">
+                <input type="checkbox" id="t7">
+                <label for="t7">Rujukan ke spesialis lain</label>
+              </div>
+              <div class="tindakan-item">
+                <input type="checkbox" id="t8">
+                <label for="t8">Rawat inap</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Rencana Kontrol</label>
+              <select class="form-control" id="plan-kontrol">
+                <option>2 minggu lagi</option>
+                <option>1 bulan lagi</option>
+                <option>3 bulan lagi</option>
+                <option>Sesuai kebutuhan</option>
+                <option>Tidak perlu kontrol</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cara Pulang</label>
+              <select class="form-control">
+                <option selected>Pulang berobat jalan</option>
+                <option>Rawat inap</option>
+                <option>Rujuk ke RS lain</option>
+                <option>Pulang atas permintaan sendiri</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Edukasi & Instruksi Pasien</label>
+            <textarea class="form-control">• Minum obat rutin sesuai anjuran, jangan dihentikan&#10;• Diet rendah garam (<2g/hari) dan rendah gula&#10;• Olahraga ringan 30 menit/hari (jalan kaki)&#10;• Kontrol tekanan darah di rumah setiap hari&#10;• Segera ke UGD jika sesak berat, nyeri dada, atau pingsan</textarea>
+          </div>
+        </div>
+
+        <!-- RESEP -->
+        <div class="tab-content" id="tab-rx">
+          <div class="drug-search">
+            <input class="form-control" id="drug-search" placeholder="🔍 Cari nama obat..." onkeyup="filterDrug(this.value)">
+            <button class="btn btn-o btn-sm">Filter</button>
+          </div>
+          <div class="drug-list" id="drug-list">
+            <div class="drug-item" onclick="addDrug('Amlodipine 5mg','Tab','Rp 850',240)">
+              <div class="drug-icon">💊</div>
+              <div style="flex:1"><div class="drug-name">Amlodipine 5mg</div><div class="drug-detail">Tablet • Rp 850/tab • Antihipertensi</div></div>
+              <div class="drug-stock" style="color:var(--success)">240 tab</div>
+              <button class="btn btn-p btn-xs" style="margin-left:8px">+</button>
+            </div>
+            <div class="drug-item" onclick="addDrug('Metformin 500mg','Tab','Rp 420',380)">
+              <div class="drug-icon">💊</div>
+              <div style="flex:1"><div class="drug-name">Metformin 500mg</div><div class="drug-detail">Tablet • Rp 420/tab • Antidiabetes</div></div>
+              <div class="drug-stock" style="color:var(--success)">380 tab</div>
+              <button class="btn btn-p btn-xs" style="margin-left:8px">+</button>
+            </div>
+            <div class="drug-item" onclick="addDrug('Bisoprolol 5mg','Tab','Rp 1.200',42)">
+              <div class="drug-icon">💊</div>
+              <div style="flex:1"><div class="drug-name">Bisoprolol 5mg</div><div class="drug-detail">Tablet • Rp 1.200/tab • Beta-blocker</div></div>
+              <div class="drug-stock" style="color:var(--warning)">42 tab ⚠</div>
+              <button class="btn btn-p btn-xs" style="margin-left:8px">+</button>
+            </div>
+            <div class="drug-item" onclick="addDrug('Omeprazole 20mg','Kaps','Rp 680',520)">
+              <div class="drug-icon">💊</div>
+              <div style="flex:1"><div class="drug-name">Omeprazole 20mg</div><div class="drug-detail">Kapsul • Rp 680/kaps • PPI</div></div>
+              <div class="drug-stock" style="color:var(--success)">520 kaps</div>
+              <button class="btn btn-p btn-xs" style="margin-left:8px">+</button>
+            </div>
+            <div class="drug-item" onclick="addDrug('Furosemide 40mg','Tab','Rp 320',180)">
+              <div class="drug-icon">💊</div>
+              <div style="flex:1"><div class="drug-name">Furosemide 40mg</div><div class="drug-detail">Tablet • Rp 320/tab • Diuretik</div></div>
+              <div class="drug-stock" style="color:var(--success)">180 tab</div>
+              <button class="btn btn-p btn-xs" style="margin-left:8px">+</button>
+            </div>
+          </div>
+
+          <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Resep Aktif</div>
+          <div style="overflow-x:auto;margin-bottom:12px">
+            <table class="rx-table" id="rx-table">
+              <thead>
+                <tr>
+                  <th>Nama Obat</th>
+                  <th>Dosis</th>
+                  <th>Frekuensi</th>
+                  <th>Jumlah</th>
+                  <th>Keterangan</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="rx-body">
+                <tr>
+                  <td><strong>Amlodipine 5mg</strong></td>
+                  <td><input class="rx-input" value="1x1" style="width:50px"></td>
+                  <td><select class="rx-input" style="width:90px"><option>Pagi</option><option>Pagi-Siang</option><option>3x sehari</option></select></td>
+                  <td><input class="rx-input" value="30" style="width:40px"> tab</td>
+                  <td><input class="rx-input" value="Setelah makan" style="width:110px"></td>
+                  <td><button class="btn btn-d btn-xs" onclick="this.closest('tr').remove();updateTotal()">✕</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Metformin 500mg</strong></td>
+                  <td><input class="rx-input" value="3x1" style="width:50px"></td>
+                  <td><select class="rx-input" style="width:90px"><option>Pagi</option><option>Pagi-Siang</option><option selected>3x sehari</option></select></td>
+                  <td><input class="rx-input" value="90" style="width:40px"> tab</td>
+                  <td><input class="rx-input" value="Bersama makan" style="width:110px"></td>
+                  <td><button class="btn btn-d btn-xs" onclick="this.closest('tr').remove();updateTotal()">✕</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Bisoprolol 5mg</strong></td>
+                  <td><input class="rx-input" value="1x1" style="width:50px"></td>
+                  <td><select class="rx-input" style="width:90px"><option selected>Pagi</option><option>Pagi-Siang</option><option>3x sehari</option></select></td>
+                  <td><input class="rx-input" value="30" style="width:40px"> tab</td>
+                  <td><input class="rx-input" value="—" style="width:110px"></td>
+                  <td><button class="btn btn-d btn-xs" onclick="this.closest('tr').remove();updateTotal()">✕</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-o" style="flex:1" onclick="cetakResep()">🖨️ Cetak Resep</button>
+            <button class="btn btn-p" style="flex:1" onclick="kirimFarmasi()">✅ Kirim ke Farmasi</button>
+          </div>
+        </div>
+
+        <!-- SURAT -->
+        <div class="tab-content" id="tab-surat">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+            <button class="btn btn-o" style="flex-direction:column;padding:14px;gap:4px;height:auto" onclick="showSurat('kontrol')">
+              <span style="font-size:20px">📅</span>
+              <span style="font-weight:700">Surat Kontrol</span>
+              <span style="font-size:10px;color:var(--text-muted)">Jadwal kontrol berikutnya</span>
+            </button>
+            <button class="btn btn-o" style="flex-direction:column;padding:14px;gap:4px;height:auto" onclick="showSurat('rujukan')">
+              <span style="font-size:20px">📨</span>
+              <span style="font-weight:700">Surat Rujukan</span>
+              <span style="font-size:10px;color:var(--text-muted)">Rujuk ke RS / spesialis lain</span>
+            </button>
+            <button class="btn btn-o" style="flex-direction:column;padding:14px;gap:4px;height:auto" onclick="showSurat('istirahat')">
+              <span style="font-size:20px">🏠</span>
+              <span style="font-weight:700">Surat Istirahat</span>
+              <span style="font-size:10px;color:var(--text-muted)">Surat keterangan sakit</span>
+            </button>
+            <button class="btn btn-o" style="flex-direction:column;padding:14px;gap:4px;height:auto" onclick="showSurat('sehat')">
+              <span style="font-size:20px">✅</span>
+              <span style="font-weight:700">Surat Sehat</span>
+              <span style="font-size:10px;color:var(--text-muted)">Keterangan berbadan sehat</span>
+            </button>
+          </div>
+
+          <div class="print-surat" id="surat-preview">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+              <div style="width:50px;height:50px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff">i</div>
+              <div>
+                <div class="rs-name">EDOY HOSPITAL MANAGEMENT</div>
+                <div class="rs-addr">Jl. Raya Cilegon KM 8, Serang, Banten • Telp: 0254-226000</div>
+              </div>
+            </div>
+            <hr>
+            <div class="surat-title" id="surat-title">SURAT KONTROL</div>
+            <div id="surat-body">
+              <div class="print-row"><span class="lbl">Nama</span><span class="sep">:</span><span>Rumiah Ny</span></div>
+              <div class="print-row"><span class="lbl">No. RM</span><span class="sep">:</span><span style="font-family:'JetBrains Mono',monospace">009001461</span></div>
+              <div class="print-row"><span class="lbl">Umur</span><span class="sep">:</span><span>64 Tahun</span></div>
+              <div class="print-row"><span class="lbl">Diagnosa</span><span class="sep">:</span><span>I10 — Hipertensi Esensial</span></div>
+              <div class="print-row" style="margin-top:6px"><span class="lbl">Dianjurkan kontrol</span><span class="sep">:</span><span>2 minggu lagi (sekitar 31 Mei 2026)</span></div>
+              <div class="print-row"><span class="lbl">Ke Poli</span><span class="sep">:</span><span>Jantung — Dr. Taka Mehi, Sp.JP, FIHA</span></div>
+              <div style="margin-top:14px;font-size:11px;color:var(--text-muted)">Serang, 17 Mei 2026</div>
+              <div style="margin-top:4px;font-size:12px;font-weight:700">Dr. Taka Mehi, Sp.JP, FIHA</div>
+              <div style="font-size:11px;color:var(--text-muted)">SIP: 123/SIP/2020</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="btn btn-o btn-sm" style="flex:1" onclick="window.print()">🖨️ Cetak</button>
+              <button class="btn btn-p btn-sm" style="flex:1">💾 Simpan PDF</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div><!-- end center panel -->
+
+  <!-- ======= KANAN: RINGKASAN & AKSI ======= -->
+  <div class="panel">
+
+    <!-- RINGKASAN TAGIHAN -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">💰 Ringkasan Tagihan</div>
+        <span class="b bp">Umum</span>
+      </div>
+      <div class="card-body">
+        <div class="summary-box">
+          <div class="summary-title">Rincian Biaya Kunjungan</div>
+          <div class="summary-row"><span class="lbl">Jasa Dokter Sp.JP</span><span class="val">Rp 100.000</span></div>
+          <div class="summary-row"><span class="lbl">Biaya Poli</span><span class="val">Rp 15.000</span></div>
+          <div class="summary-row"><span class="lbl">EKG</span><span class="val">Rp 75.000</span></div>
+          <div class="summary-row"><span class="lbl">Obat Resep (3 item)</span><span class="val">Rp 79.400</span></div>
+          <div class="summary-row"><span class="lbl">Jasa Apotek</span><span class="val">Rp 5.000</span></div>
+          <div class="summary-row"><span class="lbl">Administrasi</span><span class="val">Rp 5.000</span></div>
+          <div class="summary-total">
+            <span>TOTAL</span>
+            <span>Rp 279.400</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:7px">
+          <button class="btn btn-p" style="flex:1;font-size:12px" onclick="kirimKasir()">💳 Kirim ke Kasir</button>
+          <button class="btn btn-o btn-sm">🖨️ Kwitansi</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS KUNJUNGAN -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">📊 Status Kunjungan</div>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg);border-radius:7px;font-size:12px">
+            <span>📋 Anamnesis</span>
+            <span class="b bs">✓ Selesai</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg);border-radius:7px;font-size:12px">
+            <span>❤️ Tanda Vital</span>
+            <span class="b bs">✓ Selesai</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg);border-radius:7px;font-size:12px">
+            <span>🔍 Pemeriksaan Fisik</span>
+            <span class="b bs">✓ Selesai</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg);border-radius:7px;font-size:12px">
+            <span>🏷️ Diagnosis ICD-10</span>
+            <span class="b bs">✓ Selesai</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg);border-radius:7px;font-size:12px">
+            <span>💊 Resep Obat</span>
+            <span class="b bs">✓ Selesai</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg);border-radius:7px;font-size:12px">
+            <span>📅 Surat Kontrol</span>
+            <span class="b bw">○ Belum</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg);border-radius:7px;font-size:12px">
+            <span>💳 Kasir</span>
+            <span class="b bw">○ Belum</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANTRIAN BERIKUTNYA -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">🎫 Antrian Poli Jantung</div>
+      </div>
+      <div class="card-body">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">Sesi 13:00 – 15:00 • Dr. Taka Mehi</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 9px;background:#dbeeff;border-radius:7px;font-size:12px;border-left:3px solid var(--primary)">
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--primary)">T-45</span>
+            <span style="flex:1;font-weight:600">Rumiah Ny</span>
+            <span class="b bp">Proses</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 9px;background:var(--bg);border-radius:7px;font-size:12px">
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:700">T-46</span>
+            <span style="flex:1">Hendra K.</span>
+            <span class="b bg2">Menunggu</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 9px;background:var(--bg);border-radius:7px;font-size:12px">
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:700">T-47</span>
+            <span style="flex:1">Maria S.</span>
+            <span class="b bg2">Menunggu</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 9px;background:var(--bg);border-radius:7px;font-size:12px">
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:700">T-48</span>
+            <span style="flex:1">Yusuf R.</span>
+            <span class="b bg2">Menunggu</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 9px;background:var(--bg);border-radius:7px;font-size:12px">
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:700">T-49</span>
+            <span style="flex:1">Dewi P.</span>
+            <span class="b bg2">Menunggu</span>
+          </div>
+        </div>
+        <button class="btn btn-p btn-block" onclick="panggilBerikutnya()">⏭️ Panggil Berikutnya (T-46)</button>
+      </div>
+    </div>
+
+    <!-- AKSI UTAMA -->
+    <div class="card">
+      <div class="card-head"><div class="card-title">⚡ Aksi Cepat</div></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-s btn-block" onclick="simpanEMR()">✅ Simpan EMR & Selesai Kunjungan</button>
+        <button class="btn btn-w btn-block" onclick="switchTab(document.querySelector('[onclick*=tab-rx]'),'tab-rx')">💊 Tulis Resep</button>
+        <button class="btn btn-o btn-block" onclick="switchTab(document.querySelector('[onclick*=tab-surat]'),'tab-surat')">📄 Buat Surat</button>
+        <button class="btn btn-o btn-block">🧪 Minta Lab / Radiologi</button>
+        <button class="btn btn-o btn-block">🏥 Rawat Inap / Rujuk</button>
+        <button class="btn btn-d btn-block" style="margin-top:4px">❌ Batalkan Kunjungan</button>
+      </div>
+    </div>
+
+  </div><!-- end right panel -->
+
+</div><!-- end layout -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/shared-state.js"></script>
+<script src="js/emr.js"></script>
+</body>
+</html>

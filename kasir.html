@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kasir — Edoy Hospital Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/kasir.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tb-logo">
+    <div class="tb-box">💳</div>
+    <div>
+      <div style="font-size:14px;font-weight:700">MediCore — Kasir & Pembayaran</div>
+      <div style="font-size:10px;opacity:.5">Edoy Hospital Management</div>
+    </div>
+  </div>
+  <div class="tb-info">
+    <span><span class="sdot"></span>Online</span>
+    <span>Kasir: <strong style="color:#fff">Sari Dewi</strong></span>
+    <span id="clk">--:--:--</span>
+  </div>
+  <a href="index.html" class="tb-back">← Kembali ke SIM RS</a>
+</div>
+
+<div class="layout">
+
+  <!-- KIRI: ANTRIAN & DAFTAR PASIEN -->
+  <div class="panel">
+
+    <div class="card">
+      <div class="ch"><div class="ct">🎫 Antrian Kasir</div><button class="btn btn-sm" style="background:var(--success);color:#fff" onclick="panggilBerikutnya()">⏭️ Panggil</button></div>
+      <div class="cb">
+        <div class="q-box">
+          <div class="q-lbl">Sedang Dilayani</div>
+          <div class="q-num" id="q-active">K-15</div>
+          <div class="q-meta" id="q-name">Rumiah Ny • Umum</div>
+        </div>
+        <div class="q-grid">
+          <div class="q-stat">
+            <div class="val" id="q-tunggu" style="color:var(--warning)">8</div>
+            <div class="lbl">Menunggu</div>
+          </div>
+          <div class="q-stat">
+            <div class="val" id="q-selesai" style="color:var(--success)">24</div>
+            <div class="lbl">Selesai</div>
+          </div>
+        </div>
+        <button class="btn btn-o btn-block" style="font-size:12px">🔁 Panggil Ulang</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch">
+        <div class="ct">👥 Daftar Antrian</div>
+        <span class="b bw">8 menunggu</span>
+      </div>
+      <div class="pasien-list">
+        <div class="pasien-item active" onclick="loadPasien(this,'Rumiah Ny','974188','K-15','Umum','174400')">
+          <div class="p-av">RN</div>
+          <div><div class="p-name">Rumiah Ny</div><div class="p-meta">Reg: 974188 • Umum</div></div>
+          <div class="p-q">K-15</div>
+        </div>
+        <div class="pasien-item" onclick="loadPasien(this,'Ahmad Fauzi','974189','K-16','BPJS','0')">
+          <div class="p-av">AF</div>
+          <div><div class="p-name">Ahmad Fauzi</div><div class="p-meta">Reg: 974189 • BPJS</div></div>
+          <div class="p-q">K-16</div>
+        </div>
+        <div class="pasien-item" onclick="loadPasien(this,'Siti Rahayu','974190','K-17','BPJS','0')">
+          <div class="p-av">SR</div>
+          <div><div class="p-name">Siti Rahayu</div><div class="p-meta">Reg: 974190 • BPJS</div></div>
+          <div class="p-q">K-17</div>
+        </div>
+        <div class="pasien-item" onclick="loadPasien(this,'Budi Santoso','974191','K-18','Asuransi','380000')">
+          <div class="p-av">BS</div>
+          <div><div class="p-name">Budi Santoso</div><div class="p-meta">Reg: 974191 • Asuransi</div></div>
+          <div class="p-q">K-18</div>
+        </div>
+        <div class="pasien-item" onclick="loadPasien(this,'Hendra K.','974192','K-19','Umum','245000')">
+          <div class="p-av">HK</div>
+          <div><div class="p-name">Hendra Kusuma</div><div class="p-meta">Reg: 974192 • Umum</div></div>
+          <div class="p-q">K-19</div>
+        </div>
+        <div class="pasien-item" onclick="loadPasien(this,'Maria Siregar','974193','K-20','BPJS','0')">
+          <div class="p-av">MS</div>
+          <div><div class="p-name">Maria Siregar</div><div class="p-meta">Reg: 974193 • BPJS</div></div>
+          <div class="p-q">K-20</div>
+        </div>
+        <div class="pasien-item" onclick="loadPasien(this,'Yusuf Rahman','974194','K-21','Umum','175000')">
+          <div class="p-av">YR</div>
+          <div><div class="p-name">Yusuf Rahman</div><div class="p-meta">Reg: 974194 • Umum</div></div>
+          <div class="p-q">K-21</div>
+        </div>
+        <div class="pasien-item" onclick="loadPasien(this,'Dewi Pertiwi','974195','K-22','Asuransi','560000')">
+          <div class="p-av">DP</div>
+          <div><div class="p-name">Dewi Pertiwi</div><div class="p-meta">Reg: 974195 • Admedika</div></div>
+          <div class="p-q">K-22</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REKAP HARIAN -->
+    <div class="card">
+      <div class="ch"><div class="ct">📊 Rekap Kasir Hari Ini</div></div>
+      <div class="cb">
+        <div class="rekap-grid">
+          <div class="rekap-item"><div class="rekap-val">32</div><div class="rekap-lbl">Total Transaksi</div></div>
+          <div class="rekap-item" style="border-left-color:var(--success)"><div class="rekap-val" style="color:var(--success)">Rp 24,7jt</div><div class="rekap-lbl">Tunai</div></div>
+          <div class="rekap-item" style="border-left-color:var(--info)"><div class="rekap-val" style="color:var(--info)">Rp 38,2jt</div><div class="rekap-lbl">Transfer/QRIS</div></div>
+          <div class="rekap-item" style="border-left-color:var(--warning)"><div class="rekap-val" style="color:var(--warning)">Rp 26,4jt</div><div class="rekap-lbl">BPJS (Piutang)</div></div>
+        </div>
+        <div style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border-radius:8px;padding:11px;text-align:center">
+          <div style="font-size:11px;opacity:.7">TOTAL PENDAPATAN HARI INI</div>
+          <div style="font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;margin-top:3px">Rp 89.400.000</div>
+        </div>
+        <button class="btn btn-o btn-block btn-sm" style="margin-top:8px">📊 Laporan Lengkap</button>
+      </div>
+    </div>
+
+  </div><!-- end left -->
+
+  <!-- TENGAH: TAGIHAN & PEMBAYARAN -->
+  <div class="panel">
+    <div class="card" style="flex:1">
+      <div class="ch">
+        <div>
+          <div class="ct">🧾 Detail Tagihan</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="tag-reg-label">Reg: 974188 • T-45 • Jantung</div>
+        </div>
+        <div style="display:flex;gap:7px">
+          <button class="btn btn-o btn-sm">📥 Impor Tagihan</button>
+          <button class="btn btn-sm" style="background:var(--info);color:#fff">+ Tambah Item</button>
+        </div>
+      </div>
+      <div class="cb">
+
+        <!-- HEADER PASIEN -->
+        <div class="tag-header">
+          <div class="tag-rs">Edoy Hospital Management</div>
+          <div class="tag-pasien" id="tag-nama">Rumiah Ny</div>
+          <div class="tag-meta" id="tag-meta">Perempuan • 64 tahun • Umum</div>
+          <div class="tag-no" id="tag-no">No. Reg: 974188 &nbsp;|&nbsp; No. Antrian: K-15 &nbsp;|&nbsp; Poli: Jantung &nbsp;|&nbsp; Dokter: Dr. Taka Mehi, Sp.JP</div>
+        </div>
+
+        <!-- SEP BPJS (tampil jika BPJS) -->
+        <div class="sep-card" id="sep-section" style="display:none">
+          <div class="sep-lbl">Surat Eligibilitas Peserta (SEP) — BPJS Kesehatan</div>
+          <div class="sep-num" id="sep-num">0222R00060322V001210</div>
+          <div class="sep-grid">
+            <div class="sep-item"><div class="lbl">Nama Peserta</div><div class="val" id="sep-nama">—</div></div>
+            <div class="sep-item"><div class="lbl">No. Kartu</div><div class="val" id="sep-kartu">—</div></div>
+            <div class="sep-item"><div class="lbl">Jenis Rawat</div><div class="val">Rawat Jalan</div></div>
+            <div class="sep-item"><div class="lbl">Poli Tujuan</div><div class="val" id="sep-poli">—</div></div>
+            <div class="sep-item"><div class="lbl">Kelas Hak</div><div class="val">Kelas 3</div></div>
+            <div class="sep-item"><div class="lbl">DPJP</div><div class="val" id="sep-dpjp">—</div></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-sm" style="flex:1;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff">🖨️ Print SEP</button>
+            <button class="btn btn-sm" style="flex:1;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff">📄 SEP DOT</button>
+            <button class="btn btn-sm" style="flex:1;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff">📑 SEP PDF</button>
+          </div>
+        </div>
+
+        <!-- RINCIAN TAGIHAN -->
+        <table class="billing-table" id="billing-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Jenis Layanan / Item</th>
+              <th>Qty</th>
+              <th>Harga Satuan</th>
+              <th>Subtotal</th>
+              <th>Penjamin</th>
+            </tr>
+          </thead>
+          <tbody id="billing-body">
+            <tr><td>1</td><td>Jasa Dokter Spesialis Jantung</td><td>1</td><td class="mono">Rp 100.000</td><td class="mono">Rp 100.000</td><td><span class="b bg2">Pasien</span></td></tr>
+            <tr><td>2</td><td>Biaya Poliklinik</td><td>1</td><td class="mono">Rp 15.000</td><td class="mono">Rp 15.000</td><td><span class="b bg2">Pasien</span></td></tr>
+            <tr><td>3</td><td>EKG (Elektrokardiografi)</td><td>1</td><td class="mono">Rp 75.000</td><td class="mono">Rp 75.000</td><td><span class="b bg2">Pasien</span></td></tr>
+            <tr><td>4</td><td>Amlodipine 5mg (30 tab)</td><td>30</td><td class="mono">Rp 850</td><td class="mono">Rp 25.500</td><td><span class="b bg2">Pasien</span></td></tr>
+            <tr><td>5</td><td>Metformin 500mg (90 tab)</td><td>90</td><td class="mono">Rp 420</td><td class="mono">Rp 37.800</td><td><span class="b bg2">Pasien</span></td></tr>
+            <tr><td>6</td><td>Bisoprolol 5mg (30 tab)</td><td>30</td><td class="mono">Rp 1.200</td><td class="mono">Rp 36.000</td><td><span class="b bg2">Pasien</span></td></tr>
+            <tr><td>7</td><td>Jasa Apotek</td><td>1</td><td class="mono">Rp 5.000</td><td class="mono">Rp 5.000</td><td><span class="b bg2">Pasien</span></td></tr>
+            <tr><td>8</td><td>Biaya Administrasi</td><td>1</td><td class="mono">Rp 5.000</td><td class="mono">Rp 5.000</td><td><span class="b bg2">Pasien</span></td></tr>
+          </tbody>
+          <tfoot>
+            <tr class="subtotal">
+              <td colspan="4" style="text-align:right;font-size:12px">TOTAL TAGIHAN</td>
+              <td class="mono" style="font-size:14px;font-weight:800;color:var(--primary)" id="grand-total">Rp 279.300</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- DISKON / POTONGAN -->
+        <div style="display:flex;gap:10px;margin-bottom:12px;margin-top:6px">
+          <div style="flex:1">
+            <label class="form-label">Diskon / Potongan</label>
+            <div style="display:flex;gap:6px">
+              <input class="form-control" id="diskon" placeholder="0" style="max-width:100px" oninput="hitungBayar()">
+              <select class="form-control" id="diskon-type" onchange="hitungBayar()">
+                <option value="nominal">Nominal (Rp)</option>
+                <option value="persen">Persen (%)</option>
+              </select>
+            </div>
+          </div>
+          <div style="flex:1">
+            <label class="form-label">Keterangan Diskon</label>
+            <input class="form-control" placeholder="Diskon pegawai, voucher, dll...">
+          </div>
+        </div>
+
+        <!-- TOTAL BAYAR -->
+        <div class="total-box">
+          <div class="total-rows">
+            <div class="total-row"><span class="lbl">Total Tagihan</span><span class="val mono" id="t-total">Rp 279.300</span></div>
+            <div class="total-row"><span class="lbl">Ditanggung Penjamin</span><span class="val mono" id="t-penjamin">Rp 0</span></div>
+            <div class="total-row"><span class="lbl">Diskon</span><span class="val mono" id="t-diskon">Rp 0</span></div>
+            <div class="total-row main"><span>Yang Harus Dibayar</span><span class="val mono" id="t-bayar">Rp 279.300</span></div>
+          </div>
+        </div>
+
+        <!-- METODE BAYAR -->
+        <div class="bayar-section">
+          <label class="form-label" style="margin-bottom:8px">Metode Pembayaran</label>
+          <div class="bayar-methods">
+            <button class="pay-btn active" id="pay-tunai" onclick="setPayMethod(this,'tunai')">
+              <div class="icon">💵</div>
+              <div class="lbl">Tunai</div>
+            </button>
+            <button class="pay-btn" id="pay-transfer" onclick="setPayMethod(this,'transfer')">
+              <div class="icon">🏦</div>
+              <div class="lbl">Transfer</div>
+            </button>
+            <button class="pay-btn" id="pay-qris" onclick="setPayMethod(this,'qris')">
+              <div class="icon">📱</div>
+              <div class="lbl">QRIS</div>
+            </button>
+            <button class="pay-btn" id="pay-bpjs" onclick="setPayMethod(this,'bpjs')">
+              <div class="icon">🏥</div>
+              <div class="lbl">BPJS</div>
+            </button>
+            <button class="pay-btn" id="pay-asuransi" onclick="setPayMethod(this,'asuransi')">
+              <div class="icon">📋</div>
+              <div class="lbl">Asuransi</div>
+            </button>
+            <button class="pay-btn" id="pay-piutang" onclick="setPayMethod(this,'piutang')">
+              <div class="icon">📝</div>
+              <div class="lbl">Piutang</div>
+            </button>
+          </div>
+
+          <div id="pay-tunai-area">
+            <label class="form-label">Jumlah Diterima (Rp)</label>
+            <input class="form-control" id="jumlah-terima" placeholder="Masukkan jumlah uang..." style="font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace" oninput="hitungKembalian()">
+            <div class="kembalian-box" id="kembalian-box" style="display:none">
+              <div class="kembalian-lbl">Kembalian</div>
+              <div class="kembalian-val" id="kembalian-val">Rp 0</div>
+            </div>
+          </div>
+
+          <div id="pay-transfer-area" style="display:none">
+            <label class="form-label">Bank / Rekening Tujuan</label>
+            <select class="form-control" style="margin-bottom:8px">
+              <option>BRI — 001-23-456789-0-0</option>
+              <option>BNI — 0123456789</option>
+              <option>Mandiri — 123-000-456789-0</option>
+            </select>
+            <label class="form-label">No. Referensi Transfer</label>
+            <input class="form-control" placeholder="Masukkan nomor referensi...">
+          </div>
+
+          <div id="pay-qris-area" style="display:none">
+            <div style="text-align:center;padding:16px;background:#f8f8f8;border-radius:8px;border:2px dashed var(--border)">
+              <div style="font-size:48px;margin-bottom:8px">📱</div>
+              <div style="font-size:13px;font-weight:700;margin-bottom:4px">Scan QRIS</div>
+              <div style="font-size:11px;color:var(--text-muted)">Arahkan kamera ke QR Code mesin QRIS</div>
+            </div>
+          </div>
+
+          <div id="pay-bpjs-area" style="display:none">
+            <div style="background:#dbeafe;border-radius:8px;padding:11px;font-size:12px;margin-bottom:8px;border-left:3px solid var(--info)">
+              ℹ️ Tagihan BPJS akan masuk sebagai piutang RS dan diklaim melalui SIRS Online / INA-CBG.
+            </div>
+            <label class="form-label">No. SEP</label>
+            <input class="form-control" placeholder="Masukkan nomor SEP...">
+          </div>
+
+          <div id="pay-asuransi-area" style="display:none">
+            <label class="form-label">Nama Asuransi</label>
+            <select class="form-control" style="margin-bottom:8px">
+              <option>Admedika</option><option>Aviva</option><option>Abadi Smilylinks</option>
+              <option>ABDA Insurance</option><option>Zakirah Health Care</option><option>Jasa Raharja</option>
+            </select>
+            <label class="form-label">No. Kartu Asuransi</label>
+            <input class="form-control" placeholder="Nomor kartu peserta asuransi...">
+          </div>
+
+          <div id="pay-piutang-area" style="display:none">
+            <div style="background:#fef3c7;border-radius:8px;padding:11px;font-size:12px;border-left:3px solid var(--warning)">
+              ⚠️ Tagihan akan disimpan sebagai piutang RS dan perlu dilunasi kemudian.
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-o" style="flex:1" onclick="window.print()">🖨️ Cetak Nota</button>
+          <button class="btn btn-s" style="flex:2;font-size:14px;padding:11px" onclick="prosesTransaksi()">✅ Proses Pembayaran</button>
+        </div>
+
+      </div>
+    </div>
+  </div><!-- end center -->
+
+  <!-- KANAN: NOTA & RIWAYAT -->
+  <div class="panel">
+
+    <!-- NOTA PREVIEW -->
+    <div class="card">
+      <div class="ch"><div class="ct">🧾 Preview Nota</div><button class="btn btn-sm btn-o" onclick="window.print()">🖨️ Cetak</button></div>
+      <div class="cb">
+        <div class="nota">
+          <div class="nota-head">
+            <div style="font-weight:800;font-size:13px">EDOY HOSPITAL MANAGEMENT</div>
+            <div style="font-size:10px;opacity:.8">Jl. Raya Cilegon KM 8, Serang</div>
+            <div style="font-size:10px;opacity:.8">Telp: 0254-226000</div>
+          </div>
+          <div class="nota-body">
+            <div style="text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1px dashed var(--border);padding-bottom:7px;margin-bottom:7px">NOTA PEMBAYARAN</div>
+            <div class="nota-row"><span class="mono" id="n-reg" style="font-size:10px">No. Reg: 974188</span><span id="n-tgl" style="font-size:10px">17/05/2026</span></div>
+            <div class="nota-row"><span style="font-size:10px;color:var(--text-muted)">Nama:</span><span id="n-nama" style="font-weight:700;font-size:12px">Rumiah Ny</span></div>
+            <div class="nota-row"><span style="font-size:10px;color:var(--text-muted)">Penjamin:</span><span id="n-penjamin" style="font-weight:700;font-size:11px">UMUM</span></div>
+            <div class="nota-row"><span style="font-size:10px;color:var(--text-muted)">Poli:</span><span style="font-size:11px">Jantung</span></div>
+            <hr class="nota-sep">
+            <div id="n-items">
+              <div class="nota-row"><span style="font-size:10px">Jasa Dokter</span><span class="mono" style="font-size:10px">Rp 100.000</span></div>
+              <div class="nota-row"><span style="font-size:10px">Biaya Poli</span><span class="mono" style="font-size:10px">Rp 15.000</span></div>
+              <div class="nota-row"><span style="font-size:10px">EKG</span><span class="mono" style="font-size:10px">Rp 75.000</span></div>
+              <div class="nota-row"><span style="font-size:10px">Obat (3 item)</span><span class="mono" style="font-size:10px">Rp 79.300</span></div>
+              <div class="nota-row"><span style="font-size:10px">Jasa Apotek</span><span class="mono" style="font-size:10px">Rp 5.000</span></div>
+              <div class="nota-row"><span style="font-size:10px">Administrasi</span><span class="mono" style="font-size:10px">Rp 5.000</span></div>
+            </div>
+            <hr class="nota-sep">
+            <div class="nota-total">
+              <span>TOTAL</span>
+              <span class="mono" id="n-total" style="color:var(--primary)">Rp 279.300</span>
+            </div>
+            <div class="nota-row" id="n-bayar-row"><span style="font-size:11px">Diterima</span><span class="mono" style="font-size:11px" id="n-bayar">—</span></div>
+            <div class="nota-row" id="n-kembali-row"><span style="font-size:11px;color:var(--success);font-weight:700">Kembali</span><span class="mono" style="font-size:11px;color:var(--success);font-weight:700" id="n-kembali">—</span></div>
+            <hr class="nota-sep">
+            <div class="nota-footer">Terima kasih atas kepercayaan Anda</div>
+            <div class="nota-footer">Edoy Hospital Management</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIWAYAT TRANSAKSI -->
+    <div class="card">
+      <div class="ch">
+        <div class="ct">📋 Riwayat Transaksi</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-o">📊 Laporan</button>
+          <button class="btn btn-sm btn-o">📥 Export</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="t">
+          <thead><tr><th>Reg</th><th>Nama</th><th>Total</th><th>Metode</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">974185</td><td>Dewi Lestari</td><td class="mono">Rp 0</td><td><span class="b bi">BPJS</span></td><td><span class="b bs">Lunas</span></td></tr>
+            <tr><td class="mono">974186</td><td>Tn. Suparman</td><td class="mono">Rp 245.000</td><td><span class="b bg2">Tunai</span></td><td><span class="b bs">Lunas</span></td></tr>
+            <tr><td class="mono">974187</td><td>Ny. Kartini</td><td class="mono">Rp 380.000</td><td><span class="b bg2">Transfer</span></td><td><span class="b bs">Lunas</span></td></tr>
+            <tr><td class="mono">974183</td><td>Rudi H.</td><td class="mono">Rp 195.000</td><td><span class="b bg2">QRIS</span></td><td><span class="b bs">Lunas</span></td></tr>
+            <tr><td class="mono">974182</td><td>Sari W.</td><td class="mono">Rp 560.000</td><td><span class="b bw">Asuransi</span></td><td><span class="b bs">Lunas</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- end right -->
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/shared-state.js"></script>
+<script src="js/kasir.js"></script>
+</body>
+</html>
