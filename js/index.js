@@ -3,6 +3,53 @@
  * Main Dashboard Logic for MediCore SIMRS
  */
 
+// ─── TRANSACTION HELPER (manual rollback) ───
+var __tx_pending = [];
+
+function txBegin() { __tx_pending = []; return true; }
+
+function txAdd(table, op, data, idField) {
+  __tx_pending.push({
+    table: table, op: op,
+    data: JSON.parse(JSON.stringify(data)),
+    idField: idField || 'id',
+    _rb: null
+  });
+}
+
+async function txCommit() {
+  var errors = [], executed = [];
+  for (var i = 0; i < __tx_pending.length; i++) {
+    var s = __tx_pending[i];
+    try {
+      if (s.op === 'insert') {
+        var r = await window.__sb.from(s.table).insert(s.data);
+        if (r.error) errors.push(s.table + ': ' + r.error.message); else executed.push(s);
+      } else if (s.op === 'update') {
+        var snap = await window.__sb.from(s.table).select('*').eq(s.idField, s.data[s.idField]).single();
+        s._rb = snap.data;
+        var r2 = await window.__sb.from(s.table).update(s.data).eq(s.idField, s.data[s.idField]);
+        if (r2.error) errors.push(s.table + ': ' + r2.error.message); else executed.push(s);
+      }
+    } catch(e) { errors.push(s.table + ': ' + e.message); }
+  }
+  if (errors.length > 0) {
+    for (var j = executed.length - 1; j >= 0; j--) {
+      var rs = executed[j];
+      try {
+        if (rs.op === 'insert') window.__sb.from(rs.table).delete().eq(rs.idField, rs.data[rs.idField]);
+        else if (rs.op === 'update' && rs._rb) window.__sb.from(rs.table).update(rs._rb).eq(rs.idField, rs._rb[rs.idField]);
+      } catch(e) { console.error('Rollback fail', rs.table, e); }
+    }
+    __tx_pending = [];
+    return { success: false, errors: errors };
+  }
+  __tx_pending = [];
+  return { success: true };
+}
+
+function txRollback() { __tx_pending = []; }
+
 // ─── GLOBAL TOAST SYSTEM ───
 function showToast(message, type, duration) {
   type = type || 'info';
@@ -415,6 +462,12 @@ function toggleMobileMenu() {
     sidebar.classList.toggle('show');
   }
 }
+
+// ─── USER CHIP CLICK (delegated, not inline) ───
+document.addEventListener('click', function(e) {
+  var chip = e.target.closest('#user-chip');
+  if (chip) toggleUserMenu();
+});
 
 // ─── KEYBOARD: Close modal on Escape + click outside ───
 document.addEventListener('keydown', function(e) {
@@ -919,44 +972,38 @@ async function submitRegistration() {
         const alamat = document.getElementById('reg-alamat').value.trim();
         const hp = document.getElementById('reg-hp').value.trim();
 
-        // Cek dulu apakah pasien dengan NIK ini sudah ada
+        // Validasi NIK 16 digit
+        if (nik.length > 0 && nik.length !== 16) {
+          showToast('NIK harus 16 digit angka', 'warning');
+          return;
+        }
+
+        // Cek duplikasi: NIK
+        var dup = null;
         if (nik) {
-            const { data: existing } = await window.__sb
-                .from('patients')
-                .select('id, no_rm, nama')
-                .eq('nik', nik)
-                .limit(1);
-            if (existing && existing.length > 0) {
-                patientId = existing[0].id;
-                window._regPatientRM = existing[0].no_rm;
-                // Lanjut registrasi
-            }
+          var r = await window.__sb.from('patients').select('id,no_rm,nama').eq('nik', nik).limit(1);
+          if (r.data && r.data.length > 0) dup = r.data[0];
+        }
+        // Fallback: nama + tgl lahir
+        if (!dup && nama && tglLahir) {
+          var r2 = await window.__sb.from('patients').select('id,no_rm,nama').eq('nama', nama).eq('tgl_lahir', tglLahir).limit(1);
+          if (r2.data && r2.data.length > 0) dup = r2.data[0];
+        }
+        if (dup && !confirm('Data mirip ditemukan: ' + dup.nama + ' (' + dup.no_rm + ')\nTetap daftarkan baru?')) {
+          return;
         }
 
         if (!patientId) {
-            // Generate No.RM otomatis
-            const { count } = await window.__sb
-                .from('patients')
-                .select('id', { count: 'exact', head: true });
-            const noRm = '009' + String((count || 0) + 1).padStart(6, '0');
-
-            const { data: newPatient, error } = await window.__sb
-                .from('patients')
-                .insert({
-                    no_rm: noRm,
-                    nama: nama,
-                    nik: nik || null,
-                    jk: jk || null,
-                    tgl_lahir: tglLahir || null,
-                    alamat: alamat || null,
-                    no_hp: hp || null
-                })
-                .select()
-                .single();
-
-            if (error) return showToast(' Gagal simpan pasien: ' + error.message);
-            patientId = newPatient.id;
-            window._regPatientRM = newPatient.no_rm;
+            var { count } = await window.__sb.from('patients').select('id', { count: 'exact', head: true });
+            var noRm = '009' + String((count || 0) + 1).padStart(6, '0');
+            txBegin();
+            var { data: np, error: pe } = await window.__sb.from('patients').insert({
+                no_rm: noRm, nama: nama, nik: nik || null, jk: jk || null,
+                tgl_lahir: tglLahir || null, alamat: alamat || null, no_hp: hp || null
+            }).select().single();
+            if (pe) { txRollback(); return showToast(' Gagal: ' + pe.message); }
+            patientId = np.id;
+            window._regPatientRM = np.no_rm;
         }
     } else {
         // MODE CARI: pastikan sudah cari pasien
@@ -964,13 +1011,13 @@ async function submitRegistration() {
     }
 
     // Generate nomor antrian
-    const hariIni = new Date().toISOString().slice(0,10);
-    const { count } = await window.__sb
+    var hariIni = new Date().toISOString().slice(0,10);
+    var { count: regCount } = await window.__sb
         .from('registrations')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', hariIni);
 
-    const noUrut = (count || 0) + 1;
+    var noUrut = (regCount || 0) + 1;
     const prefix = poliId === '8' ? 'T' : 'A';
     const noAntrian = `${prefix}-${String(noUrut).padStart(2, '0')}`;
 
@@ -1315,7 +1362,20 @@ async function kirimFarmasi() {
     const { error: ie } = await window.__sb.from('prescription_items').insert(pItems);
     if (ie) return showToast(' Gagal simpan item: ' + ie.message);
 
-    showToast(' Resep terkirim ke Farmasi!\nNo. Resep: ' + noResep);
+    // Kurangi stok otomatis
+    for (var si = 0; si < items.length; si++) {
+      var it = items[si];
+      if (!it.id) continue;
+      var { data: obat } = await window.__sb.from('medicines').select('stok, nama_obat').eq('id', it.id).single();
+      if (!obat) continue;
+      if ((obat.stok || 0) < (it.jumlah || 1)) {
+        showToast('Stok ' + obat.nama_obat + ' tidak cukup (sisa: ' + obat.stok + ')', 'warning');
+        continue;
+      }
+      await window.__sb.from('medicines').update({ stok: (obat.stok || 0) - (it.jumlah || 1) }).eq('id', it.id);
+    }
+
+    showToast(' Resep terkirim ke Farmasi! Stok dikurangi otomatis.', 'success');
     window._rxItems = [];
     document.getElementById('rx-tbody').innerHTML = '';
     hitungTotal();
@@ -3776,10 +3836,19 @@ function loadConfig() {
 let medicoreUser = null;
 
 function initAuth() {
-  const saved = localStorage.getItem('medicore_user');
+  var saved = localStorage.getItem('medicore_user');
   if (saved) {
     try {
-      window.medicoreUser = JSON.parse(saved);
+      var user = JSON.parse(saved);
+      var now = Date.now();
+      if (user._expiresAt && now > user._expiresAt) {
+        localStorage.removeItem('medicore_user');
+        showToast('Sesi berakhir. Silakan login ulang.', 'warning');
+        document.getElementById('login-overlay').classList.add('active');
+        document.getElementById('app-shell').classList.remove('active');
+        return;
+      }
+      window.medicoreUser = user;
       updateUserChip();
       document.getElementById('login-overlay').classList.remove('active');
       document.getElementById('app-shell').classList.add('active');
@@ -3795,24 +3864,26 @@ function initAuth() {
 }
 
 async function doLogin() {
-  const username = document.getElementById('login-user').value.trim();
-  const password = document.getElementById('login-pass').value.trim();
-  const btn = document.querySelector('.login-btn');
-  const err = document.getElementById('login-error');
-  
+  var username = document.getElementById('login-user').value.trim();
+  var password = document.getElementById('login-pass').value.trim();
+  var btn = document.querySelector('.login-btn');
+  var err = document.getElementById('login-error');
+
+  err.classList.remove('show');
+
   if (!username || !password) {
-    err.textContent = 'Isi username dan password';
-    err.style.display = 'block';
+    err.innerHTML = '<span>⚠️</span> Isi username dan password';
+    err.classList.add('show');
     return;
   }
-  
+
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Memproses...';
-  err.style.display = 'none';
-  
-  let data, error;
+  btn.classList.add('loading');
+  btn.textContent = ' Memproses...';
+
+  var data, error;
   try {
-    const result = await window.__sb.from('users')
+    var result = await window.__sb.from('users')
       .select('username,nama,role,unit,status')
       .eq('username', username)
       .eq('password', password)
@@ -3823,24 +3894,62 @@ async function doLogin() {
   } catch(e) {
     error = e;
   }
-  
+
   btn.disabled = false;
+  btn.classList.remove('loading');
   btn.innerHTML = '🔐 Masuk';
-  
+
   if (error || !data) {
-    err.textContent = '❌ Username atau password salah';
-    err.style.display = 'block';
+    err.innerHTML = '<span>❌</span> Username atau password salah';
+    err.classList.add('show');
+    var card = btn.closest('.login-card');
+    if (card) {
+      card.style.animation = 'shake 0.4s ease';
+      setTimeout(function() { if (card) card.style.animation = ''; }, 500);
+    }
     return;
   }
-  
+
+  // Login dengan timeout session
+  var loginTime = Date.now();
   window.medicoreUser = data;
-  localStorage.setItem('medicore_user', JSON.stringify(data));
+  window.medicoreUser._loginAt = loginTime;
+  window.medicoreUser._expiresAt = loginTime + (8 * 60 * 60 * 1000); // 8 jam
+  localStorage.setItem('medicore_user', JSON.stringify(window.medicoreUser));
   updateUserChip();
   document.getElementById('login-overlay').classList.remove('active');
   document.getElementById('app-shell').classList.add('active');
-  
-  // Render dashboard after login
   renderDashboard();
+}
+
+// ─── SEP BPJS ───
+function showSEPModal(regId, patientData) {
+  document.getElementById('sep-norm').value = patientData?.no_rm || '';
+  if (regId) window._sepRegId = regId;
+  showM('mdl-sep');
+}
+async function submitSEP() {
+  var noBPJS = document.getElementById('sep-nobpjs').value.trim();
+  var poli = document.getElementById('sep-poli').value;
+  var diagnosis = document.getElementById('sep-diagnosis').value.trim();
+  if (!noBPJS) return showToast('No. BPJS wajib diisi', 'warning');
+  if (!poli) return showToast('Pilih poli', 'warning');
+  var noSEP = 'SEP' + Date.now().toString(36).toUpperCase();
+  var { error } = await window.__sb.from('sep_bpjs').insert({
+    no_sep: noSEP,
+    no_bpjs: noBPJS,
+    no_rm: document.getElementById('sep-norm').value,
+    poli: poli,
+    jenis: document.getElementById('sep-jenis').value,
+    diagnosis: diagnosis,
+    dpjp: document.getElementById('sep-dpjp').value.trim(),
+    catatan: document.getElementById('sep-catatan').value.trim(),
+    registration_id: window._sepRegId || null,
+    created_at: new Date().toISOString()
+  }).single();
+  if (error) return showToast('Gagal simpan SEP: ' + error.message, 'error');
+  showToast('✅ SEP ' + noSEP + ' berhasil disimpan', 'success');
+  hideM('mdl-sep');
 }
 
 // ─── FORMAT RUPIAH ───
@@ -7633,6 +7742,16 @@ document.addEventListener('DOMContentLoaded', function() {
     initAuth();
     tick();
     setInterval(tick, 1000);
+
+    // Session expiry check every 30 seconds
+    setInterval(function() {
+      var u = window.medicoreUser;
+      if (u && u._expiresAt && Date.now() > u._expiresAt) {
+        doLogout();
+        showToast('Sesi berakhir. Silakan login ulang.', 'warning');
+      }
+    }, 30000);
+
     renderDashboard();
 
     // Init users from DB (fallback to array)

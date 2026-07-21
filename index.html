@@ -18,13 +18,13 @@
 <!-- ===== TOAST CONTAINER ===== -->
 <div id="toast-container"></div>
 
-<!-- ===== LOGIN OVERLAY ===== -->
+<!-- ===== LOGIN OVERLAY — Premium ===== -->
 <div id="login-overlay">
   <div class="login-card">
     <div class="login-top"></div>
     <div class="login-inner">
       <img src="MediCore.png" class="login-logo" alt="MediCore">
-      <div class="login-title">MEDICORE SIMRS</div>
+      <div class="login-title">MEDICORE</div>
       <div class="login-sub">Edoy Hospital Management</div>
       <form id="login-form" onsubmit="event.preventDefault(); doLogin();">
         <div class="login-input-wrap">
@@ -35,9 +35,14 @@
           <span class="login-input-icon">🔒</span>
           <input id="login-pass" class="login-input" type="password" placeholder="Password" onkeydown="if(event.key==='Enter') doLogin()" autocomplete="current-password">
         </div>
-        <div id="login-error" class="login-error" style="display:none">❌ Username atau password salah</div>
-        <button type="submit" class="login-btn">🔐 Masuk</button>
+        <div id="login-error" class="login-error">
+          <span>❌</span> Username atau password salah
+        </div>
+        <button type="submit" id="login-btn" class="login-btn">🔐 Masuk</button>
       </form>
+      <div class="login-footer">
+        <span>MediCore SIMRS v2.4.1 — Sistem Informasi Manajemen Rumah Sakit</span>
+      </div>
     </div>
   </div>
 </div>
@@ -115,9 +120,7 @@
     </div>
     <div class="tb-right">
       <div class="ib" id="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">🌙</div>
-      <div class="ib">🔔<div class="nd"></div></div>
-      <div class="ib">🔍</div>
-      <div class="u-chip" onclick="toggleUserMenu()"><div class="u-av">AD</div><div><div class="u-nm">Admin RS</div><div class="u-rl">Administrator</div></div></div>
+      <div class="u-chip" id="user-chip"><div class="u-av">AD</div><div><div class="u-nm">Admin RS</div><div class="u-rl">Administrator</div></div></div>
       <div id="user-menu" class="dropdown-menu" style="display:none">
         <div class="dropdown-item">👤 Profil</div>
         <div class="dropdown-item" onclick="doLogout()">🚪 Keluar</div>
@@ -1118,6 +1121,34 @@
   </div>
 </div>
 
+<!-- ===== MODAL SEP BPJS ===== -->
+<div class="ov" id="mdl-sep">
+  <div class="modal" style="max-width:500px">
+    <div class="mh"><div class="mt">🏥 SEP BPJS</div><button class="mc" onclick="hideM('mdl-sep')">✕</button></div>
+    <div class="mb">
+      <div class="ib2 warn" style="font-size:12px">📋 Surat Eligibilitas Peserta — untuk pasien BPJS</div>
+      <div class="fg"><label class="fl">No. SEP</label><input class="fc" id="sep-no" placeholder="Auto generate"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">No. BPJS</label><input class="fc" id="sep-nobpjs" placeholder="0000000000000"></div>
+        <div class="fg"><label class="fl">No. RM</label><input class="fc" id="sep-norm" placeholder="No. RM" readonly></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Poli</label><select class="fc" id="sep-poli"><option value="">— Pilih —</option></select></div>
+        <div class="fg"><label class="fl">Jenis</label><select class="fc" id="sep-jenis"><option value="Rawat Jalan">Rawat Jalan</option><option value="Rawat Inap">Rawat Inap</option><option value="UGD">UGD</option></select></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Diagnosis (ICD-10)</label><input class="fc" id="sep-diagnosis" placeholder="Kode ICD-10"></div>
+        <div class="fg"><label class="fl">DPJP</label><input class="fc" id="sep-dpjp" placeholder="Nama DPJP"></div>
+      </div>
+      <div class="fg"><label class="fl">Catatan</label><textarea class="fc" id="sep-catatan" rows="2"></textarea></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-o" onclick="hideM('mdl-sep')">Batal</button>
+      <button class="btn btn-p" onclick="submitSEP()">✅ Simpan SEP</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL TRANSAKSI BARU (KASIR) ===== -->
 <div class="ov" id="mdl-transaksi">
   <div class="modal" style="max-width:520px">
@@ -1796,8 +1827,8 @@
   </div>
 </nav>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" async></script>
-<script src="js/shared-state.js?v=4" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/shared-state.js?v=4"></script>
 <script src="js/index.js?v=71" defer></script>
 <script defer>
     if ('serviceWorker' in navigator) {

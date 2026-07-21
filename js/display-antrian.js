@@ -36,13 +36,16 @@ setInterval(tick, 1000);
 
 // MODE SWITCH
 function setMode(mode, event) {
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.mode-btn').forEach(function(b) { b.classList.remove('active'); });
   if (event && event.currentTarget) {
     event.currentTarget.classList.add('active');
   }
-  const modeKunjungan = document.getElementById('mode-kunjungan');
-  const modePoli = document.getElementById('mode-poli');
-  const modeSemua = document.getElementById('mode-semua');
+  var modeBar = document.querySelector('.mode-bar');
+  if (modeBar) modeBar.classList.toggle('hidden', mode !== 'kunjungan');
+
+  var modeKunjungan = document.getElementById('mode-kunjungan');
+  var modePoli = document.getElementById('mode-poli');
+  var modeSemua = document.getElementById('mode-semua');
   if (modeKunjungan) modeKunjungan.style.display = 'none';
   if (modePoli) modePoli.classList.remove('active');
   if (modeSemua) modeSemua.classList.remove('active');

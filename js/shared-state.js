@@ -106,13 +106,17 @@ const SharedState = {
                 window.__sb.from('registrations').select('*, patients(no_rm, nama), poli(nama_poli)'),
                 window.__sb.from('beds').select('*'),
                 window.__sb.from('payments').select('total').gte('created_at', today)
+                    .then(function(r) { return r; }, function() { return { data: [] }; })
             ]);
 
             const regs = regRes.data || [];
             const beds = bedRes.data || [];
-            const payments = payRes.data || [];
+            const payments = (payRes && payRes.data) || [];
 
-            const totalIncome = payments.reduce((s, p) => s + (p.total || 0), 0);
+            var totalIncome = 0;
+            for (var i = 0; i < payments.length; i++) {
+              totalIncome += payments[i].total || 0;
+            }
 
             return {
                 stats: {
