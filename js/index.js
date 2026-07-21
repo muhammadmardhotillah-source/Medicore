@@ -3,6 +3,442 @@
  * Main Dashboard Logic for MediCore SIMRS
  */
 
+// ─── GLOBAL TOAST SYSTEM ───
+function showToast(message, type, duration) {
+  type = type || 'info';
+  duration = duration || 4000;
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const icons = {
+    success: '✅',
+    error: '❌',
+    warning: '⚠️',
+    info: 'ℹ️'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = 'toast toast-' + type;
+  toast.innerHTML = '<span class="toast-icon">' + (icons[type] || 'ℹ️') + '</span>' + message;
+  toast.onclick = function() {
+    dismissToast(toast);
+  };
+  container.appendChild(toast);
+
+  setTimeout(function() {
+    dismissToast(toast);
+  }, duration);
+}
+
+function dismissToast(toast) {
+  if (toast.classList.contains('toast-exit')) return;
+  toast.classList.add('toast-exit');
+  setTimeout(function() {
+    if (toast.parentNode) toast.parentNode.removeChild(toast);
+  }, 300);
+}
+
+// ─── REUSABLE AUTOCOMPLETE ───
+// createAutocomplete(inputEl, options)
+// options: { onSearch(term, cb), onSelect(item), renderItem(item), minChars(2), debounceMs(300) }
+function createAutocomplete(inputEl, opts) {
+  if (!inputEl) return null;
+  opts = opts || {};
+  var onSearch = opts.onSearch || function(t, cb) { cb([]); };
+  var onSelect = opts.onSelect || function() {};
+  var renderItem = opts.renderItem || function(item) {
+    return '<div class="sd-main"><div class="sd-title">' + (item.label || item) + '</div></div>';
+  };
+  var minChars = opts.minChars || 2;
+  var debounceMs = opts.debounceMs || 300;
+
+  // Create dropdown
+  var dd = document.createElement('div');
+  dd.className = 'search-dropdown';
+  inputEl.parentNode.style.position = 'relative';
+  inputEl.parentNode.appendChild(dd);
+
+  var selectedIndex = -1;
+  var currentData = [];
+  var debounceTimer = null;
+
+  function hideDropdown() {
+    dd.classList.remove('show');
+    dd.innerHTML = '';
+    selectedIndex = -1;
+  }
+
+  function showDropdown(data) {
+    currentData = data;
+    if (!data || data.length === 0) {
+      dd.innerHTML = '<div class="search-dropdown-empty">Tidak ditemukan</div>';
+      dd.classList.add('show');
+      return;
+    }
+    dd.innerHTML = data.map(function(item, i) {
+      return '<div class="search-dropdown-item" data-index="' + i + '">' +
+        '<span class="sd-icon">' + (item.icon || '🔍') + '</span>' +
+        renderItem(item) +
+        (item.sub ? '<span class="sd-right">' + item.sub + '</span>' : '') +
+        '</div>';
+    }).join('');
+    selectedIndex = -1;
+    dd.classList.add('show');
+  }
+
+  function doSearch(term) {
+    if (term.length < minChars) {
+      hideDropdown();
+      return;
+    }
+    onSearch(term, function(results) {
+      showDropdown(results);
+    });
+  }
+
+  // Input events
+  inputEl.addEventListener('input', function() {
+    var val = inputEl.value.trim();
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(function() { doSearch(val); }, debounceMs);
+  });
+
+  inputEl.addEventListener('focus', function() {
+    var val = inputEl.value.trim();
+    if (val.length >= minChars) doSearch(val);
+  });
+
+  inputEl.addEventListener('keydown', function(e) {
+    var items = dd.querySelectorAll('.search-dropdown-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+      items.forEach(function(el, i) { el.classList.toggle('highlighted', i === selectedIndex); });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIndex = Math.max(selectedIndex - 1, 0);
+      items.forEach(function(el, i) { el.classList.toggle('highlighted', i === selectedIndex); });
+    } else if (e.key === 'Enter' && selectedIndex >= 0 && currentData[selectedIndex]) {
+      e.preventDefault();
+      onSelect(currentData[selectedIndex]);
+      hideDropdown();
+    } else if (e.key === 'Escape') {
+      hideDropdown();
+    }
+  });
+
+  // Click on dropdown items
+  dd.addEventListener('click', function(e) {
+    var itemEl = e.target.closest('.search-dropdown-item');
+    if (!itemEl) return;
+    var idx = parseInt(itemEl.getAttribute('data-index'));
+    if (currentData[idx]) {
+      onSelect(currentData[idx]);
+      hideDropdown();
+    }
+  });
+
+  // Click outside
+  document.addEventListener('click', function(e) {
+    if (!inputEl.parentNode.contains(e.target)) {
+      hideDropdown();
+    }
+  });
+
+  return { hide: hideDropdown, refresh: function() { doSearch(inputEl.value.trim()); } };
+}
+
+// ─── FORM VALIDATION HELPERS ───
+function validateField(id, rules) {
+  var el = document.getElementById(id);
+  if (!el) return true;
+  rules = rules || {};
+  var value = el.value.trim();
+  var errorEl = el.parentNode.querySelector('.field-error');
+
+  // Remove existing error
+  el.classList.remove('is-error', 'is-success');
+  if (errorEl) errorEl.classList.remove('show');
+
+  // Required
+  if (rules.required && !value) {
+    el.classList.add('is-error');
+    if (errorEl) { errorEl.textContent = rules.message || 'Wajib diisi'; errorEl.classList.add('show'); }
+    return false;
+  }
+
+  // Min length
+  if (rules.minLength && value.length < rules.minLength) {
+    el.classList.add('is-error');
+    if (errorEl) { errorEl.textContent = 'Minimal ' + rules.minLength + ' karakter'; errorEl.classList.add('show'); }
+    return false;
+  }
+
+  // Pattern
+  if (rules.pattern && value && !rules.pattern.test(value)) {
+    el.classList.add('is-error');
+    if (errorEl) { errorEl.textContent = rules.message || 'Format tidak valid'; errorEl.classList.add('show'); }
+    return false;
+  }
+
+  // Custom
+  if (rules.validate && !rules.validate(value)) {
+    el.classList.add('is-error');
+    if (errorEl) { errorEl.textContent = rules.message || 'Tidak valid'; errorEl.classList.add('show'); }
+    return false;
+  }
+
+  // Success state
+  if (value && rules.showSuccess) el.classList.add('is-success');
+  return true;
+}
+
+function validateForm(rules) {
+  // rules = { fieldId: ruleObj, ... }
+  var valid = true;
+  for (var id in rules) {
+    if (!validateField(id, rules[id])) valid = false;
+  }
+  return valid;
+}
+
+// Auto-clear error on input
+document.addEventListener('input', function(e) {
+  var target = e.target;
+  if (target.classList.contains('is-error')) {
+    target.classList.remove('is-error');
+    var err = target.parentNode.querySelector('.field-error');
+    if (err) err.classList.remove('show');
+  }
+});
+function showSkeleton(containerId, type) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  type = type || 'table';
+  var skeletons = {
+    'table': function() {
+      var rows = '';
+      for (var i = 0; i < 5; i++) {
+        rows += '<div class="skeleton skeleton-table-row"></div>';
+      }
+      return rows;
+    },
+    'card': function() {
+      return '<div class="skeleton skeleton-card"></div>';
+    },
+    'stat': function() {
+      return '<div class="skeleton skeleton-stat"></div>';
+    },
+    'text': function() {
+      return '<div class="skeleton skeleton-text" style="width:80%"></div>' +
+             '<div class="skeleton skeleton-text" style="width:60%"></div>' +
+             '<div class="skeleton skeleton-text-sm"></div>';
+    },
+    'table-row': function() {
+      return '<div class="skeleton skeleton-table-row"></div>';
+    }
+  };
+  el.innerHTML = '<div class="loading-skeleton">' + (skeletons[type] ? skeletons[type]() : skeletons['table']()) + '</div>';
+  el.style.display = '';
+}
+
+function hideSkeleton(containerId) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+}
+// ─── UNIVERSAL TABLE SORT ───
+window.__tableSort = window.__tableSort || {};
+function sortTable(tableId, colIndex) {
+  var table = document.getElementById(tableId);
+  if (!table) return;
+  var tbody = table.querySelector('tbody');
+  if (!tbody) return;
+
+  var state = window.__tableSort[tableId] || {};
+  var isAsc = state.col === colIndex ? !state.asc : true;
+  window.__tableSort[tableId] = { col: colIndex, asc: isAsc };
+
+  table.querySelectorAll('th').forEach(function(th, i) {
+    var text = th.textContent.replace(/[▴▾]/g, '').trim();
+    th.textContent = i === colIndex ? text + ' ' + (isAsc ? '▴' : '▾') : text;
+    if (i === colIndex) th.setAttribute('data-sort', isAsc ? 'asc' : 'desc');
+    else th.removeAttribute('data-sort');
+  });
+
+  var rows = Array.from(tbody.querySelectorAll('tr'));
+  rows.sort(function(a, b) {
+    var aV = (a.cells[colIndex] ? a.cells[colIndex].textContent.trim() : '');
+    var bV = (b.cells[colIndex] ? b.cells[colIndex].textContent.trim() : '');
+    var aN = parseFloat(aV.replace(/[Rp. ,]/g, ''));
+    var bN = parseFloat(bV.replace(/[Rp. ,]/g, ''));
+    if (!isNaN(aN) && !isNaN(bN)) return isAsc ? aN - bN : bN - aN;
+    return isAsc ? aV.localeCompare(bV, 'id') : bV.localeCompare(aV, 'id');
+  });
+  rows.forEach(function(row) { tbody.appendChild(row); });
+}
+
+// Delegated sort: click any <th> in a .t table to sort
+document.addEventListener('click', function(e) {
+  var th = e.target.closest('.t th:not([colspan])');
+  if (!th) return;
+  var table = th.closest('.t');
+  if (!table) return;
+  var colIndex = Array.from(th.parentNode.children).indexOf(th);
+  var lastCol = table.querySelectorAll('th').length - 1;
+  if (colIndex === lastCol) return;
+  sortTable(table.id || 'table-' + Math.random(), colIndex);
+});
+
+function initAutocompletes() {
+  // Patient search (pendaftaran)
+  var regInput = document.getElementById('reg-name');
+  if (regInput) {
+    createAutocomplete(regInput, {
+      minChars: 2,
+      onSearch: function(term, cb) {
+        window.__sb.from('patients').select('id, no_rm, nama, no_hp').ilike('nama', '%' + term + '%').limit(8).then(function(res) {
+          cb((res.data || []).map(function(p) {
+            return { id: p.id, label: p.nama, sub: p.no_rm, icon: '👤', rm: p.no_rm };
+          }));
+          })['catch'](function() { cb([]); });
+      },
+      onSelect: function(item) {
+        var resultDiv = document.getElementById('search-result');
+        if (resultDiv) {
+          resultDiv.style.display = 'block';
+          document.getElementById('res-name').textContent = item.label;
+          document.getElementById('res-rm').textContent = item.rm || item.sub;
+        }
+        window._regPatientId = item.id;
+        window._regPatientRM = item.rm || item.sub;
+      }
+    });
+  }
+
+  // Drug search (stok / farmasi)
+  var stokSearch = document.getElementById('stok-search');
+  if (stokSearch) {
+    // Already handled by filterStok(), just wrap the search-input-wrap
+  }
+
+  // Drug autocomplete for prescription (rx-search)
+  var rxSearch = document.getElementById('rx-search');
+  if (rxSearch) {
+    createAutocomplete(rxSearch, {
+      minChars: 2,
+      onSearch: function(term, cb) {
+        window.__sb.from('medicines').select('id, nama_obat, kode, stok, harga_satuan, satuan').ilike('nama_obat', '%' + term + '%').limit(8).then(function(res) {
+          cb((res.data || []).map(function(m) {
+            return {
+              id: m.id,
+              label: m.nama_obat,
+              sub: 'Stok: ' + (m.stok || 0) + ' ' + (m.satuan || ''),
+              icon: '💊',
+              stok: m.stok || 0,
+              harga: m.harga_satuan || 0
+            };
+          }));
+        })['catch'](function() { cb([]); });
+      },
+      onSelect: function(item) {
+        tambahObat(item.label);
+        rxSearch.value = '';
+        rxSearch.focus();
+      }
+    });
+  }
+
+  // Drug autocomplete for penerimaan stok
+  var psSearch = document.getElementById('ps-search-input');
+  if (psSearch) {
+    createAutocomplete(psSearch, {
+      minChars: 2,
+      onSearch: function(term, cb) {
+        window.__sb.from('medicines').select('id, nama_obat, kode, stok').ilike('nama_obat', '%' + term + '%').limit(8).then(function(res) {
+          cb((res.data || []).map(function(m) {
+            return { id: m.id, label: m.nama_obat, sub: m.kode, icon: '💊' };
+          }));
+        })['catch'](function() { cb([]); });
+      },
+      onSelect: function(item) {
+        pilihObatPenerimaan(item);
+      }
+    });
+  }
+
+  // ICD-10 autocomplete for EMR
+  var icdInputs = ['emr-dx1', 'emr-dx2'];
+  icdInputs.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    createAutocomplete(el, {
+      minChars: 1,
+      onSearch: function(term, cb) {
+        var q = term.toLowerCase();
+        // Use hardcoded ICD list from emr.js + query supabase
+        var icdList = [
+          { code: 'I10', name: 'Essential hypertension' },
+          { code: 'I11', name: 'Hypertensive heart disease' },
+          { code: 'I50', name: 'Heart failure' },
+          { code: 'I48', name: 'Atrial fibrillation and flutter' },
+          { code: 'I25', name: 'Chronic ischaemic heart disease' },
+          { code: 'E11', name: 'Type 2 diabetes mellitus' },
+          { code: 'E78', name: 'Disorders of lipoprotein metabolism' },
+          { code: 'J45', name: 'Asthma' },
+          { code: 'J15', name: 'Bacterial pneumonia' },
+          { code: 'N39', name: 'Urinary tract infection' },
+          { code: 'K29', name: 'Gastritis and duodenitis' },
+          { code: 'M54', name: 'Dorsalgia (back pain)' },
+          { code: 'R51', name: 'Headache' },
+          { code: 'R10', name: 'Abdominal and pelvic pain' },
+          { code: 'A09', name: 'Infectious gastroenteritis' },
+        ];
+        var matched = icdList.filter(function(i) {
+          return i.code.toLowerCase().includes(q) || i.name.toLowerCase().includes(q);
+        });
+        cb(matched.map(function(i) {
+          return { label: i.code + ' — ' + i.name, sub: i.code, icon: '📖' };
+        }));
+      },
+      onSelect: function(item) {
+        el.value = item.label;
+      }
+    });
+  });
+}
+
+// ─── MOBILE MENU TOGGLE ───
+function toggleMobileMenu() {
+  var sidebar = document.querySelector('.sidebar');
+  if (sidebar) {
+    sidebar.classList.toggle('show');
+  }
+}
+
+// ─── KEYBOARD: Close modal on Escape + click outside ───
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    // Close any open modal
+    document.querySelectorAll('.ov.show').forEach(function(m) {
+      m.classList.remove('show');
+    });
+    // Close sidebar on mobile
+    var sidebar = document.querySelector('.sidebar.show');
+    if (sidebar) sidebar.classList.remove('show');
+    // Close user menu
+    var userMenu = document.getElementById('user-menu');
+    if (userMenu) userMenu.style.display = 'none';
+  }
+});
+
+// Click outside modal to close
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('ov')) {
+    e.target.classList.remove('show');
+  }
+});
+
 const titles = {
     dashboard: 'Dashboard',
     booking: '📅 Booking Pasien',
@@ -50,7 +486,7 @@ function go(name, el) {
   if (user) {
     const allowed = ROLE_MENUS[user.role] || [];
     if (!allowed.includes(name)) {
-      alert('⛔ Anda tidak memiliki akses ke menu ini');
+      showToast('Anda tidak memiliki akses ke menu ini', 'warning');
       return;
     }
   }
@@ -58,12 +494,22 @@ function go(name, el) {
   if (name === 'antrian') name = 'ambilantrian';
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
-    
+    document.querySelectorAll('.bn-item').forEach(b => b.classList.remove('active'));
+
     const pg = document.getElementById('pg-' + name);
     if (pg) pg.classList.add('active');
-    
+
     document.getElementById('pgt').textContent = titles[name] || name;
-    
+
+    // Sync bottom nav
+    document.querySelectorAll('.bn-item').forEach(function(b) {
+      if (b.getAttribute('data-page') === name) b.classList.add('active');
+    });
+
+    // Close sidebar on mobile after navigation
+    var mobileSidebar = document.querySelector('.sidebar.show');
+    if (mobileSidebar) mobileSidebar.classList.remove('show');
+
     // Load page-specific data
     if (name === 'booking') loadBooking();
     if (name === 'pendaftaran') loadPendaftaran();
@@ -166,16 +612,60 @@ function swTab(el, tabId) {
     if (tabId === 'far-rx') loadFarRx();
 }
 
+// ─── ANIMATED COUNTER ───
+function animateCounter(el, target, prefix, suffix) {
+  prefix = prefix || '';
+  suffix = suffix || '';
+  if (!el) return;
+  // Currency format (Rp)
+  if (typeof target === 'string' && target.includes('Rp')) {
+    el.textContent = target;
+    return;
+  }
+  if (prefix === 'Rp' || (el.id && (el.id.includes('income') || el.id.includes('total') || el.id.includes('omzet') || el.id.includes('biaya')))) {
+    el.textContent = formatRupiah(parseInt(target) || 0);
+    return;
+  }
+  const numTarget = parseInt(target) || 0;
+  let current = 0;
+  const step = Math.max(1, Math.floor(numTarget / 30));
+  const interval = 30;
+  el.textContent = prefix + current + suffix;
+  const timer = setInterval(function() {
+    current += step;
+    if (current >= numTarget) {
+      current = numTarget;
+      clearInterval(timer);
+    }
+    el.textContent = prefix + current.toLocaleString() + suffix;
+  }, interval);
+}
+
+// ─── RENDER CSS-ONLY CHART ───
+function renderMiniChart(containerId, data, color) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  color = color || 'var(--primary-500)';
+  const max = Math.max(...data, 1);
+  container.innerHTML = '<div class="chart-wrap">' +
+    data.map(function(v, i) {
+      var h = Math.max(4, (v / max) * 100);
+      var dayNames = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+      return '<div class="chart-bar"><div class="chart-bar-inner" style="height:' + h + 'px;background:' + color + ';opacity:' + (0.3 + (v/max)*0.7) + '"></div><div class="chart-bar-label">' + (dayNames[i] || '') + '</div></div>';
+    }).join('') +
+    '</div>';
+}
+
 // RENDER DASHBOARD DATA
 async function renderDashboard() {
     const dashboardData = await SharedState.getDashboardData();
     if (!dashboardData) return;
 
-    // 1. Update Statistik
-    if(document.getElementById('stat-rj')) document.getElementById('stat-rj').textContent = dashboardData.stats.rawatJalan;
-    if(document.getElementById('stat-ri')) document.getElementById('stat-ri').textContent = dashboardData.stats.rawatInap;
-    if(document.getElementById('stat-ugd')) document.getElementById('stat-ugd').textContent = dashboardData.stats.ugd;
-    if(document.getElementById('stat-income')) document.getElementById('stat-income').textContent = 'Rp ' + dashboardData.stats.income.toLocaleString();
+    // 1. Update Statistik — with animated counter
+    animateCounter(document.getElementById('stat-rj'), dashboardData.stats.rawatJalan);
+    animateCounter(document.getElementById('stat-ri'), dashboardData.stats.rawatInap);
+    animateCounter(document.getElementById('stat-ugd'), dashboardData.stats.ugd);
+    animateCounter(document.getElementById('stat-income'), 'Rp ' + (dashboardData.stats.income || 0).toLocaleString());
 
     // Update sidebar badges
     const totActive = dashboardData.stats.rawatJalan + dashboardData.stats.rawatInap + dashboardData.stats.ugd;
@@ -184,21 +674,21 @@ async function renderDashboard() {
     const ugdNb = document.querySelector('.ni[data-page="ugd"] .nb');
     if (ugdNb) ugdNb.textContent = dashboardData.stats.ugd;
 
-    // 2. Render Tempat Tidur
+    // 2. Render Tempat Tidur — Enhanced with tooltip
     const bedContainer = document.getElementById('bed-container');
     if (bedContainer) {
         bedContainer.innerHTML = '';
-        dashboardData.beds.forEach(bed => {
-            const statusClass = bed.status === 'tersedia' ? 'bo' : (bed.status === 'terpakai' ? 'ba' : 'br');
-            bedContainer.innerHTML += `
-                <div class="bi2 ${statusClass}">
-                    <div class="icon">🛏</div>
-                    <div class="num">${bed.nomor}</div>
-                    <div class="cls">${bed.kelas}</div>
-                </div>`;
+        dashboardData.beds.forEach(function(bed) {
+            var statusClass = bed.status === 'tersedia' ? 'bo' : (bed.status === 'terpakai' ? 'ba' : 'br');
+            var statusText = bed.status === 'tersedia' ? 'Tersedia' : (bed.status === 'terpakai' ? 'Terisi' : 'Reservasi');
+            bedContainer.innerHTML += '<div class="bi2 ' + statusClass + '">' +
+                '<div class="icon">🛏</div>' +
+                '<div class="num">' + bed.nomor + '</div>' +
+                '<div class="cls">' + bed.kelas + '</div>' +
+                '<div class="bed-info">' + statusText + '</div>' +
+                '</div>';
         });
-        
-        // Update Ringkasan Bed
+
         if(document.getElementById('bed-tersedia')) document.getElementById('bed-tersedia').textContent = dashboardData.stats.beds.tersedia;
         if(document.getElementById('bed-terpakai')) document.getElementById('bed-terpakai').textContent = dashboardData.stats.beds.terpakai;
         if(document.getElementById('bed-reservasi')) document.getElementById('bed-reservasi').textContent = dashboardData.stats.beds.reservasi;
@@ -208,24 +698,33 @@ async function renderDashboard() {
     const patientTable = document.getElementById('latest-patients-table')?.querySelector('tbody');
     if (patientTable) {
         patientTable.innerHTML = '';
-        dashboardData.latestPatients.forEach(p => {
-            patientTable.innerHTML += `
-                <tr>
-                    <td class="mono">${p.no_rm}</td>
-                    <td>${p.nama}</td>
-                    <td>${p.poli}</td>
-                    <td>${p.penjamin}</td>
-                    <td><span class="b ${p.status === 'Selesai' ? 'bs' : 'bw'}">${p.status}</span></td>
-                </tr>`;
+        dashboardData.latestPatients.forEach(function(p) {
+            patientTable.innerHTML += '<tr>' +
+                '<td class="mono">' + p.no_rm + '</td>' +
+                '<td>' + p.nama + '</td>' +
+                '<td>' + p.poli + '</td>' +
+                '<td>' + p.penjamin + '</td>' +
+                '<td><span class="b ' + (p.status === 'Selesai' ? 'bs' : 'bw') + '">' + p.status + '</span></td>' +
+                '</tr>';
         });
     }
 
     // 4. Render Antrian
     if (dashboardData.queues) {
-        Object.keys(dashboardData.queues).forEach(id => {
-            const el = document.getElementById('q-' + id);
+        Object.keys(dashboardData.queues).forEach(function(id) {
+            var el = document.getElementById('q-' + id);
             if (el) el.textContent = dashboardData.queues[id].current;
         });
+    }
+
+    // 5. CSS-only Revenue Chart (7 days mock)
+    var mockIncome = [65, 72, 58, 84, 91, 78, 89];
+    renderMiniChart('chart-w', mockIncome, 'var(--primary-500)');
+
+    // 6. Chart legends
+    var chartLegend = document.getElementById('chart-l');
+    if (chartLegend) {
+      chartLegend.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">7 hari terakhir • dalam juta rupiah</span>';
     }
 }
 
@@ -359,7 +858,7 @@ async function loadDoctorOptions(poliId) {
 // Cari pasien via Supabase
 async function searchPatient() {
     const nama = document.getElementById('reg-name').value.trim();
-    if (!nama) return alert('Masukkan nama pasien');
+    if (!nama) return showToast('Masukkan nama pasien');
     const { data } = await window.__sb
         .from('patients')
         .select('id, no_rm, nama')
@@ -368,7 +867,7 @@ async function searchPatient() {
     const resultDiv = document.getElementById('search-result');
     if (!data || data.length === 0) {
         resultDiv.style.display = 'none';
-        return alert('Pasien tidak ditemukan. Daftarkan pasien baru melalui halaman daftar-mandiri.');
+        return showToast('Pasien tidak ditemukan. Daftarkan pasien baru melalui halaman daftar-mandiri.');
     }
     // Show first result
     resultDiv.style.display = 'block';
@@ -395,14 +894,24 @@ async function submitRegistration() {
     const dokterId = document.getElementById('reg-dokter')?.value;
     const mode = document.getElementById('daftar-tab-baru')?.style.display !== 'none' ? 'baru' : 'cari';
 
-    if (!poliId) return alert('Pilih poli tujuan!');
+    // Validate form
+    if (mode === 'baru') {
+      var valid = validateForm({
+        'reg-nama': { required: true, message: '⚠️ Nama pasien wajib diisi' },
+        'reg-poli': { required: true, message: '⚠️ Pilih poli tujuan' }
+      });
+      if (!valid) return;
+    } else {
+      if (!validateField('reg-name', { required: true, message: '⚠️ Cari pasien terlebih dahulu' })) return;
+      if (!window._regPatientId) return showToast('Pilih pasien dari hasil pencarian', 'warning');
+    }
 
     let patientId = window._regPatientId;
 
     // MODE BARU: create pasien baru
     if (mode === 'baru') {
         const nama = document.getElementById('reg-nama').value.trim();
-        if (!nama) return alert('Nama pasien wajib diisi!');
+        if (!nama) return showToast('Nama pasien wajib diisi!');
 
         const nik = document.getElementById('reg-nik').value.trim();
         const jk = document.getElementById('reg-jk').value;
@@ -445,13 +954,13 @@ async function submitRegistration() {
                 .select()
                 .single();
 
-            if (error) return alert('❌ Gagal simpan pasien: ' + error.message);
+            if (error) return showToast(' Gagal simpan pasien: ' + error.message);
             patientId = newPatient.id;
             window._regPatientRM = newPatient.no_rm;
         }
     } else {
         // MODE CARI: pastikan sudah cari pasien
-        if (!patientId) return alert('Cari pasien terlebih dahulu!');
+        if (!patientId) return showToast('Cari pasien terlebih dahulu!');
     }
 
     // Generate nomor antrian
@@ -475,7 +984,7 @@ async function submitRegistration() {
             no_antrian: noAntrian
         });
 
-    if (error) return alert('❌ Gagal: ' + error.message);
+    if (error) return showToast(' Gagal: ' + error.message);
 
     // Create invoice automatically
     await window.__sb.from('invoices').insert({
@@ -485,7 +994,7 @@ async function submitRegistration() {
         total: 0
     });
 
-    alert(`✅ Berhasil! Pasien terdaftar. No. Antrian: ${noAntrian}`);
+    showToast(`✅ Berhasil! Pasien terdaftar. No. Antrian: ${noAntrian}`);
     hideM('mdl-daftar');
     loadPendaftaran();
 }
@@ -563,7 +1072,7 @@ async function loadRawatJalan() {
 
 // Panggil pasien — update status ke Proses + set active patient
 async function panggilPasien(regId) {
-    if (!regId) return alert('Tidak ada pasien yang bisa dipanggil');
+    if (!regId) return showToast('Tidak ada pasien yang bisa dipanggil');
 
     // Update status to Proses
     const { error } = await window.__sb
@@ -571,7 +1080,7 @@ async function panggilPasien(regId) {
         .update({ status: 'Proses' })
         .eq('id', regId);
 
-    if (error) return alert('❌ Gagal: ' + error.message);
+    if (error) return showToast(' Gagal: ' + error.message);
 
     // Switch to EMR tab
     document.querySelectorAll('.tgb').forEach(t => t.classList.remove('active'));
@@ -630,7 +1139,7 @@ function swSub(el, tabId) {
 // ─── SIMPAN EMR ───
 async function simpanEMR(mode) {
     const regId = window._activeRegId;
-    if (!regId) return alert('❌ Pilih pasien dulu dari antrian');
+    if (!regId) return showToast(' Pilih pasien dulu dari antrian');
 
     const emrData = {
         s_keluhan: document.getElementById('emr-keluhan')?.value || '',
@@ -657,10 +1166,10 @@ async function simpanEMR(mode) {
     if (mode === 'selesai') updateData.status = 'Selesai';
 
     const { error } = await window.__sb.from('registrations').update(updateData).eq('id', regId);
-    if (error) return alert('❌ Gagal: ' + error.message);
+    if (error) return showToast(' Gagal: ' + error.message);
 
     if (mode === 'selesai') {
-        alert('✅ Rekam medis selesai & tersimpan!');
+        showToast(' Rekam medis selesai & tersimpan!');
         // Reset form
         document.getElementById('rj-emr-patient').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted)">Pilih pasien dari antrian untuk memulai EMR</div>';
         document.querySelectorAll('#rj-emr input, #rj-emr textarea, #rj-emr select').forEach(el => el.value = '');
@@ -670,20 +1179,20 @@ async function simpanEMR(mode) {
         swTab(document.querySelector('.tgb'), 'rj-q');
         loadRawatJalan();
     } else {
-        alert('💾 Draft EMR tersimpan!');
+        showToast('Draft EMR tersimpan!');
     }
 }
 
 // ─── LANJUT KE RESEP ───
 function lanjutResep() {
-    if (!window._activeRegId) return alert('❌ Pilih pasien dulu');
+    if (!window._activeRegId) return showToast(' Pilih pasien dulu');
     swTab(document.querySelectorAll('.tgb')[2], 'rj-rx');
 }
 
 // ─── CETAK SURAT KONTROL ───
 function printKontrol() {
     const pt = window._activePatient;
-    if (!pt) return alert('❌ Pilih pasien dulu');
+    if (!pt) return showToast(' Pilih pasien dulu');
     const win = window.open('', '_blank');
     win.document.write(`<html><head><title>Surat Kontrol</title><style>body{font-family:sans-serif;padding:40px}</style></head><body>
         <h2>Surat Kontrol</h2>
@@ -720,7 +1229,7 @@ async function loadMedicines() {
 }
 
 function tambahObat(id, nama, harga, satuan) {
-    if (!window._activePatient) return alert('❌ Pilih pasien dulu dari EMR');
+    if (!window._activePatient) return showToast(' Pilih pasien dulu dari EMR');
     const tbody = document.getElementById('rx-tbody');
     const idx = window._rxItems ? window._rxItems.length : 0;
     if (!window._rxItems) window._rxItems = [];
@@ -769,16 +1278,16 @@ function renderRxTable() {
 function hitungTotal() {
     const items = window._rxItems || [];
     const subtotal = items.reduce((sum, item) => sum + (item.harga || 0) * (item.jumlah || 1), 0);
-    document.getElementById('rx-subtotal').textContent = 'Rp ' + subtotal.toLocaleString();
+    document.getElementById('rx-subtotal').textContent = formatRupiah(subtotal);
     document.getElementById('rx-total').textContent = 'Rp ' + (subtotal + 5000).toLocaleString();
 }
 
 async function kirimFarmasi() {
     const regId = window._activeRegId;
     const pt = window._activePatient;
-    if (!regId || !pt) return alert('❌ Pilih pasien dulu dari EMR');
+    if (!regId || !pt) return showToast(' Pilih pasien dulu dari EMR');
     const items = window._rxItems || [];
-    if (!items.length) return alert('⚠️ Belum ada obat di resep');
+    if (!items.length) return showToast(' Belum ada obat di resep');
 
     // Create prescription
     const noResep = 'RX-' + Date.now().toString(36).toUpperCase();
@@ -791,7 +1300,7 @@ async function kirimFarmasi() {
         created_at: new Date().toISOString()
     }).select().single();
 
-    if (pe) return alert('❌ Gagal buat resep: ' + pe.message);
+    if (pe) return showToast(' Gagal buat resep: ' + pe.message);
 
     // Create prescription items
     const pItems = items.map(item => ({
@@ -804,9 +1313,9 @@ async function kirimFarmasi() {
     }));
 
     const { error: ie } = await window.__sb.from('prescription_items').insert(pItems);
-    if (ie) return alert('❌ Gagal simpan item: ' + ie.message);
+    if (ie) return showToast(' Gagal simpan item: ' + ie.message);
 
-    alert('✅ Resep terkirim ke Farmasi!\nNo. Resep: ' + noResep);
+    showToast(' Resep terkirim ke Farmasi!\nNo. Resep: ' + noResep);
     window._rxItems = [];
     document.getElementById('rx-tbody').innerHTML = '';
     hitungTotal();
@@ -814,9 +1323,9 @@ async function kirimFarmasi() {
 
 function cetakResep() {
     const pt = window._activePatient;
-    if (!pt) return alert('❌ Pilih pasien dulu dari EMR');
+    if (!pt) return showToast(' Pilih pasien dulu dari EMR');
     const items = window._rxItems || [];
-    if (!items.length) return alert('⚠️ Belum ada obat di resep');
+    if (!items.length) return showToast(' Belum ada obat di resep');
 
     let rows = items.map((item, i) => `
         <tr>
@@ -1288,7 +1797,7 @@ function printRMDetail() {
     const content = document.getElementById('rm-detail-content');
     if (!content) return;
     const w = window.open('', '_blank');
-    if (!w) return alert('Izinkan popup untuk mencetak');
+    if (!w) return showToast('Izinkan popup untuk mencetak');
     w.document.write(`<html><head><title>Rekam Medis</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; }
@@ -1422,8 +1931,8 @@ async function labAmbilSampel(id) {
     const btn = document.querySelector('button[onclick*="labAmbilSampel"]');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Memproses...'; }
     const { error } = await window.__sb.from('lab_requests').update({ sampel_status: 'Diambil', status: 'Diproses' }).eq('id', id);
-    if (error) { alert('❌ Gagal: ' + error.message); if(btn){btn.disabled=false;btn.textContent='🧪 Ambil Sampel';} return; }
-    alert('✅ Sampel berhasil diambil!');
+    if (error) { showToast(' Gagal: ' + error.message); if(btn){btn.disabled=false;btn.textContent='🧪 Ambil Sampel';} return; }
+    showToast(' Sampel berhasil diambil!');
     showLabDetail(id);
     loadLab();
 }
@@ -1437,8 +1946,8 @@ async function labSelesai(id) {
     const { error } = await window.__sb.from('lab_requests').update({ 
         status: 'Selesai', hasil: hasil.trim()
     }).eq('id', id);
-    if (error) { alert('❌ Gagal: ' + error.message); if(btn){btn.disabled=false;btn.textContent='✅ Selesai';} return; }
-    alert('✅ Hasil lab tersimpan!');
+    if (error) { showToast(' Gagal: ' + error.message); if(btn){btn.disabled=false;btn.textContent='✅ Selesai';} return; }
+    showToast(' Hasil lab tersimpan!');
     showLabDetail(id);
     loadLab();
 }
@@ -1501,7 +2010,7 @@ async function radUploadScan(input, id) {
     const file = input.files[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-        alert('❌ Ukuran file maksimal 5MB');
+        showToast(' Ukuran file maksimal 5MB');
         input.value = '';
         return;
     }
@@ -1515,7 +2024,7 @@ async function radUploadScan(input, id) {
         const btn = document.querySelector('button[onclick*="radSelesai"]');
         if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan scan...'; }
         const { error } = await window.__sb.from('radiology_requests').update({ scan_url: dataUrl }).eq('id', id);
-        if (error) { alert('❌ Gagal upload scan: ' + error.message); }
+        if (error) { showToast(' Gagal upload scan: ' + error.message); }
         if (btn) { btn.disabled = false; btn.textContent = '✅ Selesai — Input Hasil'; }
     };
     reader.readAsDataURL(file);
@@ -1530,8 +2039,8 @@ async function radSelesai(id) {
         status: 'Selesai',
         hasil: hasil.trim()
     }).eq('id', id);
-    if (error) { alert('❌ Gagal: ' + error.message); if(btn){btn.disabled=false;btn.textContent='✅ Selesai — Input Hasil';} return; }
-    alert('✅ Hasil radiologi tersimpan!');
+    if (error) { showToast(' Gagal: ' + error.message); if(btn){btn.disabled=false;btn.textContent='✅ Selesai — Input Hasil';} return; }
+    showToast(' Hasil radiologi tersimpan!');
     showRadDetail(id);
     loadRad();
 }
@@ -1602,9 +2111,9 @@ async function farmasiSelesai(id) {
         // 3. Close detail modal, navigate to kasir, refresh
         hideM('mdl-detail');
         go('kasir');
-        alert('✅ Resep selesai — tagihan Rp ' + total.toLocaleString() + ' dikirim ke Kasir');
+        showToast(' Resep selesai — tagihan Rp ' + total.toLocaleString() + ' dikirim ke Kasir');
     } catch (e) {
-        alert('❌ ' + e.message);
+        showToast(' ' + e.message);
         if (btn) { btn.disabled = false; btn.textContent = '✅ Selesai — Lanjut ke Kasir'; }
     }
 }
@@ -1645,7 +2154,7 @@ async function showOKDetail(id) {
 
 async function selesaiOperasi(id) {
     const biaya = parseInt(document.getElementById('ok-biaya')?.value) || 0;
-    if (biaya <= 0) { alert('⚠️ Isi dulu biaya tindakan!'); return; }
+    if (biaya <= 0) { showToast(' Isi dulu biaya tindakan!'); return; }
     if (!confirm('💰 Konfirmasi operasi selesai dengan biaya Rp ' + biaya.toLocaleString() + '?')) return;
 
     const btn = document.querySelector(`button[onclick*="selesaiOperasi('${id}'"]`);
@@ -1653,7 +2162,7 @@ async function selesaiOperasi(id) {
 
     // Ambil data pasien dulu
     const { data: s } = await window.__sb.from('surgery_schedule').select('*, patients!inner(id, no_rm, nama)').eq('id', id).single();
-    if (!s) { alert('❌ Data operasi tidak ditemukan'); return; }
+    if (!s) { showToast(' Data operasi tidak ditemukan'); return; }
 
     try {
         // 1. Update status operasi + biaya
@@ -1678,11 +2187,11 @@ async function selesaiOperasi(id) {
         });
         if (pe) throw new Error('Gagal buat tagihan: ' + pe.message);
 
-        alert('✅ Operasi selesai — tagihan Rp ' + biaya.toLocaleString() + ' masuk ke Kasir');
+        showToast(' Operasi selesai — tagihan Rp ' + biaya.toLocaleString() + ' masuk ke Kasir');
         hideM('mdl-detail');
         loadOK();
     } catch (e) {
-        alert('❌ ' + e.message);
+        showToast(' ' + e.message);
         if (btn) { btn.disabled = false; btn.textContent = '✅ Selesai & Kirim ke Kasir'; }
     }
 }
@@ -1771,10 +2280,10 @@ function searchLabPatient() {
 
     async function submitLabReg() {
         const btn = document.getElementById('btn-lab-submit');
-        if (!_labPatientId) { alert('Pilih pasien terlebih dahulu!'); return; }
+        if (!_labPatientId) { showToast('Pilih pasien terlebih dahulu!'); return; }
         const asal = document.getElementById('lab-asal').value;
         const checked = [...document.querySelectorAll('#lab-checkbox-group input:checked')].map(c => c.value);
-        if (!checked.length) { alert('Pilih minimal satu jenis pemeriksaan!'); return; }
+        if (!checked.length) { showToast('Pilih minimal satu jenis pemeriksaan!'); return; }
         const catatan = document.getElementById('lab-catatan').value.trim();
         btn.disabled = true; btn.textContent = '⏳ Mendaftarkan...';
         const noLab = 'LAB-' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '-' + String(Date.now() % 10000).padStart(4,'0');
@@ -1782,8 +2291,8 @@ function searchLabPatient() {
             no_lab: noLab, patient_id: _labPatientId, jenis_pemeriksaan: checked.join(', '),
             asal, catatan, status: 'Menunggu', sampel_status: 'Belum'
         });
-        if (error) { alert('Gagal: ' + error.message); btn.disabled = false; btn.textContent = '✅ Daftarkan Pemeriksaan'; return; }
-        alert('✅ ' + noLab + ' — Registrasi berhasil!');
+        if (error) { showToast('' + error.message); btn.disabled = false; btn.textContent = '✅ Daftarkan Pemeriksaan'; return; }
+        showToast(' ' + noLab + ' — Registrasi berhasil!');
         hideM('mdl-lab-reg');
         _labPatientId = null;
         document.getElementById('lab-search-input').value = '';
@@ -1814,7 +2323,7 @@ function selectRadPatient(id, nama) {
 
 async function submitRadReg() {
     const btn = document.getElementById('btn-rad-submit');
-    if (!_radPatientId) { alert('Pilih pasien terlebih dahulu!'); return; }
+    if (!_radPatientId) { showToast('Pilih pasien terlebih dahulu!'); return; }
     const asal = document.getElementById('rad-asal').value;
     const jenis = document.getElementById('rad-jenis').value;
     const catatan = document.getElementById('rad-catatan').value.trim();
@@ -1824,8 +2333,8 @@ async function submitRadReg() {
         no_rad: noRad, patient_id: _radPatientId, jenis_pemeriksaan: jenis + (catatan ? ' — ' + catatan : ''),
         asal, catatan, status: 'Menunggu'
     });
-    if (error) { alert('Gagal: ' + error.message); btn.disabled = false; btn.textContent = '✅ Daftarkan Pemeriksaan'; return; }
-    alert('✅ ' + noRad + ' — Registrasi berhasil!');
+    if (error) { showToast('' + error.message); btn.disabled = false; btn.textContent = '✅ Daftarkan Pemeriksaan'; return; }
+    showToast(' ' + noRad + ' — Registrasi berhasil!');
     hideM('mdl-rad-reg');
     _radPatientId = null;
     document.getElementById('rad-search-input').value = '';
@@ -2097,7 +2606,7 @@ async function submitPenerimaanStok() {
     const id = document.getElementById('ps-obat-id').value;
     const qty = parseInt(document.getElementById('ps-qty').value);
     if (!id || !qty || qty <= 0) {
-        alert('❌ Pilih obat dan masukkan jumlah yang valid');
+        showToast(' Pilih obat dan masukkan jumlah yang valid');
         return;
     }
     const btn = document.querySelector('button[onclick*="submitPenerimaanStok"]');
@@ -2121,12 +2630,12 @@ async function submitPenerimaanStok() {
 
     const { error } = await window.__sb.from('medicines').update(updateData).eq('id', id);
     if (error) {
-        alert('❌ Gagal: ' + error.message);
+        showToast(' Gagal: ' + error.message);
         if (btn) { btn.disabled = false; btn.textContent = '📦 Simpan Penerimaan'; }
         return;
     }
 
-    alert(`✅ Penerimaan berhasil! Stok bertambah menjadi: ${stokBaru}`);
+    showToast(`✅ Penerimaan berhasil! Stok bertambah menjadi: ${stokBaru}`);
     hideM('mdl-penerimaan-stok');
     loadFarStok();
     loadFarmasi();
@@ -2635,7 +3144,7 @@ async function submitAdmit() {
     const bedId = document.getElementById('admit-bed').value;
     const dpjpId = document.getElementById('admit-dpjp').value;
     
-    if (!patientId || !bedId) { alert('Pilih pasien dan bed!'); return; }
+    if (!patientId || !bedId) { showToast('Pilih pasien dan bed!'); return; }
     
     btn.disabled = true;
     btn.textContent = '⏳ Memproses...';
@@ -2666,16 +3175,16 @@ async function submitAdmit() {
             diagnosa_masuk: diagnosa || null
         });
         
-        if (regErr) { alert('Gagal: ' + regErr.message); btn.disabled = false; btn.textContent = '✅ Konfirmasi Admit'; return; }
+        if (regErr) { showToast('' + regErr.message); btn.disabled = false; btn.textContent = '✅ Konfirmasi Admit'; return; }
         
         // Update bed status
         await window.__sb.from('beds').update({ status: 'Terpakai' }).eq('id', bedId);
         
         hideM('mdl-admit');
-        alert(`✅ ${patientName} berhasil di-admit\nNo. Antrian: ${newNo}`);
+        showToast(`✅ ${patientName} berhasil di-admit\nNo. Antrian: ${newNo}`);
         loadRawatInap();
     } catch (e) {
-        alert('Error: ' + e.message);
+        showToast('' + e.message);
         btn.disabled = false;
         btn.textContent = '✅ Konfirmasi Admit';
     }
@@ -2720,8 +3229,8 @@ async function submitDischarge() {
     const statusPulang = document.getElementById('dc-status').value;
     const catatan = document.getElementById('dc-catatan').value.trim();
 
-    if (!regId) { alert('Error: Data pasien tidak valid'); return; }
-    if (!tanggalPulang) { alert('Pilih tanggal pulang!'); return; }
+    if (!regId) { showToast('Data pasien tidak valid'); return; }
+    if (!tanggalPulang) { showToast('Pilih tanggal pulang!'); return; }
 
     btn.disabled = true;
     btn.textContent = '⏳ Memproses...';
@@ -2734,7 +3243,7 @@ async function submitDischarge() {
             diagnosa_akhir: diagnosaAkhir || null
         };
         const { error: regErr } = await window.__sb.from('registrations').update(updateData).eq('id', regId);
-        if (regErr) { alert('Gagal update registrasi: ' + regErr.message); btn.disabled = false; btn.textContent = '✅ Konfirmasi Pulang'; return; }
+        if (regErr) { showToast('update registrasi: ' + regErr.message); btn.disabled = false; btn.textContent = '✅ Konfirmasi Pulang'; return; }
 
         // Update bed status back to Tersedia
         if (bedId) {
@@ -2742,10 +3251,10 @@ async function submitDischarge() {
         }
 
         hideM('mdl-discharge');
-        alert(`✅ Pasien berhasil dipulangkan\nStatus: ${statusPulang}`);
+        showToast(`✅ Pasien berhasil dipulangkan\nStatus: ${statusPulang}`);
         loadRawatInap();
     } catch (e) {
-        alert('Error: ' + e.message);
+        showToast('' + e.message);
         btn.disabled = false;
         btn.textContent = '✅ Konfirmasi Pulang';
     }
@@ -2800,7 +3309,7 @@ function selectUGDPatient(id, nama, rm) {
 
 async function submitUGD() {
     const patientId = _ugdPatientId;
-    if (!patientId) { alert('Cari dan pilih pasien dulu!'); return; }
+    if (!patientId) { showToast('Cari dan pilih pasien dulu!'); return; }
     
     const triase = document.getElementById('ugd-triase').value;
     const dokterId = document.getElementById('ugd-dokter').value;
@@ -2809,7 +3318,7 @@ async function submitUGD() {
     const nadi = document.getElementById('ugd-nadi').value.trim() || '-';
     const keluhan = document.getElementById('ugd-keluhan').value.trim();
     
-    if (!keluhan) { alert('Isi keluhan utama pasien!'); return; }
+    if (!keluhan) { showToast('Isi keluhan utama pasien!'); return; }
     
     const btn = document.querySelector('#mdl-ugd .btn-p');
     btn.disabled = true;
@@ -2830,12 +3339,12 @@ async function submitUGD() {
             doctor_id: dokterId || null
         });
         
-        if (error) { alert('Gagal: ' + error.message); btn.disabled = false; btn.textContent = '✅ Daftarkan Pasien UGD'; return; }
+        if (error) { showToast('' + error.message); btn.disabled = false; btn.textContent = '✅ Daftarkan Pasien UGD'; return; }
         
         hideM('mdl-ugd');
-        alert(`✅ Pasien UGD terdaftar\nNo. Antrian: ${newNo}`);
+        showToast(`✅ Pasien UGD terdaftar\nNo. Antrian: ${newNo}`);
         loadUGD();
-    } catch (e) { alert('Error: ' + e.message); btn.disabled = false; btn.textContent = '✅ Daftarkan Pasien UGD'; }
+    } catch (e) { showToast('' + e.message); btn.disabled = false; btn.textContent = '✅ Daftarkan Pasien UGD'; }
 }
 
 // ===== TRANSAKSI KASIR =====
@@ -2872,7 +3381,7 @@ async function submitTransaksi() {
     const metode = document.getElementById('trx-metode').value;
     const bayar = parseInt(document.getElementById('trx-bayar').value) || 0;
 
-    if (!patId || !noReg || total <= 0) { alert('Isi pasien, No.Reg, dan Total Tagihan!'); return; }
+    if (!patId || !noReg || total <= 0) { showToast('Isi pasien, No.Reg, dan Total Tagihan!'); return; }
 
     if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
 
@@ -2888,13 +3397,13 @@ async function submitTransaksi() {
             kembalian: bayar > total ? bayar - total : 0
         });
         if (error) throw error;
-        alert('✅ Transaksi berhasil!');
+        showToast(' Transaksi berhasil!');
         hideM('mdl-transaksi');
         loadKasir();
         document.getElementById('trx-no-reg').value = '';
         document.getElementById('trx-total').value = '';
         document.getElementById('trx-bayar').value = '';
-    } catch (e) { alert('❌ ' + e.message); }
+    } catch (e) { showToast(' ' + e.message); }
     if (btn) { btn.disabled = false; btn.textContent = '✅ Proses Bayar'; }
 }
 
@@ -2923,7 +3432,7 @@ async function submitOperasi() {
     const anastesi = document.getElementById('ok-anastesi').value.trim();
     const mulai = document.getElementById('ok-mulai').value;
 
-    if (!patId || !noOp || !tindakan) { alert('Isi pasien, No.Operasi, dan Tindakan!'); return; }
+    if (!patId || !noOp || !tindakan) { showToast('Isi pasien, No.Operasi, dan Tindakan!'); return; }
 
     if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
 
@@ -2939,7 +3448,7 @@ async function submitOperasi() {
             status: 'Menunggu'
         });
         if (error) throw error;
-        alert('✅ Jadwal operasi berhasil disimpan!');
+        showToast(' Jadwal operasi berhasil disimpan!');
         hideM('mdl-operasi');
         loadOK();
         document.getElementById('ok-no').value = '';
@@ -2948,7 +3457,7 @@ async function submitOperasi() {
         document.getElementById('ok-operator').value = '';
         document.getElementById('ok-anastesi').value = '';
         document.getElementById('ok-mulai').value = '';
-    } catch (e) { alert('❌ ' + e.message); }
+    } catch (e) { showToast(' ' + e.message); }
     if (btn) { btn.disabled = false; btn.textContent = '✅ Simpan Jadwal'; }
 }
 
@@ -2959,8 +3468,8 @@ function submitRetur() {
     const jumlah = document.getElementById('retur-jumlah').value.trim();
     const kondisi = document.getElementById('retur-kondisi').value;
     const alasan = document.getElementById('retur-alasan').value.trim();
-    if (!obat || !jumlah) { alert('Isi nama obat dan jumlah!'); return; }
-    alert('✅ Retur diajukan: ' + obat + ' (' + jumlah + ') — ' + pasien + '\nAlasan: ' + (alasan || kondisi));
+    if (!obat || !jumlah) { showToast('Isi nama obat dan jumlah!'); return; }
+    showToast(' Retur diajukan: ' + obat + ' (' + jumlah + ') — ' + pasien + '\nAlasan: ' + (alasan || kondisi));
     hideM('mdl-retur');
     document.getElementById('retur-obat').value = '';
     document.getElementById('retur-jumlah').value = '';
@@ -2986,11 +3495,11 @@ async function prosesBayar() {
         .gt('total_tagihan', 0)
         .order('created_at', { ascending: true })
         .limit(1);
-    if (!payments || !payments.length) return alert('✅ Tidak ada tagihan yang perlu diproses');
+    if (!payments || !payments.length) return showToast(' Tidak ada tagihan yang perlu diproses');
 
     const p = payments[0];
     const total = Number(p.total_tagihan || 0);
-    if (total <= 0) return alert('❌ Total tagihan tidak valid');
+    if (total <= 0) return showToast(' Total tagihan tidak valid');
 
     // Update payment to Lunas
     const { error } = await window.__sb
@@ -3003,8 +3512,8 @@ async function prosesBayar() {
         })
         .eq('id', p.id);
 
-    if (error) return alert('❌ Gagal proses pembayaran: ' + error.message);
-    alert('✅ Pembayaran Rp ' + total.toLocaleString() + ' berhasil diproses!');
+    if (error) return showToast(' Gagal proses pembayaran: ' + error.message);
+    showToast(' Pembayaran Rp ' + total.toLocaleString() + ' berhasil diproses!');
     loadKasir();
 }
 function cetakKwitansi(noReg, nama, penjamin, total, bayar, metode, status, tgl) {
@@ -3100,7 +3609,7 @@ async function submitTagihan() {
     const total = parseInt(document.getElementById('tag-total').value) || 0;
     const jatuhTempo = document.getElementById('tag-jatuh-tempo').value;
     const keterangan = document.getElementById('tag-keterangan').value.trim();
-    if (!patId || !noTag || total <= 0) { alert('Isi pasien, No. Tagihan, dan Total Tagihan!'); return; }
+    if (!patId || !noTag || total <= 0) { showToast('Isi pasien, No. Tagihan, dan Total Tagihan!'); return; }
     if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
     try {
         const { error } = await window.__sb.from('invoices').insert({
@@ -3113,14 +3622,14 @@ async function submitTagihan() {
             status: 'Belum Bayar'
         });
         if (error) throw error;
-        alert('✅ Tagihan berhasil dibuat!');
+        showToast(' Tagihan berhasil dibuat!');
         hideM('mdl-tagihan');
         loadTagihan();
         document.getElementById('tag-no').value = '';
         document.getElementById('tag-total').value = '';
         document.getElementById('tag-keterangan').value = '';
         document.getElementById('tag-jatuh-tempo').value = '';
-    } catch (e) { alert('❌ ' + e.message); }
+    } catch (e) { showToast(' ' + e.message); }
     if (btn) { btn.disabled = false; btn.textContent = '✅ Buat Tagihan'; }
 }
 
@@ -3139,9 +3648,9 @@ function showMdlAddDokter() {
 
 async function submitAddDokter() {
     const nama = document.getElementById('dr-nama').value.trim();
-    if (!nama) { alert('Nama dokter wajib diisi!'); return; }
+    if (!nama) { showToast('Nama dokter wajib diisi!'); return; }
     const poliId = document.getElementById('dr-poli').value;
-    if (!poliId) { alert('Poli wajib dipilih!'); return; }
+    if (!poliId) { showToast('Poli wajib dipilih!'); return; }
     
     const payload = {
         nama_dokter: nama,
@@ -3154,7 +3663,7 @@ async function submitAddDokter() {
     };
     
     const { data, error } = await window.__sb.from('doctors').insert(payload).select().single();
-    if (error) { alert('❌ Gagal menyimpan: ' + error.message); return; }
+    if (error) { showToast(' Gagal menyimpan: ' + error.message); return; }
     
     SharedState.cache.doctors.push(data);
     hideM('mdl-add-dokter');
@@ -3176,7 +3685,7 @@ async function submitAddKaryawan() {
     const role = document.getElementById('kar-role').value;
     const unit = document.getElementById('kar-unit').value;
     
-    if (!username || !password || !nama || !role) { alert('Username, password, nama, dan role wajib diisi!'); return; }
+    if (!username || !password || !nama || !role) { showToast('Username , password, nama, dan role wajib diisi!'); return; }
     
     // Try insert to Supabase users table
     const { data, error } = await window.__sb.from('users').insert({
@@ -3187,13 +3696,13 @@ async function submitAddKaryawan() {
         // Fallback: table doesn't exist yet — use array
         if (!window._appUsers) window._appUsers = [];
         if (window._appUsers.find(u => u.username === username)) {
-            alert('❌ Username sudah terdaftar!');
+            showToast(' Username sudah terdaftar!');
             return;
         }
         window._appUsers.push({ username, nama, role, unit: unit || 'Semua', status: 'Aktif' });
         renderUsersTable();
         hideM('mdl-add-karyawan');
-        alert('✅ Akun karyawan berhasil ditambahkan (local)');
+        showToast(' Akun karyawan berhasil ditambahkan (local)');
     } else {
         // Success — reload users table from DB
         hideM('mdl-add-karyawan');
@@ -3244,7 +3753,7 @@ function simpanConfig() {
         kodeBpjs: document.getElementById('cfg-kode-bpjs').value,
     };
     localStorage.setItem('rs_config', JSON.stringify(cfg));
-    alert('✅ Konfigurasi berhasil disimpan!');
+    showToast(' Konfigurasi berhasil disimpan!');
 }
 
 function loadConfig() {
@@ -3334,6 +3843,75 @@ async function doLogin() {
   renderDashboard();
 }
 
+// ─── FORMAT RUPIAH ───
+function formatRupiah(angka) {
+  if (angka === null || angka === undefined) return 'Rp 0';
+  if (typeof angka === 'string') angka = parseFloat(angka.replace(/[^0-9.,-]/g, '').replace(',', '.'));
+  if (isNaN(angka)) angka = 0;
+  return 'Rp ' + Math.round(angka).toLocaleString('id-ID');
+}
+function formatCurrency(angka) { return formatRupiah(angka); }
+
+// ─── EXPORT TABLE TO CSV ───
+function exportTableToCSV(tableId, filename) {
+  var table = document.getElementById(tableId);
+  if (!table) { showToast('Tabel tidak ditemukan', 'error'); return; }
+  filename = filename || 'data-' + new Date().toISOString().slice(0,10) + '.csv';
+
+  var rows = [];
+  var headerRow = [];
+  table.querySelectorAll('thead th').forEach(function(th) {
+    var text = th.textContent.replace(/[▴▾]/g, '').trim();
+    if (text !== 'Aksi' && text !== '') headerRow.push('"' + text + '"');
+  });
+  if (headerRow.length) rows.push(headerRow.join(','));
+
+  table.querySelectorAll('tbody tr').forEach(function(tr) {
+    var dataRow = [];
+    var cells = tr.querySelectorAll('td');
+    if (cells.length <= 1 && tr.querySelector('[colspan]')) return;
+    cells.forEach(function(td, i) {
+      if (i === cells.length - 1) return;
+      var text = td.textContent.trim().replace(/"/g, '""');
+      dataRow.push('"' + text + '"');
+    });
+    if (dataRow.length) rows.push(dataRow.join(','));
+  });
+
+  if (rows.length <= 1) { showToast('Tidak ada data untuk di-export', 'warning'); return; }
+
+  var bom = '﻿';
+  var csv = bom + rows.join('\r\n');
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+  showToast('✅ Data di-export: ' + filename, 'success');
+}
+
+// ─── DARK MODE TOGGLE ───
+function toggleDarkMode() {
+  var html = document.documentElement;
+  var current = html.getAttribute('data-theme') || 'light';
+  var next = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('medicore-theme', next);
+  var btn = document.getElementById('dark-mode-toggle');
+  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
+}
+function initDarkMode() {
+  var saved = localStorage.getItem('medicore-theme');
+  if (saved === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    var btn = document.getElementById('dark-mode-toggle');
+    if (btn) btn.textContent = '☀️';
+  }
+}
+
 function doLogout() {
   localStorage.removeItem('medicore_user');
   window.medicoreUser = null;
@@ -3419,7 +3997,7 @@ async function showMdlPoli() {
 
 async function editPoli(id) {
     const { data, error } = await window.__sb.from('poli').select('*').eq('id', id).single();
-    if (error || !data) { alert('❌ Data tidak ditemukan'); return; }
+    if (error || !data) { showToast(' Data tidak ditemukan'); return; }
     document.getElementById('mdl-poli-id').value = data.id;
     document.getElementById('mdl-poli-nama').value = data.nama_poli;
     document.getElementById('mdl-poli-kode').value = data.kode_poli || '';
@@ -3429,7 +4007,7 @@ async function editPoli(id) {
 async function hapusPoli(id) {
     if (!confirm('Yakin hapus poli ini?')) return;
     const { error } = await window.__sb.from('poli').delete().eq('id', id);
-    if (error) { alert('❌ Gagal hapus: ' + error.message); return; }
+    if (error) { showToast(' Gagal hapus: ' + error.message); return; }
     loadPoliTable();
 }
 
@@ -3437,7 +4015,7 @@ async function submitPoli() {
     const id = document.getElementById('mdl-poli-id').value;
     const nama = document.getElementById('mdl-poli-nama').value.trim();
     const kode = document.getElementById('mdl-poli-kode').value.trim();
-    if (!nama) { alert('Nama poli wajib diisi!'); return; }
+    if (!nama) { showToast('Nama poli wajib diisi!'); return; }
     const payload = { nama_poli: nama, kode_poli: kode || null };
     let error;
     if (id) {
@@ -3445,7 +4023,7 @@ async function submitPoli() {
     } else {
         ({ error } = await window.__sb.from('poli').insert(payload));
     }
-    if (error) { alert('❌ Gagal: ' + error.message); return; }
+    if (error) { showToast(' Gagal: ' + error.message); return; }
     hideM('mdl-poli');
     loadPoliTable();
 }
@@ -3503,7 +4081,7 @@ async function showMdlTarif() {
 
 async function editTarif(id) {
     const { data, error } = await window.__sb.from('master_tarif').select('*').eq('id', id).single();
-    if (error || !data) { alert('❌ Data tidak ditemukan'); return; }
+    if (error || !data) { showToast(' Data tidak ditemukan'); return; }
     document.getElementById('mdl-tarif-id').value = data.id;
     document.getElementById('mdl-tarif-kode').value = data.kode_tarif;
     document.getElementById('mdl-tarif-nama').value = data.nama_tindakan;
@@ -3520,7 +4098,7 @@ async function editTarif(id) {
 async function hapusTarif(id) {
     if (!confirm('Yakin hapus tarif ini?')) return;
     const { error } = await window.__sb.from('master_tarif').delete().eq('id', id);
-    if (error) { alert('❌ Gagal hapus: ' + error.message); return; }
+    if (error) { showToast(' Gagal hapus: ' + error.message); return; }
     loadTarifTable();
 }
 
@@ -3531,7 +4109,7 @@ async function submitTarif() {
     const harga = parseInt(document.getElementById('mdl-tarif-harga').value) || 0;
     const kategori = document.getElementById('mdl-tarif-kategori').value;
     const poliId = document.getElementById('mdl-tarif-poli').value || null;
-    if (!kode || !nama) { alert('Kode dan nama tindakan wajib diisi!'); return; }
+    if (!kode || !nama) { showToast('Kode dan nama tindakan wajib diisi!'); return; }
     const payload = { kode_tarif: kode, nama_tindakan: nama, harga, kategori, poli_id: poliId };
     let error;
     if (id) {
@@ -3539,7 +4117,7 @@ async function submitTarif() {
     } else {
         ({ error } = await window.__sb.from('master_tarif').insert(payload));
     }
-    if (error) { alert('❌ Gagal: ' + error.message); return; }
+    if (error) { showToast(' Gagal: ' + error.message); return; }
     hideM('mdl-tarif');
     loadTarifTable();
 }
@@ -3589,7 +4167,7 @@ async function showMdlIcd() {
 
 async function editIcd(id) {
     const { data, error } = await window.__sb.from('icd10').select('*').eq('id', id).single();
-    if (error || !data) { alert('❌ Data tidak ditemukan'); return; }
+    if (error || !data) { showToast(' Data tidak ditemukan'); return; }
     document.getElementById('mdl-icd-id').value = data.id;
     document.getElementById('mdl-icd-kode').value = data.kode_icd;
     document.getElementById('mdl-icd-nama').value = data.nama_penyakit;
@@ -3600,7 +4178,7 @@ async function editIcd(id) {
 async function hapusIcd(id) {
     if (!confirm('Yakin hapus ICD-10 ini?')) return;
     const { error } = await window.__sb.from('icd10').delete().eq('id', id);
-    if (error) { alert('❌ Gagal hapus: ' + error.message); return; }
+    if (error) { showToast(' Gagal hapus: ' + error.message); return; }
     loadIcdTable();
 }
 
@@ -3609,7 +4187,7 @@ async function submitIcd() {
     const kode = document.getElementById('mdl-icd-kode').value.trim().toUpperCase();
     const nama = document.getElementById('mdl-icd-nama').value.trim();
     const kategori = document.getElementById('mdl-icd-kategori').value;
-    if (!kode || !nama) { alert('Kode dan nama penyakit wajib diisi!'); return; }
+    if (!kode || !nama) { showToast('Kode dan nama penyakit wajib diisi!'); return; }
     const payload = { kode_icd: kode, nama_penyakit: nama, kategori };
     let error;
     if (id) {
@@ -3617,7 +4195,7 @@ async function submitIcd() {
     } else {
         ({ error } = await window.__sb.from('icd10').insert(payload));
     }
-    if (error) { alert('❌ Gagal: ' + error.message); return; }
+    if (error) { showToast(' Gagal: ' + error.message); return; }
     hideM('mdl-icd');
     loadIcdTable();
 }
@@ -3646,7 +4224,7 @@ async function showMdlKatObat() {
 
 async function editKatObat(id) {
     const { data, error } = await window.__sb.from('kategori_obat').select('*').eq('id', id).single();
-    if (error || !data) { alert('❌ Data tidak ditemukan'); return; }
+    if (error || !data) { showToast(' Data tidak ditemukan'); return; }
     document.getElementById('mdl-katobat-id').value = data.id;
     document.getElementById('mdl-katobat-nama').value = data.nama_kategori;
     document.getElementById('mdl-katobat-desk').value = data.deskripsi || '';
@@ -3656,7 +4234,7 @@ async function editKatObat(id) {
 async function hapusKatObat(id) {
     if (!confirm('Yakin hapus kategori ini?')) return;
     const { error } = await window.__sb.from('kategori_obat').delete().eq('id', id);
-    if (error) { alert('❌ Gagal hapus: ' + error.message); return; }
+    if (error) { showToast(' Gagal hapus: ' + error.message); return; }
     loadKatObatTable();
 }
 
@@ -3664,7 +4242,7 @@ async function submitKatObat() {
     const id = document.getElementById('mdl-katobat-id').value;
     const nama = document.getElementById('mdl-katobat-nama').value.trim();
     const desk = document.getElementById('mdl-katobat-desk').value.trim();
-    if (!nama) { alert('Nama kategori wajib diisi!'); return; }
+    if (!nama) { showToast('Nama kategori wajib diisi!'); return; }
     const payload = { nama_kategori: nama, deskripsi: desk || null };
     let error;
     if (id) {
@@ -3672,7 +4250,7 @@ async function submitKatObat() {
     } else {
         ({ error } = await window.__sb.from('kategori_obat').insert(payload));
     }
-    if (error) { alert('❌ Gagal: ' + error.message); return; }
+    if (error) { showToast(' Gagal: ' + error.message); return; }
     hideM('mdl-katobat');
     loadKatObatTable();
 }
@@ -3697,7 +4275,7 @@ async function loadStok() {
   document.getElementById('stok-total-items').textContent = totalItems;
   document.getElementById('stok-total-qty').textContent = totalQty.toLocaleString();
   document.getElementById('stok-low-items').textContent = lowItems;
-  document.getElementById('stok-total-value').textContent = 'Rp ' + totalValue.toLocaleString();
+  document.getElementById('stok-total-value').textContent = formatRupiah(totalValue);
   
   // Populate kategori filter
   const kats = [...new Set(medicines.map(m => m.kategori).filter(Boolean))];
@@ -3784,7 +4362,7 @@ function showMdlTambahObat() {
 async function editObat(id) {
   await SharedState.waitReady();
   const { data, error } = await window.__sb.from('medicines').select('*').eq('id', id).single();
-  if (error || !data) { alert('❌ Data tidak ditemukan'); return; }
+  if (error || !data) { showToast(' Data tidak ditemukan'); return; }
   
   document.getElementById('mdl-obat-id').value = data.id;
   document.getElementById('mdl-obat-kode').value = data.kode || '';
@@ -3813,8 +4391,8 @@ async function submitObat() {
   const harga = parseInt(document.getElementById('mdl-obat-harga').value) || 0;
   const exp = document.getElementById('mdl-obat-exp').value;
   
-  if (!nama) { alert('Nama obat wajib diisi!'); return; }
-  if (!kode) { alert('Kode obat wajib diisi!'); return; }
+  if (!nama) { showToast('Nama obat wajib diisi!'); return; }
+  if (!kode) { showToast('Kode obat wajib diisi!'); return; }
   
   const payload = {
     kode,
@@ -3834,7 +4412,7 @@ async function submitObat() {
     ({ error } = await window.__sb.from('medicines').insert(payload));
   }
   
-  if (error) { alert('❌ Gagal: ' + error.message); return; }
+  if (error) { showToast(' Gagal: ' + error.message); return; }
   hideM('mdl-obat');
   loadStok();
 }
@@ -3845,7 +4423,7 @@ async function submitObat() {
 async function deleteObat(id, nama) {
   if (!confirm(`Yakin ingin menghapus "${nama}"?`)) return;
   const { error } = await window.__sb.from('medicines').delete().eq('id', id);
-  if (error) { alert('❌ Gagal hapus: ' + error.message); return; }
+  if (error) { showToast(' Gagal hapus: ' + error.message); return; }
   loadStok();
 }
 
@@ -3885,7 +4463,7 @@ async function submitStokMasuk() {
   const ket = document.getElementById('mdl-sm-ket').value.trim();
   
   if (!obatId || !qty || qty <= 0) {
-    alert('❌ Pilih obat dan masukkan jumlah yang valid');
+    showToast(' Pilih obat dan masukkan jumlah yang valid');
     return;
   }
   
@@ -3897,10 +4475,10 @@ async function submitStokMasuk() {
   if (harga) updateData.harga_satuan = parseInt(harga);
   
   const { error } = await window.__sb.from('medicines').update(updateData).eq('id', obatId);
-  if (error) { alert('❌ Gagal: ' + error.message); return; }
+  if (error) { showToast(' Gagal: ' + error.message); return; }
   
   console.log('📥 Stok Masuk:', { obatId, qty, ref, ket });
-  alert(`✅ Penerimaan berhasil! Stok baru: ${newStok}`);
+  showToast(`✅ Penerimaan berhasil! Stok baru: ${newStok}`);
   hideM('mdl-stok-masuk');
   loadStok();
 }
@@ -3946,15 +4524,15 @@ async function submitStokOpname() {
   const ket = document.getElementById('mdl-so-ket').value.trim();
   
   if (!obatId || isNaN(stokFisik) || stokFisik < 0) {
-    alert('❌ Pilih obat dan masukkan stok fisik yang valid');
+    showToast(' Pilih obat dan masukkan stok fisik yang valid');
     return;
   }
   
   const { error } = await window.__sb.from('medicines').update({ stok: stokFisik }).eq('id', obatId);
-  if (error) { alert('❌ Gagal: ' + error.message); return; }
+  if (error) { showToast(' Gagal: ' + error.message); return; }
   
   console.log('📋 Stok Opname:', { obatId, stokFisik, ket });
-  alert(`✅ Opname berhasil! Stok diatur ke: ${stokFisik}`);
+  showToast(`✅ Opname berhasil! Stok diatur ke: ${stokFisik}`);
   hideM('mdl-stok-opname');
   loadStok();
 }
@@ -4242,11 +4820,11 @@ function poItemChange() {
     const harga = parseInt(row.querySelector('.po-item-harga')?.value) || 0;
     const sub = qty * harga;
     const subSpan = row.querySelector('.po-item-subtotal');
-    if (subSpan) subSpan.textContent = 'Rp ' + sub.toLocaleString();
+    if (subSpan) subSpan.textContent = formatRupiah(sub);
     total += sub;
   });
 
-  document.getElementById('po-total-display').textContent = 'Rp ' + total.toLocaleString();
+  document.getElementById('po-total-display').textContent = formatRupiah(total);
 }
 
 /**
@@ -4261,8 +4839,8 @@ async function submitPO() {
   const poId = document.getElementById('mdl-po-id').value;
 
   // Validation
-  if (!noPO) { alert('❌ No. PO harus diisi'); return; }
-  if (!supplierId) { alert('❌ Supplier harus dipilih'); return; }
+  if (!noPO) { showToast(' No. PO harus diisi'); return; }
+  if (!supplierId) { showToast(' Supplier harus dipilih'); return; }
 
   // Get items
   const rows = document.querySelectorAll('#po-items-container .po-item-row');
@@ -4276,7 +4854,7 @@ async function submitPO() {
     }
   });
 
-  if (items.length === 0) { alert('❌ Minimal 1 item obat harus ditambahkan'); return; }
+  if (items.length === 0) { showToast(' Minimal 1 item obat harus ditambahkan'); return; }
 
   await SharedState.waitReady();
 
@@ -4304,13 +4882,13 @@ async function submitPO() {
     }
 
     hideM('mdl-po');
-    alert('✅ PO berhasil disimpan!');
+    showToast(' PO berhasil disimpan!');
     loadPembelian();
   } catch (e) {
     if (isTableNotFound(e)) {
-      alert('⚠️ Database table belum dibuat. Jalankan sql/03-pembelian.sql di Supabase SQL Editor.');
+      showToast(' Database table belum dibuat. Jalankan sql/03-pembelian.sql di Supabase SQL Editor.');
     } else {
-      alert('❌ Gagal menyimpan PO: ' + e.message);
+      showToast(' Gagal menyimpan PO: ' + e.message);
     }
     console.error('submitPO error:', e);
   }
@@ -4328,7 +4906,7 @@ async function seePO(id) {
       .eq('id', id)
       .single();
     if (poErr) throw poErr;
-    if (!po) { alert('❌ PO tidak ditemukan'); return; }
+    if (!po) { showToast(' PO tidak ditemukan'); return; }
 
     const { data: items, error: itemsErr } = await window.__sb.from('purchase_order_items')
       .select('*, medicines!purchase_order_items_medicine_id_fkey(nama_obat, kode, satuan)')
@@ -4383,9 +4961,9 @@ async function seePO(id) {
     showM('mdl-po-detail');
   } catch (e) {
     if (isTableNotFound(e)) {
-      alert('⚠️ Database table belum dibuat. Jalankan sql/03-pembelian.sql di Supabase SQL Editor.');
+      showToast(' Database table belum dibuat. Jalankan sql/03-pembelian.sql di Supabase SQL Editor.');
     } else {
-      alert('❌ Gagal memuat detail PO: ' + e.message);
+      showToast(' Gagal memuat detail PO: ' + e.message);
     }
     console.error('seePO error:', e);
   }
@@ -4425,7 +5003,7 @@ function getStatusLabel(status) {
 async function terimaPO() {
   const poData = window.__currentPO;
   if (!poData || !poData.po || !poData.items) {
-    alert('❌ Data PO tidak tersedia. Silakan buka detail PO lagi.');
+    showToast(' Data PO tidak tersedia. Silakan buka detail PO lagi.');
     return;
   }
 
@@ -4434,7 +5012,7 @@ async function terimaPO() {
   // Confirm
   const remainingItems = items.filter(i => (i.qty || 0) > (i.qty_diterima || 0));
   if (remainingItems.length === 0) {
-    alert('✅ Semua item sudah diterima seluruhnya.');
+    showToast(' Semua item sudah diterima seluruhnya.');
     return;
   }
 
@@ -4480,13 +5058,13 @@ async function terimaPO() {
     if (poUpdateErr) throw poUpdateErr;
 
     hideM('mdl-po-detail');
-    alert('✅ Barang berhasil diterima! Stok telah ditambahkan.');
+    showToast(' Barang berhasil diterima! Stok telah ditambahkan.');
     loadPembelian();
   } catch (e) {
     if (isTableNotFound(e)) {
-      alert('⚠️ Database table belum dibuat. Jalankan sql/03-pembelian.sql di Supabase SQL Editor.');
+      showToast(' Database table belum dibuat. Jalankan sql/03-pembelian.sql di Supabase SQL Editor.');
     } else {
-      alert('❌ Gagal menerima barang: ' + e.message);
+      showToast(' Gagal menerima barang: ' + e.message);
     }
     console.error('terimaPO error:', e);
   }
@@ -4503,13 +5081,13 @@ async function hapusPO(id) {
   try {
     const { error } = await window.__sb.from('purchase_orders').delete().eq('id', id);
     if (error) throw error;
-    alert('✅ PO berhasil dihapus');
+    showToast(' PO berhasil dihapus');
     loadPembelian();
   } catch (e) {
     if (isTableNotFound(e)) {
-      alert('⚠️ Database table belum dibuat. Jalankan sql/03-pembelian.sql di Supabase SQL Editor.');
+      showToast(' Database table belum dibuat. Jalankan sql/03-pembelian.sql di Supabase SQL Editor.');
     } else {
-      alert('❌ Gagal menghapus PO: ' + e.message);
+      showToast(' Gagal menghapus PO: ' + e.message);
     }
   }
 }
@@ -4903,8 +5481,8 @@ async function submitKasTransaksi() {
   const trxId = document.getElementById('mdl-kas-trx-id').value;
 
   // Validation
-  if (!akunId) { alert('⚠️ Pilih akun terlebih dahulu'); return; }
-  if (!jumlah || jumlah <= 0) { alert('⚠️ Jumlah harus lebih dari 0'); return; }
+  if (!akunId) { showToast(' Pilih akun terlebih dahulu'); return; }
+  if (!jumlah || jumlah <= 0) { showToast(' Jumlah harus lebih dari 0'); return; }
 
   await SharedState.waitReady();
 
@@ -4931,12 +5509,12 @@ async function submitKasTransaksi() {
       saldoSesudah = saldoSebelum + jumlah;
     } else if (tipe === 'pengeluaran') {
       if (saldoSebelum < jumlah) {
-        alert('⚠️ Saldo tidak mencukupi! Saldo saat ini: ' + formatCurrency(saldoSebelum));
+        showToast(' Saldo tidak mencukupi! Saldo saat ini: ' + formatCurrency(saldoSebelum));
         return;
       }
       saldoSesudah = saldoSebelum - jumlah;
     } else {
-      alert('❌ Tipe transaksi tidak valid');
+      showToast(' Tipe transaksi tidak valid');
       return;
     }
 
@@ -4956,7 +5534,7 @@ async function submitKasTransaksi() {
         })
         .eq('id', trxId);
       if (error) throw error;
-      alert('✅ Transaksi berhasil diperbarui');
+      showToast(' Transaksi berhasil diperbarui');
     } else {
       // Insert new transaction
       const { error } = await window.__sb.from('transaksi_kas').insert({
@@ -4972,16 +5550,16 @@ async function submitKasTransaksi() {
         dibuat_oleh: window.medicoreUser?.id || null
       });
       if (error) throw error;
-      alert('✅ Transaksi berhasil disimpan');
+      showToast(' Transaksi berhasil disimpan');
     }
 
     hideM('mdl-kas-transaksi');
     loadKasBank();
   } catch (e) {
     if (isTableNotFound(e)) {
-      alert('⚠️ Database table belum dibuat. Jalankan sql/04-kas-bank.sql di Supabase SQL Editor.');
+      showToast(' Database table belum dibuat. Jalankan sql/04-kas-bank.sql di Supabase SQL Editor.');
     } else {
-      alert('❌ Gagal menyimpan transaksi: ' + e.message);
+      showToast(' Gagal menyimpan transaksi: ' + e.message);
     }
     console.error('submitKasTransaksi error:', e);
   }
@@ -5026,10 +5604,10 @@ async function submitKasTransfer() {
   const keterangan = document.getElementById('mdl-kas-transfer-ket').value || '';
 
   // Validation
-  if (!dariId) { alert('⚠️ Pilih akun asal'); return; }
-  if (!keId) { alert('⚠️ Pilih akun tujuan'); return; }
-  if (dariId === keId) { alert('⚠️ Akun asal dan tujuan harus berbeda'); return; }
-  if (!jumlah || jumlah <= 0) { alert('⚠️ Jumlah harus lebih dari 0'); return; }
+  if (!dariId) { showToast(' Pilih akun asal'); return; }
+  if (!keId) { showToast(' Pilih akun tujuan'); return; }
+  if (dariId === keId) { showToast(' Akun asal dan tujuan harus berbeda'); return; }
+  if (!jumlah || jumlah <= 0) { showToast(' Jumlah harus lebih dari 0'); return; }
 
   await SharedState.waitReady();
 
@@ -5049,7 +5627,7 @@ async function submitKasTransfer() {
     }
 
     if (sourceSaldo < jumlah) {
-      alert('⚠️ Saldo tidak mencukupi! Saldo sumber: ' + formatCurrency(sourceSaldo));
+      showToast(' Saldo tidak mencukupi! Saldo sumber: ' + formatCurrency(sourceSaldo));
       return;
     }
 
@@ -5099,14 +5677,14 @@ async function submitKasTransfer() {
     });
     if (err2) throw err2;
 
-    alert('✅ Transfer berhasil: ' + formatCurrency(jumlah));
+    showToast(' Transfer berhasil: ' + formatCurrency(jumlah));
     hideM('mdl-kas-transfer');
     loadKasBank();
   } catch (e) {
     if (isTableNotFound(e)) {
-      alert('⚠️ Database table belum dibuat. Jalankan sql/04-kas-bank.sql di Supabase SQL Editor.');
+      showToast(' Database table belum dibuat. Jalankan sql/04-kas-bank.sql di Supabase SQL Editor.');
     } else {
-      alert('❌ Gagal melakukan transfer: ' + e.message);
+      showToast(' Gagal melakukan transfer: ' + e.message);
     }
     console.error('submitKasTransfer error:', e);
   }
@@ -5232,14 +5810,14 @@ async function hapusKasTransaksi() {
     const { error } = await window.__sb.from('transaksi_kas').delete().eq('id', id);
     if (error) throw error;
 
-    alert('✅ Transaksi berhasil dihapus');
+    showToast(' Transaksi berhasil dihapus');
     hideM('mdl-kas-detail');
     loadKasBank();
   } catch (e) {
       if (isTableNotFound(e)) {
-        alert('⚠️ Database table belum dibuat. Jalankan sql/04-kas-bank.sql di Supabase SQL Editor.');
+        showToast(' Database table belum dibuat. Jalankan sql/04-kas-bank.sql di Supabase SQL Editor.');
       } else {
-        alert('❌ Gagal menghapus transaksi: ' + e.message);
+        showToast(' Gagal menghapus transaksi: ' + e.message);
       }
       console.error('hapusKasTransaksi error:', e);
     }
@@ -5479,13 +6057,13 @@ async function hapusKasTransaksi() {
     const tgl = document.getElementById('mdl-obat-tgl').value;
 
     if (!noResep || !patientId) {
-      return alert('No. Resep dan Pasien wajib diisi!');
+      return showToast('No. Resep dan Pasien wajib diisi!');
     }
 
     const container = document.getElementById('obat-items-container');
     const rows = container?.querySelectorAll('.fr') || [];
     if (rows.length === 0) {
-      return alert('Minimal 1 item obat!');
+      return showToast('Minimal 1 item obat!');
     }
 
     const items = [];
@@ -5509,13 +6087,13 @@ async function hapusKasTransaksi() {
           });
         });
 
-    if (items.length === 0) return alert('Item obat tidak valid!');
+    if (items.length === 0) return showToast('Item obat tidak valid!');
 
     try {
       const { error } = await window.__sb.from('penggunaan_obat').insert(items);
       if (error) {
         if (isTableNotFound(error)) {
-          return alert('⚠️ Tabel penggunaan_obat belum dibuat. Jalankan sql/05-penggunaan-obat.sql di Supabase SQL Editor.');
+          return showToast(' Tabel penggunaan_obat belum dibuat. Jalankan sql/05-penggunaan-obat.sql di Supabase SQL Editor.');
         }
         throw error;
       }
@@ -5523,7 +6101,7 @@ async function hapusKasTransaksi() {
       loadPenggunaanObat();
     } catch (e) {
       console.error('submitPenggunaanObat error:', e);
-      alert('Gagal menyimpan: ' + e.message);
+      showToast('menyimpan: ' + e.message);
     }
   }
 
@@ -5587,7 +6165,7 @@ async function hapusKasTransaksi() {
       const { error } = await window.__sb.from('penggunaan_obat').delete().eq('no_resep', noResep);
       if (error) {
         if (isTableNotFound(error)) {
-          return alert('⚠️ Tabel penggunaan_obat belum dibuat.');
+          return showToast(' Tabel penggunaan_obat belum dibuat.');
         }
         throw error;
       }
@@ -5595,7 +6173,7 @@ async function hapusKasTransaksi() {
       loadPenggunaanObat();
     } catch (e) {
       console.error('hapusPenggunaanObat error:', e);
-      alert('Gagal hapus: ' + e.message);
+      showToast('hapus: ' + e.message);
     }
   }
 
@@ -5749,7 +6327,7 @@ function pmItemChange() {
 
 async function submitPermintaanMedis() {
   const unit = document.getElementById('mdl-pm-unit').value;
-  if (!unit) { alert('Pilih unit peminta!'); return; }
+  if (!unit) { showToast('Pilih unit peminta!'); return; }
   
   // Collect items from DOM
   const rows = document.querySelectorAll('#pm-items-container .pm-item-row');
@@ -5761,7 +6339,7 @@ async function submitPermintaanMedis() {
       items.push({ medicine_id: sel.value, jumlah_diminta: parseInt(inp.value) });
     }
   });
-  if (!items.length) { alert('Tambah minimal 1 item obat!'); return; }
+  if (!items.length) { showToast('Tambah minimal 1 item obat!'); return; }
   
   const noPM = 'PM-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + String(Date.now() % 10000).padStart(4,'0');
   const ket = document.getElementById('mdl-pm-ket').value.trim();
@@ -5770,7 +6348,7 @@ async function submitPermintaanMedis() {
     .insert({ no_permintaan: noPM, unit_peminta: unit, keterangan: ket, status: 'Menunggu' })
     .select().single();
   
-  if (hErr) { alert('❌ Gagal: ' + hErr.message); return; }
+  if (hErr) { showToast(' Gagal: ' + hErr.message); return; }
   
   const pmItems = items.map(it => ({ permintaan_id: header.id, medicine_id: it.medicine_id, jumlah_diminta: it.jumlah_diminta }));
   const { error: iErr } = await window.__sb.from('permintaan_medis_items').insert(pmItems);
@@ -5778,11 +6356,11 @@ async function submitPermintaanMedis() {
   if (iErr) {
     // Rollback header
     await window.__sb.from('permintaan_medis').delete().eq('id', header.id);
-    alert('❌ Gagal simpan item: ' + iErr.message);
+    showToast(' Gagal simpan item: ' + iErr.message);
     return;
   }
   
-  alert('✅ ' + noPM + ' — Permintaan berhasil dibuat!');
+  showToast(' ' + noPM + ' — Permintaan berhasil dibuat!');
   hideM('mdl-pm-buat');
   loadPermintaanMedis();
 }
@@ -5791,7 +6369,7 @@ async function submitPermintaanMedis() {
 async function detailPermintaanMedis(id) {
   await SharedState.waitReady();
   const { data: pm } = await window.__sb.from('permintaan_medis').select('*').eq('id', id).single();
-  if (!pm) { alert('Data tidak ditemukan'); return; }
+  if (!pm) { showToast('Data tidak ditemukan'); return; }
   
   const { data: items } = await window.__sb.from('permintaan_medis_items').select('*').eq('permintaan_id', id);
   
@@ -5857,7 +6435,7 @@ async function selesaiPermintaanMedis() {
   }
   
   await window.__sb.from('permintaan_medis').update({ status: 'Selesai' }).eq('id', id);
-  alert('✅ Permintaan selesai diproses. Stok sudah dikurangi.');
+  showToast(' Permintaan selesai diproses. Stok sudah dikurangi.');
   hideM('mdl-pm-proses');
   loadPermintaanMedis();
 }
@@ -5866,7 +6444,7 @@ async function tolakPermintaanMedis() {
   const id = document.getElementById('mdl-pm-proses-body').dataset.pmId;
   if (!id || !confirm('Tolak permintaan ini?')) return;
   await window.__sb.from('permintaan_medis').update({ status: 'Ditolak' }).eq('id', id);
-  alert('Permintaan ditolak.');
+  showToast('Permintaan ditolak.', 'warning');
   hideM('mdl-pm-proses');
   loadPermintaanMedis();
 }
@@ -5905,7 +6483,7 @@ async function loadPenjualan() {
   const itemsSold = todayPenj.length; // proxy
 
   document.getElementById('penj-total').textContent = __penjData.length;
-  document.getElementById('penj-omzet').textContent = 'Rp ' + omzet.toLocaleString('id-ID');
+  document.getElementById('penj-omzet').textContent = formatRupiah(omzet);
   document.getElementById('penj-item').textContent = itemsSold;
   document.getElementById('penj-customer').textContent = customers.size;
 
@@ -6012,12 +6590,12 @@ function penjItemChange() {
     const harga = parseInt(row.querySelectorAll('input[type="number"]')[1]?.value) || 0;
     const sub = qty * harga;
     const subEl = row.querySelector('.penj-subtotal');
-    if (subEl) subEl.textContent = 'Rp ' + sub.toLocaleString('id-ID');
+    if (subEl) subEl.textContent = formatRupiah(sub);
     total += sub;
   });
   const diskon = parseInt(document.getElementById('mdl-penj-diskon')?.value) || 0;
   const afterDiskon = Math.max(0, total - diskon);
-  document.getElementById('penj-total-display').textContent = 'Rp ' + afterDiskon.toLocaleString('id-ID');
+  document.getElementById('penj-total-display').textContent = formatRupiah(afterDiskon);
 }
 
 async function submitPenjualan() {
@@ -6039,7 +6617,7 @@ async function submitPenjualan() {
       subtotal += sub;
     }
   });
-  if (!items.length) { alert('Tambah minimal 1 item!'); return; }
+  if (!items.length) { showToast('Tambah minimal 1 item!'); return; }
 
   const total = Math.max(0, subtotal - diskon);
   const noTrx = 'TRX-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + String(Date.now() % 1000).padStart(3,'0');
@@ -6053,7 +6631,7 @@ async function submitPenjualan() {
     })
     .select().single();
 
-  if (hErr) { alert('❌ Gagal: ' + hErr.message); return; }
+  if (hErr) { showToast(' Gagal: ' + hErr.message); return; }
 
   // Save items
   const penjItems = items.map(it => ({ ...it, penjualan_id: header.id }));
@@ -6061,7 +6639,7 @@ async function submitPenjualan() {
 
   if (iErr) {
     await window.__sb.from('penjualan').delete().eq('id', header.id);
-    alert('❌ Gagal simpan item: ' + iErr.message);
+    showToast(' Gagal simpan item: ' + iErr.message);
     return;
   }
 
@@ -6073,7 +6651,7 @@ async function submitPenjualan() {
     }
   }
 
-  alert('✅ ' + noTrx + ' — Transaksi berhasil!');
+  showToast(' ' + noTrx + ' — Transaksi berhasil!');
   hideM('mdl-penjualan');
   loadPenjualan();
 }
@@ -6082,7 +6660,7 @@ async function submitPenjualan() {
 async function detailPenjualan(id) {
   await SharedState.waitReady();
   const { data: penj } = await window.__sb.from('penjualan').select('*').eq('id', id).single();
-  if (!penj) { alert('Data tidak ditemukan'); return; }
+  if (!penj) { showToast('Data tidak ditemukan'); return; }
 
   const { data: items } = await window.__sb.from('penjualan_items').select('*').eq('penjualan_id', id);
 
@@ -6231,7 +6809,7 @@ function showLogistikBarang() {
 
 async function submitLogistikBarang() {
   const nama = document.getElementById('mdl-log-nama').value.trim();
-  if (!nama) { alert('Nama barang wajib diisi!'); return; }
+  if (!nama) { showToast('Nama barang wajib diisi!'); return; }
 
   const editId = document.getElementById('mdl-log-id').value;
   const kode = document.getElementById('mdl-log-kode').value.trim() || 'LG-' + String(Date.now() % 10000).padStart(4,'0');
@@ -6246,20 +6824,20 @@ async function submitLogistikBarang() {
     const { error } = await window.__sb.from('logistik')
       .update({ nama, kode, kategori, satuan, stok_minimum: min, keterangan: ket })
       .eq('id', editId);
-    if (error) { alert('❌ ' + error.message); return; }
-    alert('✅ Barang updated!');
+    if (error) { showToast(' ' + error.message); return; }
+    showToast(' Barang updated!');
   } else {
     // Insert
     const { data: baru, error } = await window.__sb.from('logistik')
       .insert({ nama, kode, kategori, satuan, stok, stok_minimum: min, keterangan: ket })
       .select().single();
-    if (error) { alert('❌ ' + error.message); return; }
+    if (error) { showToast(' ' + error.message); return; }
     // Auto-create mutasi for initial stock
     if (stok > 0) {
       await window.__sb.from('logistik_mutasi')
         .insert({ logistik_id: baru.id, tipe: 'masuk', qty: stok, keterangan: 'Stok awal', dibuat_oleh: 'Admin' });
     }
-    alert('✅ Barang ' + nama + ' ditambahkan!');
+    showToast(' Barang ' + nama + ' ditambahkan!');
   }
 
   hideM('mdl-logistik-barang');
@@ -6270,7 +6848,7 @@ async function submitLogistikBarang() {
 async function detailLogistik(id) {
   await SharedState.waitReady();
   const { data: item } = await window.__sb.from('logistik').select('*').eq('id', id).single();
-  if (!item) { alert('Data tidak ditemukan'); return; }
+  if (!item) { showToast('Data tidak ditemukan'); return; }
 
   const { data: mutasi } = await window.__sb.from('logistik_mutasi')
     .select('*').eq('logistik_id', id).order('created_at', { ascending: false }).limit(20);
@@ -6328,12 +6906,12 @@ async function submitLogMutasi() {
   const id = document.getElementById('mdl-log-mutasi-id').value;
   const tipe = document.getElementById('mdl-log-mutasi-tipe').value;
   const qty = parseInt(document.getElementById('mdl-log-mutasi-qty').value) || 0;
-  if (qty <= 0) { alert('Jumlah harus > 0!'); return; }
+  if (qty <= 0) { showToast('Jumlah harus > 0!'); return; }
   const ket = document.getElementById('mdl-log-mutasi-ket').value.trim() || (tipe === 'masuk' ? 'Stok masuk' : 'Stok keluar');
 
   const { error } = await window.__sb.from('logistik_mutasi')
     .insert({ logistik_id: id, tipe, qty, keterangan: ket, dibuat_oleh: 'Admin' });
-  if (error) { alert('❌ ' + error.message); return; }
+  if (error) { showToast(' ' + error.message); return; }
 
   // Update stok
   const { data: item } = await window.__sb.from('logistik').select('stok').eq('id', id).single();
@@ -6342,7 +6920,7 @@ async function submitLogMutasi() {
     await window.__sb.from('logistik').update({ stok: newStok }).eq('id', id);
   }
 
-  alert('✅ Stok ' + (tipe === 'masuk' ? 'masuk' : 'keluar') + ' ' + qty);
+  showToast(' Stok ' + (tipe === 'masuk' ? 'masuk' : 'keluar') + ' ' + qty);
   hideM('mdl-log-mutasi');
   detailLogistik(id); // refresh detail
   loadLogistik(); // refresh table
@@ -6428,8 +7006,8 @@ async function loadJurnalUmum() {
       '<td class="mono">' + j.no_jurnal + '</td>' +
       '<td style="font-size:12px">' + (j.tanggal ? new Date(j.tanggal).toLocaleDateString('id-ID') : '—') + '</td>' +
       '<td>' + (j.keterangan || '') + '</td>' +
-      '<td style="font-family:monospace;text-align:right">' + (t.debit ? 'Rp ' + t.debit.toLocaleString('id-ID') : '—') + '</td>' +
-      '<td style="font-family:monospace;text-align:right">' + (t.kredit ? 'Rp ' + t.kredit.toLocaleString('id-ID') : '—') + '</td>' +
+      '<td style="font-family:monospace;text-align:right">' + (t.debit ? formatRupiah(t.debit) : '—') + '</td>' +
+      '<td style="font-family:monospace;text-align:right">' + (t.kredit ? formatRupiah(t.kredit) : '—') + '</td>' +
       '<td><button class="btn btn-o btn-xs" onclick="detailJurnal(\'' + j.id + '\')">📋</button></td>' +
       '</tr>';
   }).join('');
@@ -6506,8 +7084,8 @@ function jurnalItemCalc() {
     totalDebit += d;
     totalKredit += k;
   });
-  document.getElementById('jurnal-total-debit').textContent = 'Rp ' + totalDebit.toLocaleString('id-ID');
-  document.getElementById('jurnal-total-kredit').textContent = 'Rp ' + totalKredit.toLocaleString('id-ID');
+  document.getElementById('jurnal-total-debit').textContent = formatRupiah(totalDebit);
+  document.getElementById('jurnal-total-kredit').textContent = formatRupiah(totalKredit);
   const msg = document.getElementById('jurnal-balance-msg');
   if (totalDebit === 0 && totalKredit === 0) msg.textContent = '';
   else if (totalDebit === totalKredit) msg.innerHTML = '<span style="color:#22c55e">✅ Balance (Debit = Kredit)</span>';
@@ -6516,7 +7094,7 @@ function jurnalItemCalc() {
 
 async function submitJurnal() {
   const ket = document.getElementById('mdl-jurnal-ket').value.trim();
-  if (!ket) { alert('Keterangan jurnal wajib diisi!'); return; }
+  if (!ket) { showToast('Keterangan jurnal wajib diisi!'); return; }
   const tgl = document.getElementById('mdl-jurnal-tgl').value || new Date().toISOString().slice(0,10);
 
   const rows = document.querySelectorAll('#jurnal-items-container .jurnal-item-row');
@@ -6532,25 +7110,25 @@ async function submitJurnal() {
       totalKredit += k;
     }
   });
-  if (items.length < 2) { alert('Minimal 2 baris entri (debit & kredit)!'); return; }
-  if (totalDebit !== totalKredit) { alert('Total Debit harus sama dengan Total Kredit!'); return; }
+  if (items.length < 2) { showToast('Minimal 2 baris entri (debit & kredit)!'); return; }
+  if (totalDebit !== totalKredit) { showToast('Total Debit harus sama dengan Total Kredit!'); return; }
 
   const noJurnal = document.getElementById('mdl-jurnal-no').value.trim() ||
     'JRN-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + String(Date.now() % 1000).padStart(3,'0');
 
   const { data: header, error: hErr } = await window.__sb.from('jurnal')
     .insert({ no_jurnal: noJurnal, tanggal: tgl, keterangan: ket }).select().single();
-  if (hErr) { alert('❌ ' + hErr.message); return; }
+  if (hErr) { showToast(' ' + hErr.message); return; }
 
   const jItems = items.map(it => ({ ...it, jurnal_id: header.id }));
   const { error: iErr } = await window.__sb.from('jurnal_item').insert(jItems);
   if (iErr) {
     await window.__sb.from('jurnal').delete().eq('id', header.id);
-    alert('❌ ' + iErr.message);
+    showToast(' ' + iErr.message);
     return;
   }
 
-  alert('✅ Jurnal ' + noJurnal + ' tersimpan!');
+  showToast(' Jurnal ' + noJurnal + ' tersimpan!');
   hideM('mdl-jurnal');
   loadJurnalUmum();
 }
@@ -6559,7 +7137,7 @@ async function submitJurnal() {
 async function detailJurnal(id) {
   await SharedState.waitReady();
   const { data: j } = await window.__sb.from('jurnal').select('*').eq('id', id).single();
-  if (!j) { alert('Data tidak ditemukan'); return; }
+  if (!j) { showToast('Data tidak ditemukan'); return; }
   const { data: items } = await window.__sb.from('jurnal_item').select('*').eq('jurnal_id', id);
 
   let html = '<div style="margin-bottom:12px"><strong>' + j.no_jurnal + '</strong> — ' + (j.keterangan || '') + '<br><span style="color:var(--text-muted);font-size:13px">' + (j.tanggal ? new Date(j.tanggal).toLocaleDateString('id-ID') : '') + '</span></div>';
@@ -6569,8 +7147,8 @@ async function detailJurnal(id) {
   (items || []).forEach(it => {
     const a = getAkun(it.akun_id);
     html += '<tr><td style="padding:6px 8px;border-bottom:1px solid var(--border)">[' + (a?.kode || '?') + '] ' + (a?.nama || '—') + '</td>' +
-      '<td style="padding:6px 8px;text-align:right;font-family:monospace;border-bottom:1px solid var(--border)">' + (it.debit ? 'Rp ' + Number(it.debit).toLocaleString('id-ID') : '—') + '</td>' +
-      '<td style="padding:6px 8px;text-align:right;font-family:monospace;border-bottom:1px solid var(--border)">' + (it.kredit ? 'Rp ' + Number(it.kredit).toLocaleString('id-ID') : '—') + '</td></tr>';
+      '<td style="padding:6px 8px;text-align:right;font-family:monospace;border-bottom:1px solid var(--border)">' + (it.debit ? formatRupiah(it.debit) : '—') + '</td>' +
+      '<td style="padding:6px 8px;text-align:right;font-family:monospace;border-bottom:1px solid var(--border)">' + (it.kredit ? formatRupiah(it.kredit) : '—') + '</td></tr>';
     tDebit += Number(it.debit || 0);
     tKredit += Number(it.kredit || 0);
   });
@@ -6621,8 +7199,8 @@ async function loadBukuBesar() {
     html += '<tr><td style="padding:4px 8px;border-bottom:1px solid var(--border);font-size:12px">' + tgl + '</td>' +
       '<td style="padding:4px 8px;border-bottom:1px solid var(--border);font-size:12px" class="mono">' + (j?.no_jurnal || '—') + '</td>' +
       '<td style="padding:4px 8px;border-bottom:1px solid var(--border)">' + (j?.keterangan || '') + '</td>' +
-      '<td style="padding:4px 8px;text-align:right;border-bottom:1px solid var(--border);font-family:monospace">' + (d ? 'Rp ' + d.toLocaleString('id-ID') : '') + '</td>' +
-      '<td style="padding:4px 8px;text-align:right;border-bottom:1px solid var(--border);font-family:monospace">' + (k ? 'Rp ' + k.toLocaleString('id-ID') : '') + '</td>' +
+      '<td style="padding:4px 8px;text-align:right;border-bottom:1px solid var(--border);font-family:monospace">' + (d ? formatRupiah(d) : '') + '</td>' +
+      '<td style="padding:4px 8px;text-align:right;border-bottom:1px solid var(--border);font-family:monospace">' + (k ? formatRupiah(k) : '') + '</td>' +
       '<td style="padding:4px 8px;text-align:right;border-bottom:1px solid var(--border);font-family:monospace;font-weight:600">Rp ' + saldo.toLocaleString('id-ID') + '</td></tr>';
   });
 
@@ -6660,8 +7238,8 @@ async function loadNeracaSaldo() {
     totalKredit += saldoKredit;
     if (saldoDebit || saldoKredit || a.induk_id === null) {
       html += '<tr><td class="mono">' + a.kode + '</td><td>' + a.nama + '</td><td>' + a.tipe +
-        '</td><td style="text-align:right;font-family:monospace">' + (saldoDebit ? 'Rp ' + saldoDebit.toLocaleString('id-ID') : '') +
-        '</td><td style="text-align:right;font-family:monospace">' + (saldoKredit ? 'Rp ' + saldoKredit.toLocaleString('id-ID') : '') + '</td></tr>';
+        '</td><td style="text-align:right;font-family:monospace">' + (saldoDebit ? formatRupiah(saldoDebit) : '') +
+        '</td><td style="text-align:right;font-family:monospace">' + (saldoKredit ? formatRupiah(saldoKredit) : '') + '</td></tr>';
     }
   });
 
@@ -6877,7 +7455,7 @@ async function togglePermission(roleId, permId, el) {
   const { error } = await window.__sb.from('role_permissions')
     .upsert({ role_id: roleId, permission_id: permId, allowed: newVal }, { onConflict: 'role_id,permission_id' });
 
-  if (error) { alert('❌ ' + error.message); return; }
+  if (error) { showToast(' ' + error.message); return; }
 
   __rolePerms[key] = newVal;
   el.innerHTML = newVal ? '✅' : '—';
@@ -6894,18 +7472,18 @@ function showRoleBaru() {
 
 async function submitRole() {
   const name = document.getElementById('mdl-role-name').value.trim();
-  if (!name) { alert('Nama role wajib diisi!'); return; }
+  if (!name) { showToast('Nama role wajib diisi!'); return; }
   const desc = document.getElementById('mdl-role-desc').value.trim();
   const editId = document.getElementById('mdl-role-id').value;
 
   if (editId) {
     const { error } = await window.__sb.from('roles').update({ name, description: desc }).eq('id', editId);
-    if (error) { alert('❌ ' + error.message); return; }
-    alert('✅ Role updated!');
+    if (error) { showToast(' ' + error.message); return; }
+    showToast(' Role updated!');
   } else {
     const { error } = await window.__sb.from('roles').insert({ name, description: desc });
-    if (error) { alert('❌ ' + error.message); return; }
-    alert('✅ Role ' + name + ' ditambahkan!');
+    if (error) { showToast(' ' + error.message); return; }
+    showToast(' Role ' + name + ' ditambahkan!');
   }
 
   hideM('mdl-role');
@@ -6967,7 +7545,7 @@ function showAssetBaru() {
 
 async function detailFixedAsset(id) {
   const a = __faData.find(x => x.id === id);
-  if (!a) { alert('Data tidak ditemukan'); return; }
+  if (!a) { showToast('Data tidak ditemukan'); return; }
   document.getElementById('mdl-fa-id').value = a.id;
   document.getElementById('mdl-fa-kode').value = a.kode_aset;
   document.getElementById('mdl-fa-nama').value = a.nama;
@@ -6986,7 +7564,7 @@ async function detailFixedAsset(id) {
 async function submitFixedAsset() {
   const kode = document.getElementById('mdl-fa-kode').value.trim();
   const nama = document.getElementById('mdl-fa-nama').value.trim();
-  if (!kode || !nama) { alert('Kode & Nama aset wajib diisi!'); return; }
+  if (!kode || !nama) { showToast('Kode & Nama aset wajib diisi!'); return; }
   const editId = document.getElementById('mdl-fa-id').value;
 
   const payload = {
@@ -7006,8 +7584,8 @@ async function submitFixedAsset() {
   } else {
     ({ error } = await window.__sb.from('fixed_assets').insert(payload));
   }
-  if (error) { alert('❌ ' + error.message); return; }
-  alert('✅ Aset ' + (editId ? 'diupdate!' : 'ditambahkan!'));
+  if (error) { showToast(' ' + error.message); return; }
+  showToast(' Aset ' + (editId ? 'diupdate!' : 'ditambahkan!'));
   hideM('mdl-fa');
   loadFixedAssets();
 }
@@ -7050,7 +7628,8 @@ function filterAudit() {
 }
 
   // ===== INIT =====
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
+    initDarkMode();
     initAuth();
     tick();
     setInterval(tick, 1000);
@@ -7058,6 +7637,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Init users from DB (fallback to array)
     loadUsers();
+
+    // Init autocomplete components
+    setTimeout(initAutocompletes, 500);
 
     // Listen for real-time updates
     SharedState.onUpdate((key) => {
