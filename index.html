@@ -10,9 +10,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="MEDICORE">
+<link rel="stylesheet" href="css/variables.css?v=1">
 <link rel="stylesheet" href="css/index.css?v=77">
 </head>
 <body>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div id="toast-container"></div>
 
 <!-- ===== LOGIN OVERLAY ===== -->
 <div id="login-overlay">
@@ -42,7 +46,7 @@
 <div id="app-shell">
 
 <!-- SIDEBAR -->
-<aside class="sidebar">
+<aside class="sidebar" role="navigation" aria-label="Menu utama">
   <div class="logo-wrap">
     <img src="MediCore.png" class="logo-img" alt="MediCore">
     <div><div class="logo-name">MEDICORE</div><div class="logo-sub">Edoy Hospital Management</div></div>
@@ -105,8 +109,12 @@
 <!-- MAIN -->
 <div class="main">
   <div class="topbar">
-    <div><div class="tb-title" id="pgt">Dashboard</div><div class="tb-date" id="pgd"></div></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Buka menu">☰</button>
+      <div><div class="tb-title" id="pgt">Dashboard</div><div class="tb-date" id="pgd"></div></div>
+    </div>
     <div class="tb-right">
+      <div class="ib" id="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">🌙</div>
       <div class="ib">🔔<div class="nd"></div></div>
       <div class="ib">🔍</div>
       <div class="u-chip" onclick="toggleUserMenu()"><div class="u-av">AD</div><div><div class="u-nm">Admin RS</div><div class="u-rl">Administrator</div></div></div>
@@ -211,7 +219,7 @@
       <div id="booking-today">
         <table class="t"><thead><tr><th>No.Booking</th><th>Nama</th><th>Poli</th><th>Dokter</th><th>Jadwal</th><th>Status</th><th>Aksi</th></tr></thead>
           <tbody id="booking-tbody">
-            <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat data booking...</td></tr>
+            <tr><td colspan="7" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -223,7 +231,7 @@
     <div class="sh"><div><div class="st">🎫 Ambil Antrian</div><div class="ss">Monitoring antrian seluruh loket dan unit</div></div><div class="sa"><button class="btn btn-o btn-sm" onclick="window.print()">🖨️ Print Server</button><button class="btn btn-p btn-sm" onclick="window.open('display-antrian.html','_blank','width=1280,height=720')">📺 Mode Display</button></div></div>
     <div class="g33" id="antrian-queue-container">
       <!-- Queue cards diisi dinamis oleh loadAntrian() -->
-      <div class="loader" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data antrian...</div>
+      <div class="loader" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)"><div class="pending-skeleton"><div class="skeleton skeleton-card" style="height:120px"></div></div></div>
     </div>
     <div class="card">
       <div class="ch"><div class="ct">🛏️ Monitoring Tempat Tidur</div><div style="display:flex;gap:10px;font-size:11px"><span style="color:var(--success)">🟢 Tersedia</span><span style="color:var(--danger)">🔴 Terpakai</span><span style="color:var(--warning)">🟡 Reservasi</span></div></div>
@@ -252,7 +260,7 @@
     <div class="sh"><div><div class="st">Rawat Jalan</div><div class="ss">Poliklinik &amp; rekam medis elektronik</div></div><div class="sa"><div class="tg"><button class="tgb active" onclick="swTab(this,'rj-q')">Antrian Poli</button><button class="tgb" onclick="swTab(this,'rj-emr')">Input EMR</button><button class="tgb" onclick="swTab(this,'rj-rx')">Resep</button></div></div></div>
     <div id="rj-q">
       <div class="g33" id="rj-queue-container">
-        <div class="loader" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data antrian...</div>
+        <div class="loader" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)"><div class="pending-skeleton"><div class="skeleton skeleton-card" style="height:120px"></div></div></div>
       </div>
     </div>
     <div id="rj-emr" style="display:none">
@@ -364,11 +372,11 @@
   <div id="pg-rawatinap" class="page">
     <div class="sh"><div><div class="st">Rawat Inap</div><div class="ss">Manajemen kamar, pasien opname &amp; tindakan</div></div><div class="sa"><button class="btn btn-p" onclick="admitPasien()">+ Admit Pasien</button></div></div>
     <div class="sg" id="ri-stats">
-      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div>
+      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></div></div>
     </div>
     <div class="g2">
       <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🛏️ Peta Kamar</div><div style="display:flex;gap:8px;font-size:11px"><span style="color:var(--success)">🟢 Tersedia</span><span style="color:var(--danger)">🔴 Terpakai</span><span style="color:var(--warning)">🟡 Reservasi</span></div></div>
-        <div id="ri-bedmap" style="padding:13px;color:var(--text-muted);text-align:center;font-size:12px">⏳ Memuat peta kamar...</div>
+        <div id="ri-bedmap" style="padding:13px;color:var(--text-muted);text-align:center;font-size:12px"><div class="pending-skeleton"><div class="skeleton skeleton-card" style="height:200px"></div></div></div>
       </div>
       <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">👥 Pasien Opname Aktif</div></div>
         <div id="ri-opname-table"><table class="t"><thead><tr><th>Kamar</th><th>Nama</th><th>Diagnosa</th><th>DPJP</th><th>Hari ke-</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>
@@ -380,7 +388,7 @@
   <div id="pg-ugd" class="page">
     <div class="sh"><div><div class="st">Unit Gawat Darurat</div><div class="ss">Triase &amp; penanganan pasien darurat</div></div><div class="sa"><button class="btn btn-d" onclick="showM('mdl-ugd')">🚨 Input Pasien UGD Baru</button></div></div>
     <div class="sg" id="ugd-stats">
-      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div>
+      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></div></div>
     </div>
     <div class="card"><div class="ch"><div class="ct">🆘 Pasien UGD Aktif</div></div>
       <div id="ugd-table"><table class="t"><thead><tr><th>No</th><th>Nama</th><th>Antrian</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>
@@ -398,7 +406,7 @@
       <div id="rm-detail" style="display:none">
         <div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">📁 Detail Rekam Medis</div><button class="btn btn-o btn-sm" onclick="printRMDetail()">🖨️ Cetak</button></div>
           <div id="rm-detail-content" style="padding:13px">
-            <div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat detail...</div>
+            <div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:60%"></div><div class="skeleton skeleton-text-sm"></div></div></div>
           </div>
         </div>
       </div>
@@ -409,7 +417,7 @@
   <div id="pg-laboratorium" class="page">
     <div class="sh"><div><div class="st">Laboratorium</div><div class="ss">Registrasi, sampel &amp; input hasil lab</div></div><div class="sa"><button class="btn btn-p" onclick="showM('mdl-lab-reg')">+ Registrasi Lab</button></div></div>
     <div class="sg" id="lab-stats">
-      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div>
+      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></div></div>
     </div>
     <div class="card"><div class="ch"><div class="ct">Daftar Pemeriksaan Lab</div></div>
       <div id="lab-table">
@@ -422,7 +430,7 @@
   <div id="pg-radiologi" class="page">
     <div class="sh"><div><div class="st">Radiologi</div><div class="ss">Pemeriksaan radiologi &amp; hasil</div></div><div class="sa"><button class="btn btn-p" onclick="showM('mdl-rad-reg')">+ Registrasi Radiologi</button></div></div>
     <div class="sg" id="rad-stats">
-      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div>
+      <div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></div></div>
     </div>
     <div class="card"><div class="ch"><div class="ct">Daftar Pemeriksaan Radiologi</div></div>
       <div id="rad-table">
@@ -434,9 +442,9 @@
   <!-- ===== FARMASI ===== -->
   <div id="pg-farmasi" class="page">
     <div class="sh"><div><div class="st">Farmasi</div><div class="ss">Resep, racik obat &amp; manajemen stok</div></div><div class="sa"><div class="tg"><button class="tgb active" onclick="swTab(this,'far-rx')">Resep Masuk</button><button class="tgb" onclick="swTab(this,'far-stok')">Stok Obat</button><button class="tgb" onclick="swTab(this,'far-retur')">Retur</button></div></div></div>
-    <div class="sg" id="far-stats"><div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div></div>
-    <div id="far-rx"><div id="far-rx-table"><div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data resep...</div></div></div>
-    <div id="far-stok" style="display:none"><div id="far-stok-table"><div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data stok...</div></div></div>
+    <div class="sg" id="far-stats"><div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></div></div></div>
+    <div id="far-rx"><div id="far-rx-table"><div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="pending-skeleton"><div class="skeleton skeleton-card" style="height:160px"></div></div></div></div></div>
+    <div id="far-stok" style="display:none"><div id="far-stok-table"><div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="pending-skeleton"><div class="skeleton skeleton-card" style="height:160px"></div></div></div></div></div>
     <div id="far-retur" style="display:none"><div class="card"><div class="ch"><div class="ct">Retur Obat</div><button class="btn btn-p btn-sm" onclick="showM('mdl-retur')">+ Retur Baru</button></div>
       <table class="t"><thead><tr><th>No.Retur</th><th>Pasien</th><th>Obat</th><th>Jumlah</th><th>Alasan</th><th>Status</th></tr></thead><tbody>
         <tr><td class="mono">RTR-001</td><td>Ahmad Fauzi</td><td>Metformin 500mg</td><td>30 tab</td><td>Pasien pulang lebih awal</td><td><span class="b bs">Diterima</span></td></tr>
@@ -448,9 +456,9 @@
   <!-- ===== KAMAR OPERASI ===== -->
   <div id="pg-operasi" class="page">
     <div class="sh"><div><div class="st">Kamar Operasi</div><div class="ss">Jadwal operasi &amp; monitoring OK</div></div><div class="sa"><button class="btn btn-p"onclick="showMdlOperasi()">+ Jadwal Operasi</button></div></div>
-    <div class="sg" id="ok-stats"><div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl">⏳ Memuat...</div></div></div>
+    <div class="sg" id="ok-stats"><div class="sc"><div class="sb" style="background:var(--text-muted)"></div><div class="sv">—</div><div class="sl"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></div></div></div>
     <div class="card"><div class="ch"><div class="ct">Jadwal Operasi</div></div>
-      <div id="ok-table"><div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat jadwal operasi...</div></div>
+      <div id="ok-table"><div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="pending-skeleton"><div class="skeleton skeleton-card" style="height:160px"></div></div></div></div>
     </div>
   </div>
 
@@ -476,10 +484,10 @@
 
   <!-- ===== LAPORAN ===== -->
   <div id="pg-laporan" class="page">
-    <div class="sh"><div><div class="st">Laporan Keuangan</div><div class="ss">Rekapitulasi pendapatan &amp; analisis finansial RS</div></div><div class="sa"><select class="fc" style="max-width:130px"><option>Mei 2026</option><option>April 2026</option></select><button class="btn btn-o btn-sm" onclick="alert('📥 Export data ke Excel/CSV')">📥 Export</button><button class="btn btn-p btn-sm" onclick="window.print()">🖨️ Cetak PDF</button></div></div>
+    <div class="sh"><div><div class="st">Laporan Keuangan</div><div class="ss">Rekapitulasi pendapatan &amp; analisis finansial RS</div></div><div class="sa"><select class="fc" style="max-width:130px"><option>Mei 2026</option><option>April 2026</option></select><button class="btn btn-o btn-sm" onclick="exportTableToCSV('stok-table','stok-obat.csv')">📥 Export Stok</button><button class="btn btn-p btn-sm" onclick="window.print()">🖨️ Cetak PDF</button></div></div>
     <div class="fin">
       <div class="fin-s">Total Pendapatan Bulan Ini</div>
-      <div class="fin-m" id="fin-m">⏳ Memuat...</div>
+      <div class="fin-m" id="fin-m"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></div>
       <div class="fin-s">Mei 2026 • Edoy Hospital Management</div>
       <div class="fin-g" id="fin-g"></div>
     </div>
@@ -503,7 +511,7 @@
   <div id="pg-sdm" class="page">
     <div class="sh"><div><div class="st">SDM &amp; Dokter</div><div class="ss">Data kepegawaian &amp; jadwal dokter</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showMdlAddDokter()">+ Tambah Dokter</button><button class="btn btn-o btn-sm" onclick="showMdlAddKaryawan()">+ Tambah Karyawan</button></div></div>
     <div id="sdm-container">
-      <div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data SDM...</div>
+      <div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="pending-skeleton"><div class="skeleton skeleton-card" style="height:200px"></div></div></div>
     </div>
   </div>
 
@@ -544,7 +552,7 @@
   <div id="md-poli">
     <div class="card"><div class="ch"><div class="ct">🏥 Data Poliklinik</div><button class="btn btn-p btn-sm" onclick="showMdlPoli()">+ Tambah Poli</button></div>
       <table class="t" id="md-poli-table"><thead><tr><th>ID</th><th>Nama Poli</th><th>Kode</th><th>Aksi</th></tr></thead>
-        <tbody id="md-poli-tbody"><tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr></tbody>
+        <tbody id="md-poli-tbody"><tr><td colspan="4" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -554,7 +562,7 @@
     <div class="card"><div class="ch"><div class="ct">💰 Tarif Tindakan & Pelayanan</div><button class="btn btn-p btn-sm" onclick="showMdlTarif()">+ Tambah Tarif</button></div>
       <div class="srch" style="padding:6px 13px"><input class="fc" id="md-tarif-search" placeholder="🔍 Cari tindakan..." style="max-width:280px" onkeyup="filterTarif(this.value)"></div>
       <table class="t"><thead><tr><th>Kode</th><th>Nama Tindakan</th><th>Kategori</th><th>Harga</th><th>Aksi</th></tr></thead>
-        <tbody id="md-tarif-tbody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr></tbody>
+        <tbody id="md-tarif-tbody"><tr><td colspan="5" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -564,7 +572,7 @@
     <div class="card"><div class="ch"><div class="ct">📖 Kode Diagnosis (ICD-10)</div><button class="btn btn-p btn-sm" onclick="showMdlIcd()">+ Tambah ICD-10</button></div>
       <div class="srch" style="padding:6px 13px"><input class="fc" id="md-icd-search" placeholder="🔍 Cari kode / penyakit..." style="max-width:340px" onkeyup="filterIcd(this.value)"></div>
       <table class="t"><thead><tr><th>Kode ICD</th><th>Nama Penyakit</th><th>Kategori</th><th>Aksi</th></tr></thead>
-        <tbody id="md-icd-tbody"><tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr></tbody>
+        <tbody id="md-icd-tbody"><tr><td colspan="4" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -573,7 +581,7 @@
   <div id="md-katobat" style="display:none">
     <div class="card"><div class="ch"><div class="ct">💊 Kategori Obat</div><button class="btn btn-p btn-sm" onclick="showMdlKatObat()">+ Tambah Kategori</button></div>
       <table class="t"><thead><tr><th>Nama Kategori</th><th>Deskripsi</th><th>Aksi</th></tr></thead>
-        <tbody id="md-katobat-tbody"><tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr></tbody>
+        <tbody id="md-katobat-tbody"><tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted)"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -604,10 +612,11 @@
 
   <!-- TABLE -->
   <div class="card">
+    <div class="ch"><div class="ct">📋 Daftar Obat</div><button class="btn btn-o btn-sm" onclick="exportTableToCSV('stok-table','stok-obat.csv')">📥 Export CSV</button></div>
     <table class="t" id="stok-table"><thead><tr>
-      <th>Kode</th><th>Nama Obat</th><th>Kategori</th><th>Stok</th><th>Min.</th><th>Status</th><th>Satuan</th><th>Harga</th><th>Aksi</th>
+      <th onclick="sortTable('stok-table',0)" style="cursor:pointer">Kode</th><th onclick="sortTable('stok-table',1)" style="cursor:pointer">Nama Obat</th><th onclick="sortTable('stok-table',2)" style="cursor:pointer">Kategori</th><th onclick="sortTable('stok-table',3)" style="cursor:pointer">Stok</th><th onclick="sortTable('stok-table',4)" style="cursor:pointer">Min.</th><th onclick="sortTable('stok-table',5)" style="cursor:pointer">Status</th><th onclick="sortTable('stok-table',6)" style="cursor:pointer">Satuan</th><th onclick="sortTable('stok-table',7)" style="cursor:pointer">Harga</th><th>Aksi</th>
     </tr></thead>
-      <tbody id="stok-tbody"><tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr></tbody>
+      <tbody id="stok-tbody"><tr><td colspan="9" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody>
     </table>
   </div>
 </div>
@@ -626,8 +635,9 @@
     <select class="fc" id="pembelian-filter-status" style="max-width:160px" onchange="filterPembelian()"><option value="">Semua Status</option><option value="draft">Draft</option><option value="dipesan">Dipesan</option><option value="diterima_sebagian">Diterima Sebagian</option><option value="selesai">Selesai</option><option value="dibatalkan">Dibatalkan</option></select>
   </div>
   <div class="card">
-    <table class="t" id="beli-table"><thead><tr><th>No. PO</th><th>Supplier</th><th>Tgl. PO</th><th>Jatuh Tempo</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead>
-      <tbody id="beli-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr></tbody>
+    <div class="ch"><div class="ct">📋 Daftar Purchase Order</div><button class="btn btn-o btn-sm" onclick="exportTableToCSV('beli-table','pembelian.csv')">📥 Export CSV</button></div>
+    <table class="t" id="beli-table"><thead><tr><th onclick="sortTable('beli-table',0)" style="cursor:pointer">No. PO</th><th onclick="sortTable('beli-table',1)" style="cursor:pointer">Supplier</th><th onclick="sortTable('beli-table',2)" style="cursor:pointer">Tgl. PO</th><th onclick="sortTable('beli-table',3)" style="cursor:pointer">Jatuh Tempo</th><th onclick="sortTable('beli-table',4)" style="cursor:pointer">Total</th><th onclick="sortTable('beli-table',5)" style="cursor:pointer">Status</th><th>Aksi</th></tr></thead>
+      <tbody id="beli-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></td></tr></tbody>
     </table>
   </div>
 </div>
@@ -664,7 +674,7 @@
     <div class="fg" style="flex:0 0 170px"><input class="fc" id="kas-tgl-dari" type="date" onchange="filterKas()"></div>
     <div class="fg" style="flex:0 0 170px"><input class="fc" id="kas-tgl-sampai" type="date" onchange="filterKas()"></div>
   </div>
-  <div class="card"><table class="t"><thead><tr><th>TANGGAL</th><th>AKUN</th><th>TIPE</th><th>KATEGORI</th><th>KETERANGAN</th><th>REFERENSI</th><th>PEMASUKAN</th><th>PENGELUARAN</th><th>SALDO</th><th>AKSI</th></tr></thead><tbody id="kas-tbody"><tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+  <div class="card"><table class="t"><thead><tr><th>TANGGAL</th><th>AKUN</th><th>TIPE</th><th>KATEGORI</th><th>KETERANGAN</th><th>REFERENSI</th><th>PEMASUKAN</th><th>PENGELUARAN</th><th>SALDO</th><th>AKSI</th></tr></thead><tbody id="kas-tbody"><tr><td colspan="10" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody></table></div>
 </div>
 
 <!-- ===== PENGGUNAAN OBAT ===== -->
@@ -683,7 +693,7 @@
     <div class="fg" style="flex:0 0 170px"><input class="fc" id="obat-tgl-dari" type="date" onchange="filterPenggunaanObat()"></div>
     <div class="fg" style="flex:0 0 170px"><input class="fc" id="obat-tgl-sampai" type="date" onchange="filterPenggunaanObat()"></div>
   </div>
-  <div class="card"><table class="t"><thead><tr><th>NO. RESEP</th><th>TANGGAL</th><th>PASIEN</th><th>DOKTER</th><th>POLI</th><th>STATUS</th><th>TOTAL ITEM</th><th>TOTAL HARGA</th><th>AKSI</th></tr></thead><tbody id="obat-tbody"><tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+  <div class="card"><table class="t"><thead><tr><th>NO. RESEP</th><th>TANGGAL</th><th>PASIEN</th><th>DOKTER</th><th>POLI</th><th>STATUS</th><th>TOTAL ITEM</th><th>TOTAL HARGA</th><th>AKSI</th></tr></thead><tbody id="obat-tbody"><tr><td colspan="9" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody></table></div>
 </div>
 
 <div id="pg-permintaan-medis" class="page">
@@ -700,7 +710,7 @@
     <div class="fg" style="flex:0 0 170px"><input class="fc" id="pm-tgl-dari" type="date" onchange="filterPermintaanMedis()"></div>
     <div class="fg" style="flex:0 0 170px"><input class="fc" id="pm-tgl-sampai" type="date" onchange="filterPermintaanMedis()"></div>
   </div>
-  <div class="card"><table class="t"><thead><tr><th>NO. PERMINTAAN</th><th>UNIT</th><th>ITEM</th><th>TOTAL ITEM</th><th>STATUS</th><th>DIBUAT</th><th>AKSI</th></tr></thead><tbody id="pm-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+  <div class="card"><table class="t"><thead><tr><th>NO. PERMINTAAN</th><th>UNIT</th><th>ITEM</th><th>TOTAL ITEM</th><th>STATUS</th><th>DIBUAT</th><th>AKSI</th></tr></thead><tbody id="pm-tbody"><tr><td colspan="7" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody></table></div>
 </div>
 
 <div id="pg-penjualan" class="page">
@@ -717,7 +727,7 @@
     <div class="fg" style="flex:0 0 170px"><input class="fc" id="penj-tgl-dari" type="date" onchange="filterPenjualan()"></div>
     <div class="fg" style="flex:0 0 170px"><input class="fc" id="penj-tgl-sampai" type="date" onchange="filterPenjualan()"></div>
   </div>
-  <div class="card"><table class="t"><thead><tr><th>NO. TRANSAKSI</th><th>TANGGAL</th><th>CUSTOMER</th><th>TOTAL</th><th>METODE</th><th>STATUS</th><th>AKSI</th></tr></thead><tbody id="penj-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+  <div class="card"><table class="t"><thead><tr><th>NO. TRANSAKSI</th><th>TANGGAL</th><th>CUSTOMER</th><th>TOTAL</th><th>METODE</th><th>STATUS</th><th>AKSI</th></tr></thead><tbody id="penj-tbody"><tr><td colspan="7" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody></table></div>
 </div>
 
 <div id="pg-logistik" class="page">
@@ -732,7 +742,7 @@
     <div class="fg" style="flex:1"><input class="fc" id="log-search" placeholder="🔍 Cari nama / kode barang..." onkeyup="filterLogistik()"></div>
     <div class="fg" style="flex:0 0 160px"><select class="fc" id="log-kategori" onchange="filterLogistik()"><option value="">Semua Kategori</option><option value="ATK">ATK</option><option value="Kebersihan">Kebersihan</option><option value="Umum">Umum</option></select></div>
   </div>
-  <div class="card"><table class="t"><thead><tr><th>KODE</th><th>NAMA BARANG</th><th>KATEGORI</th><th>SATUAN</th><th>STOK</th><th>MIN</th><th>STATUS</th><th>AKSI</th></tr></thead><tbody id="log-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+  <div class="card"><table class="t"><thead><tr><th>KODE</th><th>NAMA BARANG</th><th>KATEGORI</th><th>SATUAN</th><th>STOK</th><th>MIN</th><th>STATUS</th><th>AKSI</th></tr></thead><tbody id="log-tbody"><tr><td colspan="8" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody></table></div>
 </div>
 
 <div id="pg-akuntansi" class="page">
@@ -752,7 +762,7 @@
       <div class="fg" style="flex:0 0 170px"><input class="fc" id="jurnal-tgl-dari" type="date" onchange="filterJurnal()"></div>
       <div class="fg" style="flex:0 0 170px"><input class="fc" id="jurnal-tgl-sampai" type="date" onchange="filterJurnal()"></div>
     </div>
-    <div class="card"><table class="t"><thead><tr><th>NO. JURNAL</th><th>TANGGAL</th><th>KETERANGAN</th><th>DEBIT</th><th>KREDIT</th><th>AKSI</th></tr></thead><tbody id="jurnal-tbody"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+    <div class="card"><table class="t"><thead><tr><th>NO. JURNAL</th><th>TANGGAL</th><th>KETERANGAN</th><th>DEBIT</th><th>KREDIT</th><th>AKSI</th></tr></thead><tbody id="jurnal-tbody"><tr><td colspan="6" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody></table></div>
   </div>
   
   <!-- Buku Besar -->
@@ -765,24 +775,24 @@
   
   <!-- Neraca Saldo -->
   <div class="akun-tab" id="tab-neracasaldo" style="display:none">
-    <div class="card"><table class="t"><thead><tr><th>KODE</th><th>NAMA AKUN</th><th>TIPE</th><th style="text-align:right">DEBIT</th><th style="text-align:right">KREDIT</th></tr></thead><tbody id="ns-tbody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+    <div class="card"><table class="t"><thead><tr><th>KODE</th><th>NAMA AKUN</th><th>TIPE</th><th style="text-align:right">DEBIT</th><th style="text-align:right">KREDIT</th></tr></thead><tbody id="ns-tbody"><tr><td colspan="5" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody></table></div>
   </div>
   
   <!-- Laba Rugi -->
   <div class="akun-tab" id="tab-laba rugi" style="display:none">
-    <div class="card"><div id="laba-rugi-content" style="padding:8px 0">Memuat...</div></div>
+    <div class="card"><div id="laba-rugi-content" style="padding:8px 0"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></div></div>
   </div>
   
   <!-- Neraca -->
   <div class="akun-tab" id="tab-neraca" style="display:none">
-    <div class="card"><div id="neraca-content" style="padding:8px 0">Memuat...</div></div>
+    <div class="card"><div id="neraca-content" style="padding:8px 0"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></div></div>
   </div>
 </div>
 
 <div id="pg-security" class="page">
   <div class="sh"><div><div class="st">🔒 Security</div><div class="ss">Role-Based Access Control Matrix</div></div><div class="sa"><button class="btn btn-p btn-sm" onclick="showRoleBaru()">+ Role Baru</button><button class="btn btn-o btn-sm" onclick="loadSecurity()">🔄 Refresh</button></div></div>
   <div class="card" style="overflow-x:auto;padding:0">
-    <div id="security-matrix" style="font-size:13px;min-width:800px">Memuat matrix permission...</div>
+    <div id="security-matrix" style="font-size:13px;min-width:800px"><div class="pending-skeleton"><div class="skeleton skeleton-card" style="height:300px"></div></div></div>
   </div>
   </div>
 
@@ -792,7 +802,7 @@
   <div class="fg" style="flex:1"><input class="fc" id="fa-search" placeholder="🔍 Cari aset..." onkeyup="filterFixedAssets()"></div>
   <div class="fg" style="flex:0 0 150px"><select class="fc" id="fa-kategori" onchange="filterFixedAssets()"><option value="">Semua Kategori</option><option>Tanah</option><option>Gedung</option><option>Kendaraan</option><option>Peralatan Medis</option><option>Komputer</option><option>Furniture</option><option>Lainnya</option></select></div>
   </div>
-  <div class="card"><table class="t"><thead><tr><th>KODE</th><th>NAMA ASET</th><th>KATEGORI</th><th>NILAI PEROLEHAN</th><th>LOKASI</th><th>KONDISI</th><th>AKSI</th></tr></thead><tbody id="fa-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+  <div class="card"><table class="t"><thead><tr><th>KODE</th><th>NAMA ASET</th><th>KATEGORI</th><th>NILAI PEROLEHAN</th><th>LOKASI</th><th>KONDISI</th><th>AKSI</th></tr></thead><tbody id="fa-tbody"><tr><td colspan="7" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody></table></div>
   </div>
 
   <div id="pg-audit-trail" class="page">
@@ -801,7 +811,7 @@
   <div class="fg" style="flex:1"><input class="fc" id="audit-search" placeholder="🔍 Cari user/aksi/entitas..." onkeyup="filterAudit()"></div>
   <div class="fg" style="flex:0 0 170px"><input class="fc" id="audit-tgl" type="date" onchange="filterAudit()"></div>
   </div>
-  <div class="card"><table class="t"><thead><tr><th>WAKTU</th><th>USER</th><th>AKSI</th><th>ENTITAS</th><th>DETAIL</th></tr></thead><tbody id="audit-tbody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Memuat data...</td></tr></tbody></table></div>
+  <div class="card"><table class="t"><thead><tr><th>WAKTU</th><th>USER</th><th>AKSI</th><th>ENTITAS</th><th>DETAIL</th></tr></thead><tbody id="audit-tbody"><tr><td colspan="5" style="padding:0"><div class="pending-skeleton"><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div><div class="skeleton skeleton-table-row"></div></div></td></tr></tbody></table></div>
   </div>
 
 <!-- ===== MODAL PENGGUNAAN OBAT ===== -->
@@ -1032,8 +1042,8 @@
       <!-- TAB: INPUT PASIEN BARU -->
       <div id="daftar-tab-baru">
         <div class="fr">
-          <div class="fg"><label class="fl">Nama Lengkap <span style="color:var(--danger)">*</span></label><input id="reg-nama" class="fc" placeholder="Nama pasien..." required></div>
-          <div class="fg"><label class="fl">NIK</label><input id="reg-nik" class="fc" placeholder="16 digit NIK"></div>
+          <div class="fg"><label class="fl">Nama Lengkap <span style="color:var(--danger)">*</span></label><input id="reg-nama" class="fc" placeholder="Nama pasien..." required><div class="field-error">⚠️ Wajib diisi</div></div>
+          <div class="fg"><label class="fl">NIK</label><input id="reg-nik" class="fc" placeholder="16 digit NIK"><div class="field-error">⚠️ NIK harus 16 digit</div></div>
         </div>
         <div class="fr">
           <div class="fg"><label class="fl">Jenis Kelamin</label>
@@ -1066,7 +1076,7 @@
       </div>
 
       <div class="fr">
-        <div class="fg"><label class="fl">Poli Tujuan <span style="color:var(--danger)">*</span></label><select id="reg-poli" class="fc" onchange="loadDoctorOptions(this.value)"><option value="">— Pilih Poli —</option></select></div>
+        <div class="fg"><label class="fl">Poli Tujuan <span style="color:var(--danger)">*</span></label><select id="reg-poli" class="fc" onchange="loadDoctorOptions(this.value)"><option value="">— Pilih Poli —</option></select><div class="field-error">⚠️ Pilih poli tujuan</div></div>
         <div class="fg"><label class="fl">Dokter</label><select id="reg-dokter" class="fc"><option value="">— Pilih Dokter —</option></select></div>
       </div>
       <div class="fr">
@@ -1332,7 +1342,7 @@
   <div class="modal modal-lg" style="max-width:600px">
     <div class="mh"><div class="mt" id="dtl-title">🔍 Detail</div><button class="mc" onclick="hideM('mdl-detail')">✕</button></div>
     <div class="mb" id="dtl-body" style="font-size:13px">
-      <div style="padding:20px;text-align:center;color:var(--text-muted)">⏳ Memuat...</div>
+      <div style="padding:20px;text-align:center;color:var(--text-muted)"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></div>
     </div>
     <div class="mf">
       <button class="btn btn-o" onclick="hideM('mdl-detail')">Tutup</button>
@@ -1764,10 +1774,32 @@
 
 </div><!-- end app-shell -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/shared-state.js?v=4"></script>
-<script src="js/index.js?v=71"></script>
-<script>
+<!-- ===== BOTTOM NAVIGATION (Mobile) ===== -->
+<nav class="bottom-nav" aria-label="Navigasi utama">
+  <div class="bottom-nav-inner">
+    <button class="bn-item active" data-page="dashboard" onclick="go('dashboard',this)">
+      <span class="bn-icon">🏠</span>
+      <span class="bn-label">Dashboard</span>
+    </button>
+    <button class="bn-item" data-page="ambilantrian" onclick="go('ambilantrian',this)">
+      <span class="bn-icon">🎫</span>
+      <span class="bn-label">Antrian</span>
+    </button>
+    <button class="bn-item" data-page="pendaftaran" onclick="go('pendaftaran',this)">
+      <span class="bn-icon">📋</span>
+      <span class="bn-label">Pasien</span>
+    </button>
+    <button class="bn-item" data-page="laporan" onclick="go('laporan',this)">
+      <span class="bn-icon">📊</span>
+      <span class="bn-label">Laporan</span>
+    </button>
+  </div>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" async></script>
+<script src="js/shared-state.js?v=4" defer></script>
+<script src="js/index.js?v=71" defer></script>
+<script defer>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js');
     }
