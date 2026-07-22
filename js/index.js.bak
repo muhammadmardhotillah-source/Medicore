@@ -3,6 +3,104 @@
  * Main Dashboard Logic for MediCore SIMRS
  */
 
+// ─── AUDIT TRAIL ───
+// ─── LAPORAN SIRS ───
+async function exportSIRS() {
+  var now = new Date();
+  var bulan = now.getMonth() + 1;
+  var tahun = now.getFullYear();
+  var tglAwal = tahun + '-' + String(bulan).padStart(2,'0') + '-01';
+  var tglAkhir = tahun + '-' + String(bulan).padStart(2,'0') + '-' + new Date(tahun, bulan, 0).getDate();
+
+  showToast('Mengenerate laporan SIRS...', 'info');
+
+  // 1. Data kunjungan
+  var { data: regs } = await window.__sb.from('registrations')
+    .select('*, patients(nama, jk, tgl_lahir)')
+    .gte('created_at', tglAwal)
+    .lte('created_at', tglAkhir + 'T23:59:59Z');
+  var daftarReg = regs || [];
+
+  // 2. Data pasien
+  var totalKunjungan = daftarReg.length;
+  var rawatJalan = daftarReg.filter(function(r) { return r.poli_id && r.status !== 'Opname'; }).length;
+  var rawatInap = daftarReg.filter(function(r) { return r.status === 'Opname'; }).length;
+  var ugd = daftarReg.filter(function(r) { return !r.poli_id && r.status !== 'Opname' && r.status !== 'Selesai'; }).length;
+  var bpjs = daftarReg.filter(function(r) { return r.penjamin === 'BPJS'; }).length;
+  var umum = daftarReg.filter(function(r) { return r.penjamin === 'Umum'; }).length;
+  var laki = daftarReg.filter(function(r) { return r.patients && r.patients.jk === 'L'; }).length;
+  var perempuan = daftarReg.filter(function(r) { return r.patients && r.patients.jk === 'P'; }).length;
+
+  // 3. 10 besar penyakit (dari diagnosis di registration notes / EMR)
+  // Fallback: hitung dari poli tujuan terpopuler
+  var poliCount = {};
+  daftarReg.forEach(function(r) {
+    if (!r.poli_id) return;
+    poliCount[r.poli_id] = (poliCount[r.poli_id] || 0) + 1;
+  });
+  var topPenyakit = Object.entries(poliCount)
+    .sort(function(a, b) { return b[1] - a[1]; })
+    .slice(0, 10);
+  var poliMap = {};
+  (SharedState.getPoli() || []).forEach(function(p) { poliMap[p.id] = p.nama_poli; });
+
+  // Generate CSV
+  var csvRows = [];
+  csvRows.push('"LAPORAN SIRS BULANAN"');
+  csvRows.push('"Rumah Sakit: Edoy Hospital Management"');
+  csvRows.push('"Periode: ' + bulan + '/' + tahun + '"');
+  csvRows.push('');
+  csvRows.push('"A. DATA KUNJUNGAN"');
+  csvRows.push('"Indikator","Jumlah"');
+  csvRows.push('"Total Kunjungan",' + totalKunjungan);
+  csvRows.push('"Rawat Jalan",' + rawatJalan);
+  csvRows.push('"Rawat Inap",' + rawatInap);
+  csvRows.push('"UGD",' + ugd);
+  csvRows.push('"BPJS",' + bpjs);
+  csvRows.push('"Umum",' + umum);
+  csvRows.push('"Laki-laki",' + laki);
+  csvRows.push('"Perempuan",' + perempuan);
+  csvRows.push('');
+  csvRows.push('"B. 10 POLI/LAYANAN TERBANYAK"');
+  csvRows.push('"Poli","Kunjungan"');
+  topPenyakit.forEach(function(p) {
+    csvRows.push('"' + (poliMap[parseInt(p[0])] || 'Poli #' + p[0]) + '",' + p[1]);
+  });
+  csvRows.push('');
+  csvRows.push('"C. INFORMASI RUMAH SAKIT"');
+  csvRows.push('"Nama RS","Edoy Hospital Management"');
+  csvRows.push('"Alamat","Jl. Raya Cilegon KM 8, Serang, Banten"');
+  csvRows.push('"Kode RS BPJS","0401R001"');
+  csvRows.push('"Periode Laporan","' + bulan + '/' + tahun + '"');
+  csvRows.push('"Tanggal Generate","' + new Date().toLocaleDateString('id-ID') + '"');
+
+  var bom = '﻿';
+  var csv = bom + csvRows.join('\r\n');
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'SIRS-' + tahun + '-' + String(bulan).padStart(2,'0') + '.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+  logActivity('Export SIRS', 'Laporan', 'SIRS-' + tahun + '-' + bulan, 'Export laporan bulanan SIRS');
+  showToast('✅ Laporan SIRS ' + bulan + '/' + tahun + ' di-export', 'success');
+}
+
+function logActivity(action, entityType, entityName, detail) {
+  var user = window.medicoreUser;
+  if (!window.__sb) return;
+  window.__sb.from('audit_logs').insert({
+    user_name: user ? user.nama || user.username : 'System',
+    action: action,
+    entity_type: entityType,
+    entity_name: entityName || '',
+    detail: detail || '',
+    created_at: new Date().toISOString()
+  })['catch'](function(e) { console.warn('Audit log fail:', e); });
+}
+
 // ─── TRANSACTION HELPER (manual rollback) ───
 var __tx_pending = [];
 
@@ -711,13 +809,8 @@ function renderMiniChart(containerId, data, color) {
 
 // RENDER DASHBOARD DATA
 async function renderDashboard() {
-    await SharedState.waitReady();
-    var dashboardData = await SharedState.getDashboardData();
-    if (!dashboardData) { showToast('Data dashboard gagal dimuat','warning'); return; }
-    var st = dashboardData.stats || {};
-    var beds = dashboardData.beds || [];
-    var patients = dashboardData.latestPatients || [];
-    var queues = dashboardData.queues || {};
+    const dashboardData = await SharedState.getDashboardData();
+    if (!dashboardData) return;
 
     // 1. Update Statistik — with animated counter
     animateCounter(document.getElementById('stat-rj'), dashboardData.stats.rawatJalan);
@@ -1046,6 +1139,7 @@ async function submitRegistration() {
         total: 0
     });
 
+    logActivity('Registrasi','Pasien',window._regPatientRM||'',`Pasien terdaftar No.Antrian: ${noAntrian}`);
     showToast(`✅ Berhasil! Pasien terdaftar. No. Antrian: ${noAntrian}`);
     hideM('mdl-daftar');
     loadPendaftaran();
@@ -3246,7 +3340,8 @@ async function submitAdmit() {
         await window.__sb.from('beds').update({ status: 'Terpakai' }).eq('id', bedId);
         
         hideM('mdl-admit');
-        showToast(`✅ ${patientName} berhasil di-admit\nNo. Antrian: ${newNo}`);
+        logActivity('Admit','Pasien',patientName||'',`Admit rawat inap No.Antrian: ${newNo}`);
+    showToast(`✅ ${patientName} berhasil di-admit\nNo. Antrian: ${newNo}`);
         loadRawatInap();
     } catch (e) {
         showToast('' + e.message);
@@ -3854,7 +3949,8 @@ function initAuth() {
         return;
       }
       window.medicoreUser = user;
-      updateUserChip();
+      logActivity('Login','User',window.medicoreUser?.nama||'',`Login role: ${window.medicoreUser?.role||''}`);
+  updateUserChip();
       document.getElementById('login-overlay').classList.remove('active');
       document.getElementById('app-shell').classList.add('active');
     } catch(e) {
@@ -3921,6 +4017,7 @@ async function doLogin() {
   window.medicoreUser._loginAt = loginTime;
   window.medicoreUser._expiresAt = loginTime + (8 * 60 * 60 * 1000); // 8 jam
   localStorage.setItem('medicore_user', JSON.stringify(window.medicoreUser));
+  logActivity('Login','User',window.medicoreUser?.nama||'',`Login role: ${window.medicoreUser?.role||''}`);
   updateUserChip();
   document.getElementById('login-overlay').classList.remove('active');
   document.getElementById('app-shell').classList.add('active');
@@ -3953,6 +4050,7 @@ async function submitSEP() {
     created_at: new Date().toISOString()
   }).single();
   if (error) return showToast('Gagal simpan SEP: ' + error.message, 'error');
+  logActivity('Buat SEP','BPJS',noSEP,'No.BPJS: ' + noBPJS);
   showToast('✅ SEP ' + noSEP + ' berhasil disimpan', 'success');
   hideM('mdl-sep');
 }
@@ -4592,6 +4690,7 @@ async function submitStokMasuk() {
   if (error) { showToast(' Gagal: ' + error.message); return; }
   
   console.log('📥 Stok Masuk:', { obatId, qty, ref, ket });
+  logActivity('Terima Stok','Obat',document.getElementById('mdl-obat-nama')?.value||'',`Penerimaan stok baru: ${newStok}`);
   showToast(`✅ Penerimaan berhasil! Stok baru: ${newStok}`);
   hideM('mdl-stok-masuk');
   loadStok();
@@ -4646,6 +4745,7 @@ async function submitStokOpname() {
   if (error) { showToast(' Gagal: ' + error.message); return; }
   
   console.log('📋 Stok Opname:', { obatId, stokFisik, ket });
+  logActivity('Opname Stok','Obat',document.getElementById('mdl-so-obat')?.selectedOptions?.[0]?.text||'',`Opname stok fisik: ${stokFisik}`);
   showToast(`✅ Opname berhasil! Stok diatur ke: ${stokFisik}`);
   hideM('mdl-stok-opname');
   loadStok();
@@ -7714,7 +7814,7 @@ async function loadAuditLogs() {
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr>';
 
   const { data, error } = await window.__sb.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
-  if (error || !data) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--danger)">' + (error?.message || 'Gagal memuat') + '</td></tr>'; return; }
+  if (error || !data) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--danger)"><div class="error-state"><div class="error-state-icon">⚠️</div><div style="font-size:var(--text-sm)">' + (error?.message || 'Gagal memuat') + '</div></div></td></tr>'; return; }
 
   __auditData = data;
   renderAuditLogs(data);

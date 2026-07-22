@@ -19,21 +19,21 @@
 <div id="toast-container"></div>
 
 <!-- ===== LOGIN OVERLAY — Premium ===== -->
-<div id="login-overlay">
+<div id="login-overlay" class="active">
   <div class="login-card">
     <div class="login-top"></div>
     <div class="login-inner">
       <img src="MediCore.png" class="login-logo" alt="MediCore">
       <div class="login-title">MEDICORE</div>
       <div class="login-sub">Edoy Hospital Management</div>
-      <form id="login-form" onsubmit="event.preventDefault(); doLogin();">
+      <form id="login-form" >
         <div class="login-input-wrap">
           <span class="login-input-icon">👤</span>
-          <input id="login-user" class="login-input" type="text" placeholder="Username" onkeydown="if(event.key==='Enter') doLogin()" autocomplete="username">
+          <input id="login-user" class="login-input" type="text" placeholder="Username"  autocomplete="username">
         </div>
         <div class="login-input-wrap">
           <span class="login-input-icon">🔒</span>
-          <input id="login-pass" class="login-input" type="password" placeholder="Password" onkeydown="if(event.key==='Enter') doLogin()" autocomplete="current-password">
+          <input id="login-pass" class="login-input" type="password" placeholder="Password"  autocomplete="current-password">
         </div>
         <div id="login-error" class="login-error">
           <span>❌</span> Username atau password salah
@@ -115,7 +115,7 @@
 <div class="main">
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:12px">
-      <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Buka menu">☰</button>
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Buka menu">☰</button>
       <div><div class="tb-title" id="pgt">Dashboard</div><div class="tb-date" id="pgd"></div></div>
     </div>
     <div class="tb-right">

@@ -5,16 +5,18 @@
 
 // ─── AUDIT TRAIL ───
 function logActivity(action, entityType, entityName, detail) {
-  var user = window.medicoreUser;
-  if (!window.__sb) return;
-  window.__sb.from('audit_logs').insert({
-    user_name: user ? user.nama || user.username : 'System',
-    action: action,
-    entity_type: entityType,
-    entity_name: entityName || '',
-    detail: detail || '',
-    created_at: new Date().toISOString()
-  })['catch'](function(e) { console.warn('Audit log fail:', e); });
+  try {
+    var user = window.medicoreUser;
+    if (!window.__sb) return;
+    window.__sb.from('audit_logs').insert({
+      user_name: user ? user.nama || user.username : 'System',
+      action: action,
+      entity_type: entityType,
+      entity_name: entityName || '',
+      detail: detail || '',
+      created_at: new Date().toISOString()
+    });
+  } catch(e) {}
 }
 
 // ─── TOAST ───
@@ -124,6 +126,22 @@ function hideSkeleton(containerId) {
 }
 
 // ─── ANIMATED COUNTER ───
+function renderMiniChart(containerId, data, color) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  color = color || 'var(--primary-500)';
+  var max = Math.max.apply(null, data, 1);
+  var html = '<div class="chart-wrap">';
+  var days = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+  for (var i = 0; i < data.length; i++) {
+    var h = Math.max(4, (data[i] / max) * 100);
+    var op = 0.3 + (data[i]/max)*0.7;
+    html += '<div class="chart-bar"><div class="chart-bar-inner" style="height:'+h+'px;background:'+color+';opacity:'+op+'"></div><div class="chart-bar-label">'+(days[i]||'')+'</div></div>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
 function animateCounter(el, target, prefix, suffix) {
   if (!el) return;
   if (typeof target === 'string' && target.includes('Rp')) { el.textContent = target; return; }

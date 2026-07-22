@@ -3,251 +3,26 @@
  * Main Dashboard Logic for MediCore SIMRS
  */
 
+// ─── AUDIT TRAIL ───
+// ─── LAPORAN SIRS ───
+
+
 // ─── TRANSACTION HELPER (manual rollback) ───
 var __tx_pending = [];
 
-function txBegin() { __tx_pending = []; return true; }
 
-function txAdd(table, op, data, idField) {
-  __tx_pending.push({
-    table: table, op: op,
-    data: JSON.parse(JSON.stringify(data)),
-    idField: idField || 'id',
-    _rb: null
-  });
-}
 
-async function txCommit() {
-  var errors = [], executed = [];
-  for (var i = 0; i < __tx_pending.length; i++) {
-    var s = __tx_pending[i];
-    try {
-      if (s.op === 'insert') {
-        var r = await window.__sb.from(s.table).insert(s.data);
-        if (r.error) errors.push(s.table + ': ' + r.error.message); else executed.push(s);
-      } else if (s.op === 'update') {
-        var snap = await window.__sb.from(s.table).select('*').eq(s.idField, s.data[s.idField]).single();
-        s._rb = snap.data;
-        var r2 = await window.__sb.from(s.table).update(s.data).eq(s.idField, s.data[s.idField]);
-        if (r2.error) errors.push(s.table + ': ' + r2.error.message); else executed.push(s);
-      }
-    } catch(e) { errors.push(s.table + ': ' + e.message); }
-  }
-  if (errors.length > 0) {
-    for (var j = executed.length - 1; j >= 0; j--) {
-      var rs = executed[j];
-      try {
-        if (rs.op === 'insert') window.__sb.from(rs.table).delete().eq(rs.idField, rs.data[rs.idField]);
-        else if (rs.op === 'update' && rs._rb) window.__sb.from(rs.table).update(rs._rb).eq(rs.idField, rs._rb[rs.idField]);
-      } catch(e) { console.error('Rollback fail', rs.table, e); }
-    }
-    __tx_pending = [];
-    return { success: false, errors: errors };
-  }
-  __tx_pending = [];
-  return { success: true };
-}
 
-function txRollback() { __tx_pending = []; }
 
 // ─── GLOBAL TOAST SYSTEM ───
-function showToast(message, type, duration) {
-  type = type || 'info';
-  duration = duration || 4000;
-  const container = document.getElementById('toast-container');
-  if (!container) return;
 
-  const icons = {
-    success: '✅',
-    error: '❌',
-    warning: '⚠️',
-    info: 'ℹ️'
-  };
-
-  const toast = document.createElement('div');
-  toast.className = 'toast toast-' + type;
-  toast.innerHTML = '<span class="toast-icon">' + (icons[type] || 'ℹ️') + '</span>' + message;
-  toast.onclick = function() {
-    dismissToast(toast);
-  };
-  container.appendChild(toast);
-
-  setTimeout(function() {
-    dismissToast(toast);
-  }, duration);
-}
-
-function dismissToast(toast) {
-  if (toast.classList.contains('toast-exit')) return;
-  toast.classList.add('toast-exit');
-  setTimeout(function() {
-    if (toast.parentNode) toast.parentNode.removeChild(toast);
-  }, 300);
-}
 
 // ─── REUSABLE AUTOCOMPLETE ───
 // createAutocomplete(inputEl, options)
 // options: { onSearch(term, cb), onSelect(item), renderItem(item), minChars(2), debounceMs(300) }
-function createAutocomplete(inputEl, opts) {
-  if (!inputEl) return null;
-  opts = opts || {};
-  var onSearch = opts.onSearch || function(t, cb) { cb([]); };
-  var onSelect = opts.onSelect || function() {};
-  var renderItem = opts.renderItem || function(item) {
-    return '<div class="sd-main"><div class="sd-title">' + (item.label || item) + '</div></div>';
-  };
-  var minChars = opts.minChars || 2;
-  var debounceMs = opts.debounceMs || 300;
-
-  // Create dropdown
-  var dd = document.createElement('div');
-  dd.className = 'search-dropdown';
-  inputEl.parentNode.style.position = 'relative';
-  inputEl.parentNode.appendChild(dd);
-
-  var selectedIndex = -1;
-  var currentData = [];
-  var debounceTimer = null;
-
-  function hideDropdown() {
-    dd.classList.remove('show');
-    dd.innerHTML = '';
-    selectedIndex = -1;
-  }
-
-  function showDropdown(data) {
-    currentData = data;
-    if (!data || data.length === 0) {
-      dd.innerHTML = '<div class="search-dropdown-empty">Tidak ditemukan</div>';
-      dd.classList.add('show');
-      return;
-    }
-    dd.innerHTML = data.map(function(item, i) {
-      return '<div class="search-dropdown-item" data-index="' + i + '">' +
-        '<span class="sd-icon">' + (item.icon || '🔍') + '</span>' +
-        renderItem(item) +
-        (item.sub ? '<span class="sd-right">' + item.sub + '</span>' : '') +
-        '</div>';
-    }).join('');
-    selectedIndex = -1;
-    dd.classList.add('show');
-  }
-
-  function doSearch(term) {
-    if (term.length < minChars) {
-      hideDropdown();
-      return;
-    }
-    onSearch(term, function(results) {
-      showDropdown(results);
-    });
-  }
-
-  // Input events
-  inputEl.addEventListener('input', function() {
-    var val = inputEl.value.trim();
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(function() { doSearch(val); }, debounceMs);
-  });
-
-  inputEl.addEventListener('focus', function() {
-    var val = inputEl.value.trim();
-    if (val.length >= minChars) doSearch(val);
-  });
-
-  inputEl.addEventListener('keydown', function(e) {
-    var items = dd.querySelectorAll('.search-dropdown-item');
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
-      items.forEach(function(el, i) { el.classList.toggle('highlighted', i === selectedIndex); });
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      selectedIndex = Math.max(selectedIndex - 1, 0);
-      items.forEach(function(el, i) { el.classList.toggle('highlighted', i === selectedIndex); });
-    } else if (e.key === 'Enter' && selectedIndex >= 0 && currentData[selectedIndex]) {
-      e.preventDefault();
-      onSelect(currentData[selectedIndex]);
-      hideDropdown();
-    } else if (e.key === 'Escape') {
-      hideDropdown();
-    }
-  });
-
-  // Click on dropdown items
-  dd.addEventListener('click', function(e) {
-    var itemEl = e.target.closest('.search-dropdown-item');
-    if (!itemEl) return;
-    var idx = parseInt(itemEl.getAttribute('data-index'));
-    if (currentData[idx]) {
-      onSelect(currentData[idx]);
-      hideDropdown();
-    }
-  });
-
-  // Click outside
-  document.addEventListener('click', function(e) {
-    if (!inputEl.parentNode.contains(e.target)) {
-      hideDropdown();
-    }
-  });
-
-  return { hide: hideDropdown, refresh: function() { doSearch(inputEl.value.trim()); } };
-}
 
 // ─── FORM VALIDATION HELPERS ───
-function validateField(id, rules) {
-  var el = document.getElementById(id);
-  if (!el) return true;
-  rules = rules || {};
-  var value = el.value.trim();
-  var errorEl = el.parentNode.querySelector('.field-error');
 
-  // Remove existing error
-  el.classList.remove('is-error', 'is-success');
-  if (errorEl) errorEl.classList.remove('show');
-
-  // Required
-  if (rules.required && !value) {
-    el.classList.add('is-error');
-    if (errorEl) { errorEl.textContent = rules.message || 'Wajib diisi'; errorEl.classList.add('show'); }
-    return false;
-  }
-
-  // Min length
-  if (rules.minLength && value.length < rules.minLength) {
-    el.classList.add('is-error');
-    if (errorEl) { errorEl.textContent = 'Minimal ' + rules.minLength + ' karakter'; errorEl.classList.add('show'); }
-    return false;
-  }
-
-  // Pattern
-  if (rules.pattern && value && !rules.pattern.test(value)) {
-    el.classList.add('is-error');
-    if (errorEl) { errorEl.textContent = rules.message || 'Format tidak valid'; errorEl.classList.add('show'); }
-    return false;
-  }
-
-  // Custom
-  if (rules.validate && !rules.validate(value)) {
-    el.classList.add('is-error');
-    if (errorEl) { errorEl.textContent = rules.message || 'Tidak valid'; errorEl.classList.add('show'); }
-    return false;
-  }
-
-  // Success state
-  if (value && rules.showSuccess) el.classList.add('is-success');
-  return true;
-}
-
-function validateForm(rules) {
-  // rules = { fieldId: ruleObj, ... }
-  var valid = true;
-  for (var id in rules) {
-    if (!validateField(id, rules[id])) valid = false;
-  }
-  return valid;
-}
 
 // Auto-clear error on input
 document.addEventListener('input', function(e) {
@@ -258,72 +33,9 @@ document.addEventListener('input', function(e) {
     if (err) err.classList.remove('show');
   }
 });
-function showSkeleton(containerId, type) {
-  var el = document.getElementById(containerId);
-  if (!el) return;
-  type = type || 'table';
-  var skeletons = {
-    'table': function() {
-      var rows = '';
-      for (var i = 0; i < 5; i++) {
-        rows += '<div class="skeleton skeleton-table-row"></div>';
-      }
-      return rows;
-    },
-    'card': function() {
-      return '<div class="skeleton skeleton-card"></div>';
-    },
-    'stat': function() {
-      return '<div class="skeleton skeleton-stat"></div>';
-    },
-    'text': function() {
-      return '<div class="skeleton skeleton-text" style="width:80%"></div>' +
-             '<div class="skeleton skeleton-text" style="width:60%"></div>' +
-             '<div class="skeleton skeleton-text-sm"></div>';
-    },
-    'table-row': function() {
-      return '<div class="skeleton skeleton-table-row"></div>';
-    }
-  };
-  el.innerHTML = '<div class="loading-skeleton">' + (skeletons[type] ? skeletons[type]() : skeletons['table']()) + '</div>';
-  el.style.display = '';
-}
 
-function hideSkeleton(containerId) {
-  var el = document.getElementById(containerId);
-  if (!el) return;
-  el.innerHTML = '';
-}
 // ─── UNIVERSAL TABLE SORT ───
 window.__tableSort = window.__tableSort || {};
-function sortTable(tableId, colIndex) {
-  var table = document.getElementById(tableId);
-  if (!table) return;
-  var tbody = table.querySelector('tbody');
-  if (!tbody) return;
-
-  var state = window.__tableSort[tableId] || {};
-  var isAsc = state.col === colIndex ? !state.asc : true;
-  window.__tableSort[tableId] = { col: colIndex, asc: isAsc };
-
-  table.querySelectorAll('th').forEach(function(th, i) {
-    var text = th.textContent.replace(/[▴▾]/g, '').trim();
-    th.textContent = i === colIndex ? text + ' ' + (isAsc ? '▴' : '▾') : text;
-    if (i === colIndex) th.setAttribute('data-sort', isAsc ? 'asc' : 'desc');
-    else th.removeAttribute('data-sort');
-  });
-
-  var rows = Array.from(tbody.querySelectorAll('tr'));
-  rows.sort(function(a, b) {
-    var aV = (a.cells[colIndex] ? a.cells[colIndex].textContent.trim() : '');
-    var bV = (b.cells[colIndex] ? b.cells[colIndex].textContent.trim() : '');
-    var aN = parseFloat(aV.replace(/[Rp. ,]/g, ''));
-    var bN = parseFloat(bV.replace(/[Rp. ,]/g, ''));
-    if (!isNaN(aN) && !isNaN(bN)) return isAsc ? aN - bN : bN - aN;
-    return isAsc ? aV.localeCompare(bV, 'id') : bV.localeCompare(aV, 'id');
-  });
-  rows.forEach(function(row) { tbody.appendChild(row); });
-}
 
 // Delegated sort: click any <th> in a .t table to sort
 document.addEventListener('click', function(e) {
@@ -630,8 +342,6 @@ function filterSidebar(role) {
 }
 
 // MODAL UTILS
-function showM(id) { document.getElementById(id)?.classList.add('show'); }
-function hideM(id) { document.getElementById(id)?.classList.remove('show'); }
 
 let selectedPenjamin = 'Umum';
 
@@ -666,58 +376,13 @@ function swTab(el, tabId) {
 }
 
 // ─── ANIMATED COUNTER ───
-function animateCounter(el, target, prefix, suffix) {
-  prefix = prefix || '';
-  suffix = suffix || '';
-  if (!el) return;
-  // Currency format (Rp)
-  if (typeof target === 'string' && target.includes('Rp')) {
-    el.textContent = target;
-    return;
-  }
-  if (prefix === 'Rp' || (el.id && (el.id.includes('income') || el.id.includes('total') || el.id.includes('omzet') || el.id.includes('biaya')))) {
-    el.textContent = formatRupiah(parseInt(target) || 0);
-    return;
-  }
-  const numTarget = parseInt(target) || 0;
-  let current = 0;
-  const step = Math.max(1, Math.floor(numTarget / 30));
-  const interval = 30;
-  el.textContent = prefix + current + suffix;
-  const timer = setInterval(function() {
-    current += step;
-    if (current >= numTarget) {
-      current = numTarget;
-      clearInterval(timer);
-    }
-    el.textContent = prefix + current.toLocaleString() + suffix;
-  }, interval);
-}
 
 // ─── RENDER CSS-ONLY CHART ───
-function renderMiniChart(containerId, data, color) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  color = color || 'var(--primary-500)';
-  const max = Math.max(...data, 1);
-  container.innerHTML = '<div class="chart-wrap">' +
-    data.map(function(v, i) {
-      var h = Math.max(4, (v / max) * 100);
-      var dayNames = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
-      return '<div class="chart-bar"><div class="chart-bar-inner" style="height:' + h + 'px;background:' + color + ';opacity:' + (0.3 + (v/max)*0.7) + '"></div><div class="chart-bar-label">' + (dayNames[i] || '') + '</div></div>';
-    }).join('') +
-    '</div>';
-}
 
 // RENDER DASHBOARD DATA
 async function renderDashboard() {
-    await SharedState.waitReady();
-    var dashboardData = await SharedState.getDashboardData();
-    if (!dashboardData) { showToast('Data dashboard gagal dimuat','warning'); return; }
-    var st = dashboardData.stats || {};
-    var beds = dashboardData.beds || [];
-    var patients = dashboardData.latestPatients || [];
-    var queues = dashboardData.queues || {};
+    const dashboardData = await SharedState.getDashboardData();
+    if (!dashboardData) return;
 
     // 1. Update Statistik — with animated counter
     animateCounter(document.getElementById('stat-rj'), dashboardData.stats.rawatJalan);
@@ -787,107 +452,8 @@ async function renderDashboard() {
 }
 
 // RENDER PENDAFTARAN
-async function loadPendaftaran() {
-    const { data: regs } = await window.__sb
-        .from('registrations')
-        .select('*, patients(no_rm, nama, tgl_lahir), poli(nama_poli)')
-        .order('created_at', { ascending: false });
-
-    if (!regs) return;
-
-    const tbody = document.getElementById('pendaftaran-tbody');
-    if (!tbody) return;
-
-    // Hitung stat
-    const total = regs.length;
-    const menunggu = regs.filter(r => r.status === 'Menunggu').length;
-    const proses = regs.filter(r => r.status === 'Proses').length;
-    const selesai = regs.filter(r => r.status === 'Selesai').length;
-
-    document.getElementById('stat-kunjungan-total').textContent = total;
-    document.getElementById('stat-kunjungan-menunggu').textContent = menunggu;
-    document.getElementById('stat-kunjungan-proses').textContent = proses;
-    document.getElementById('stat-kunjungan-selesai').textContent = selesai;
-    document.getElementById('stat-kunjungan-count').textContent = total + ' kunjungan';
-
-    // Render tabel
-    tbody.innerHTML = '';
-    regs.forEach(r => {
-        const usia = r.patients?.tgl_lahir 
-            ? Math.floor((new Date() - new Date(r.patients.tgl_lahir)) / 31557600000) + 'th'
-            : '—';
-        const dokter = '—';
-        const statusClass = r.status === 'Selesai' ? 'bs' 
-            : r.status === 'Proses' ? 'bp'
-            : r.status === 'URGENT' ? 'bd'
-            : r.status === 'Opname' ? 'bi'
-            : 'bw';
-        const rowClass = r.status === 'URGENT' ? ' class="row-u"' : '';
-
-        tbody.innerHTML += `<tr${rowClass}>
-            <td class="mono">${String(r.id).slice(0,6).toUpperCase()}</td>
-            <td class="mono">${r.patients?.no_rm || '—'}</td>
-            <td><strong>${r.patients?.nama || 'Unknown'}</strong></td>
-            <td>${usia}</td>
-            <td>${r.poli?.nama_poli || 'UGD'}</td>
-            <td>${dokter}</td>
-            <td><span class="b ${r.penjamin === 'BPJS' ? 'bi' : r.penjamin === 'Asuransi' ? 'bw' : 'bp'}">${r.penjamin || 'Umum'}</span></td>
-            <td><strong>${r.no_antrian || '—'}</strong></td>
-            <td><span class="b ${statusClass}">${r.status}</span></td>
-            <td><button class="btn btn-o btn-xs" onclick="showPendaftaranDetail('${r.id}')">Detail</button></td>
-        </tr>`;
-    });
-}
 
 // Detail kunjungan di Pendaftaran
-async function showPendaftaranDetail(regId) {
-    showDetail('⏳ Memuat detail...', '<div style="padding:30px;text-align:center;color:var(--text-muted)">Memuat data...</div>');
-    showM('mdl-detail');
-    
-    const { data: r } = await window.__sb
-        .from('registrations')
-        .select('*, patients(no_rm, nama, nik, jk, tgl_lahir, alamat, no_hp), poli(nama_poli)')
-        .eq('id', regId)
-        .single();
-    
-    if (!r) return showDetail('❌ Error', '<div style="padding:30px;text-align:center;color:var(--danger)">Data tidak ditemukan</div>');
-    
-    const p = r.patients;
-    const usia = p?.tgl_lahir 
-        ? Math.floor((new Date() - new Date(p.tgl_lahir)) / 31557600000) + ' tahun'
-        : '—';
-    const gender = p?.jk === 'L' ? 'Laki-laki' : p?.jk === 'P' ? 'Perempuan' : '—';
-    const cr = r.created_at ? new Date(r.created_at).toLocaleString('id-ID') : '—';
-    const statClass = r.status === 'Selesai' ? 'bs' 
-        : r.status === 'Proses' ? 'bp'
-        : r.status === 'calling' ? 'bi'
-        : r.status === 'URGENT' ? 'bd'
-        : r.status === 'Opname' ? 'bi'
-        : 'bw';
-
-    showDetail('📋 Detail Kunjungan — ' + (p?.nama || 'Unknown'), `
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;background:var(--bg);padding:11px;border-radius:8px;margin-bottom:11px">
-            <div><span style="color:var(--text-muted)">No. Antrian</span><div style="font-weight:700;font-family:monospace;font-size:16px">${r.no_antrian || '—'}</div></div>
-            <div><span style="color:var(--text-muted)">Status</span><div><span class="b ${statClass}">${r.status}</span></div></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;background:var(--bg);padding:11px;border-radius:8px;margin-bottom:11px">
-            <div style="grid-column:1/-1;font-weight:700;color:var(--text-muted);margin-bottom:2px">👤 DATA PASIEN</div>
-            <div><span style="color:var(--text-muted)">Nama</span><div style="font-weight:700">${p?.nama || '—'}</div></div>
-            <div><span style="color:var(--text-muted)">No. RM</span><div style="font-weight:700;font-family:monospace">${p?.no_rm || '—'}</div></div>
-            <div><span style="color:var(--text-muted)">NIK</span><div>${p?.nik || '—'}</div></div>
-            <div><span style="color:var(--text-muted)">JK / Usia</span><div>${gender} / ${usia}</div></div>
-            <div><span style="color:var(--text-muted)">Tgl Lahir</span><div>${p?.tgl_lahir || '—'}</div></div>
-            <div><span style="color:var(--text-muted)">No. HP</span><div>${p?.no_hp || '—'}</div></div>
-            <div style="grid-column:1/-1"><span style="color:var(--text-muted)">Alamat</span><div>${p?.alamat || '—'}</div></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;background:var(--bg);padding:11px;border-radius:8px">
-            <div style="grid-column:1/-1;font-weight:700;color:var(--text-muted);margin-bottom:2px">📋 DATA KUNJUNGAN</div>
-            <div><span style="color:var(--text-muted)">Poli</span><div style="font-weight:700">${r.poli?.nama_poli || 'UGD'}</div></div>
-            <div><span style="color:var(--text-muted)">Penjamin</span><div><span class="b ${r.penjamin === 'BPJS' ? 'bi' : r.penjamin === 'Asuransi' ? 'bw' : 'bp'}">${r.penjamin || 'Umum'}</span></div></div>
-            <div style="grid-column:1/-1"><span style="color:var(--text-muted)">Didaftarkan</span><div>${cr}</div></div>
-        </div>
-    `);
-}
 
 // PENDAFTARAN — Dynamic dropdowns from Supabase
 async function loadPoliOptions() {
@@ -914,548 +480,37 @@ async function loadDoctorOptions(poliId) {
 }
 
 // Cari pasien via Supabase
-async function searchPatient() {
-    const nama = document.getElementById('reg-name').value.trim();
-    if (!nama) return showToast('Masukkan nama pasien');
-    const { data } = await window.__sb
-        .from('patients')
-        .select('id, no_rm, nama')
-        .ilike('nama', `%${nama}%`)
-        .limit(5);
-    const resultDiv = document.getElementById('search-result');
-    if (!data || data.length === 0) {
-        resultDiv.style.display = 'none';
-        return showToast('Pasien tidak ditemukan. Daftarkan pasien baru melalui halaman daftar-mandiri.');
-    }
-    // Show first result
-    resultDiv.style.display = 'block';
-    document.getElementById('res-name').textContent = data[0].nama;
-    document.getElementById('res-rm').textContent = data[0].no_rm;
-    window._regPatientId = data[0].id;
-    window._regPatientRM = data[0].no_rm;
-}
 
 // Toggle tab Pendaftaran: baru vs cari
-function swTabDaftar(mode) {
-  document.getElementById('daftar-tab-baru').style.display = mode === 'baru' ? 'block' : 'none';
-  document.getElementById('daftar-tab-cari').style.display = mode === 'cari' ? 'block' : 'none';
-  document.getElementById('tg-daftar-baru').className = 'tgb' + (mode === 'baru' ? ' active' : '');
-  document.getElementById('tg-daftar-cari').className = 'tgb' + (mode === 'cari' ? ' active' : '');
-  window._regPatientId = null;
-  window._regPatientRM = null;
-}
 
 // Submit registrasi ke Supabase
-async function submitRegistration() {
-    const penjamin = window.selectedPenjamin || 'Umum';
-    const poliId = document.getElementById('reg-poli')?.value;
-    const dokterId = document.getElementById('reg-dokter')?.value;
-    const mode = document.getElementById('daftar-tab-baru')?.style.display !== 'none' ? 'baru' : 'cari';
-
-    // Validate form
-    if (mode === 'baru') {
-      var valid = validateForm({
-        'reg-nama': { required: true, message: '⚠️ Nama pasien wajib diisi' },
-        'reg-poli': { required: true, message: '⚠️ Pilih poli tujuan' }
-      });
-      if (!valid) return;
-    } else {
-      if (!validateField('reg-name', { required: true, message: '⚠️ Cari pasien terlebih dahulu' })) return;
-      if (!window._regPatientId) return showToast('Pilih pasien dari hasil pencarian', 'warning');
-    }
-
-    let patientId = window._regPatientId;
-
-    // MODE BARU: create pasien baru
-    if (mode === 'baru') {
-        const nama = document.getElementById('reg-nama').value.trim();
-        if (!nama) return showToast('Nama pasien wajib diisi!');
-
-        const nik = document.getElementById('reg-nik').value.trim();
-        const jk = document.getElementById('reg-jk').value;
-        const tglLahir = document.getElementById('reg-tgl-lahir').value;
-        const alamat = document.getElementById('reg-alamat').value.trim();
-        const hp = document.getElementById('reg-hp').value.trim();
-
-        // Validasi NIK 16 digit
-        if (nik.length > 0 && nik.length !== 16) {
-          showToast('NIK harus 16 digit angka', 'warning');
-          return;
-        }
-
-        // Cek duplikasi: NIK
-        var dup = null;
-        if (nik) {
-          var r = await window.__sb.from('patients').select('id,no_rm,nama').eq('nik', nik).limit(1);
-          if (r.data && r.data.length > 0) dup = r.data[0];
-        }
-        // Fallback: nama + tgl lahir
-        if (!dup && nama && tglLahir) {
-          var r2 = await window.__sb.from('patients').select('id,no_rm,nama').eq('nama', nama).eq('tgl_lahir', tglLahir).limit(1);
-          if (r2.data && r2.data.length > 0) dup = r2.data[0];
-        }
-        if (dup && !confirm('Data mirip ditemukan: ' + dup.nama + ' (' + dup.no_rm + ')\nTetap daftarkan baru?')) {
-          return;
-        }
-
-        if (!patientId) {
-            var { count } = await window.__sb.from('patients').select('id', { count: 'exact', head: true });
-            var noRm = '009' + String((count || 0) + 1).padStart(6, '0');
-            txBegin();
-            var { data: np, error: pe } = await window.__sb.from('patients').insert({
-                no_rm: noRm, nama: nama, nik: nik || null, jk: jk || null,
-                tgl_lahir: tglLahir || null, alamat: alamat || null, no_hp: hp || null
-            }).select().single();
-            if (pe) { txRollback(); return showToast(' Gagal: ' + pe.message); }
-            patientId = np.id;
-            window._regPatientRM = np.no_rm;
-        }
-    } else {
-        // MODE CARI: pastikan sudah cari pasien
-        if (!patientId) return showToast('Cari pasien terlebih dahulu!');
-    }
-
-    // Generate nomor antrian
-    var hariIni = new Date().toISOString().slice(0,10);
-    var { count: regCount } = await window.__sb
-        .from('registrations')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', hariIni);
-
-    var noUrut = (regCount || 0) + 1;
-    const prefix = poliId === '8' ? 'T' : 'A';
-    const noAntrian = `${prefix}-${String(noUrut).padStart(2, '0')}`;
-
-    const { error } = await window.__sb
-        .from('registrations')
-        .insert({
-            patient_id: patientId,
-            poli_id: parseInt(poliId),
-            penjamin: penjamin,
-            status: 'Menunggu',
-            no_antrian: noAntrian
-        });
-
-    if (error) return showToast(' Gagal: ' + error.message);
-
-    // Create invoice automatically
-    await window.__sb.from('invoices').insert({
-        registration_id: null,
-        patient_id: patientId,
-        status: 'Belum Dibayar',
-        total: 0
-    });
-
-    showToast(`✅ Berhasil! Pasien terdaftar. No. Antrian: ${noAntrian}`);
-    hideM('mdl-daftar');
-    loadPendaftaran();
-}
 
 // ===== RAWAT JALAN — Queue from Supabase =====
 const _RJ = { regs: [], patients: {}, polis: {}, doctors: {} };
 
-async function loadRawatJalan() {
-    const container = document.getElementById('rj-queue-container');
-    if (!container) return;
-    container.innerHTML = '<div class="loader" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data antrian...</div>';
-
-    const poliMap = {};
-    SharedState.getPoli().forEach(p => poliMap[p.id] = p.nama_poli);
-
-    // Fetch registrations for poli (antrian T-* / status not Opname/calling/URGENT)
-    const { data: regs } = await window.__sb
-        .from('registrations')
-        .select('id, patient_id, poli_id, doctor_id, no_antrian, status, penjamin, created_at')
-        .not('status', 'in', '("Opname","calling","URGENT")')
-        .order('created_at', { ascending: true });
-
-    if (!regs || !regs.length) {
-        container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-muted)"><div style="font-size:48px;margin-bottom:10px">🏥</div>Tidak ada antrian poli hari ini</div>';
-        return;
-    }
-
-    // Fetch patients & doctors for display
-    const patientIds = [...new Set(regs.map(r => r.patient_id))];
-    const { data: patients } = await window.__sb
-        .from('patients')
-        .select('id, no_rm, nama, tgl_lahir, jk')
-        .in('id', patientIds);
-
-    const patientsMap = {};
-    (patients || []).forEach(p => patientsMap[p.id] = p);
-
-    // Group by poli
-    const groups = {};
-    regs.forEach(r => {
-        if (!r.poli_id) return;
-        if (!groups[r.poli_id]) groups[r.poli_id] = [];
-        groups[r.poli_id].push(r);
-    });
-
-    // Render
-    let html = '';
-    for (const [poliId, poliRegs] of Object.entries(groups)) {
-        const pid = parseInt(poliId);
-        const poliName = poliMap[pid] || 'Poli #' + pid;
-        const waiting = poliRegs.filter(r => r.status === 'Menunggu').length;
-        const proses = poliRegs.filter(r => r.status === 'Proses');
-        const regsHtml = poliRegs.map(r => {
-            const pat = patientsMap[r.patient_id];
-            const isProses = r.status === 'Proses';
-            return `<tr class="${isProses ? 'row-n' : ''}"><td><strong>${r.no_antrian || '-'}</strong></td><td>${pat ? pat.nama : '—'}</td><td><span class="b ${isProses ? 'bp' : (r.status === 'Selesai' ? 'bs' : 'bw')}">${r.status}</span></td></tr>`;
-        }).join('');
-
-        const haveProses = proses.length > 0;
-        const nextWaiting = poliRegs.find(r => r.status === 'Menunggu');
-        const currentReg = haveProses ? proses[0] : nextWaiting;
-        const patName = currentReg && patientsMap[currentReg.patient_id] ? patientsMap[currentReg.patient_id].nama : '';
-
-        html += `<div class="card" style="margin-bottom:0"><div class="ch"><div class="ct">🫀 Poli ${poliName}</div><span class="b bw">${waiting} menunggu</span></div>
-          <div style="padding:10px 13px"><div style="font-size:11px;color:var(--text-muted);margin-bottom:7px">${SharedState.getDokterByPoli(pid) || 'Dokter tersedia'} — ${SharedState.getJadwalByPoli(pid) || 'Jam praktik'}</div>
-          <table class="t"><thead><tr><th>Antrian</th><th>Nama</th><th>Status</th></tr></thead><tbody>${regsHtml}</tbody></table>
-          <button class="btn btn-p btn-sm" style="margin-top:9px;width:100%" onclick="panggilPasien('${currentReg ? currentReg.id : ''}')">⏭️ ${haveProses ? 'Lanjutkan EMR' : (nextWaiting ? 'Panggil & Input EMR' : 'Tunggu Pasien')}</button></div>
-        </div>`;
-    }
-
-    container.innerHTML = html;
-    // Load medicines for resep tab
-    loadMedicines();
-}
 
 // Panggil pasien — update status ke Proses + set active patient
-async function panggilPasien(regId) {
-    if (!regId) return showToast('Tidak ada pasien yang bisa dipanggil');
-
-    // Update status to Proses
-    const { error } = await window.__sb
-        .from('registrations')
-        .update({ status: 'Proses' })
-        .eq('id', regId);
-
-    if (error) return showToast(' Gagal: ' + error.message);
-
-    // Switch to EMR tab
-    document.querySelectorAll('.tgb').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tgb')[1].classList.add('active');
-    document.getElementById('rj-q').style.display = 'none';
-    document.getElementById('rj-emr').style.display = 'block';
-
-    // Load patient data into EMR
-    loadEMR(regId);
-    loadRawatJalan();
-}
 
 // Load EMR data for a registration
-async function loadEMR(regId) {
-    const { data: reg } = await window.__sb
-        .from('registrations')
-        .select('*, patients!inner(id, no_rm, nama, tgl_lahir, jk), poli(nama_poli)')
-        .eq('id', regId)
-        .single();
-
-    if (!reg) return;
-
-    const p = reg.patients;
-    const umur = p.tgl_lahir ? Math.floor((new Date() - new Date(p.tgl_lahir)) / 31557600000) : '?';
-    const inisial = p.nama ? p.nama.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '--';
-
-    document.getElementById('rj-emr-patient').innerHTML = `
-        <div class="pc" style="margin-bottom:10px;cursor:default"><div class="p-av">${inisial}</div><div><div class="p-name">${p.nama}</div><div class="p-meta">No.RM: ${p.no_rm || '—'} • ${umur}th • ${p.jk || '—'}</div><div class="p-meta">${reg.penjamin || '—'} • Antrian ${reg.no_antrian}</div></div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:12px">
-            <div><span style="color:var(--text-muted)">Poli:</span> <strong>${reg.poli?.nama_poli || 'UGD'}</strong></div>
-            <div><span style="color:var(--text-muted)">Dokter:</span> <strong>${SharedState.getDokterByPoli(reg.poli_id) || '—'}</strong></div>
-        </div>`;
-
-    const titleEl = document.getElementById('mdl-emr-title');
-    if (titleEl) titleEl.textContent = `📝 Input EMR — ${p.nama} (${reg.no_antrian || '—'})`;
-
-    document.getElementById('rx-pasien-nama').textContent = p.nama || '—';
-    document.getElementById('rx-tbody').innerHTML = '';
-    document.getElementById('rx-subtotal').textContent = 'Rp 0';
-    document.getElementById('rx-total').textContent = 'Rp 5.000';
-    window._activeRegId = regId;
-    window._activePatient = p;
-    window._rxItems = [];
-}
 
 // ─── TAB SWITCH EMR ───
-function swSub(el, tabId) {
-    document.querySelectorAll('#rj-emr .tabs .tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-    document.querySelectorAll('#rj-emr [id^="emr-"]').forEach(d => {
-        if (['emr-s','emr-o','emr-a','emr-p'].includes(d.id)) d.style.display = 'none';
-    });
-    document.getElementById(tabId).style.display = 'block';
-}
 
 // ─── SIMPAN EMR ───
-async function simpanEMR(mode) {
-    const regId = window._activeRegId;
-    if (!regId) return showToast(' Pilih pasien dulu dari antrian');
-
-    const emrData = {
-        s_keluhan: document.getElementById('emr-keluhan')?.value || '',
-        s_rps: document.getElementById('emr-rps')?.value || '',
-        s_rpd: document.getElementById('emr-rpd')?.value || '',
-        s_alergi: document.getElementById('emr-alergi')?.value || '',
-        o_fisik: document.getElementById('emr-fisik')?.value || '',
-        o_khusus: document.getElementById('emr-khusus')?.value || '',
-        a_dx1: document.getElementById('emr-dx1')?.value || '',
-        a_dx2: document.getElementById('emr-dx2')?.value || '',
-        a_asesmen: document.getElementById('emr-asesmen')?.value || '',
-        p_plan: document.getElementById('emr-plan')?.value || '',
-        p_kontrol: document.getElementById('emr-kontrol')?.value || '',
-        p_tindakan: [
-            document.getElementById('act-konsul')?.checked ? 'Konsul' : null,
-            document.getElementById('act-ranap')?.checked ? 'Rawat Inap' : null,
-            document.getElementById('act-resep')?.checked ? 'Resep Obat' : null,
-            document.getElementById('act-rujuk')?.checked ? 'Rujukan' : null,
-            document.getElementById('act-lab')?.checked ? 'Lab' : null,
-        ].filter(Boolean)
-    };
-
-    const updateData = { notes: JSON.stringify(emrData), updated_at: new Date().toISOString() };
-    if (mode === 'selesai') updateData.status = 'Selesai';
-
-    const { error } = await window.__sb.from('registrations').update(updateData).eq('id', regId);
-    if (error) return showToast(' Gagal: ' + error.message);
-
-    if (mode === 'selesai') {
-        showToast(' Rekam medis selesai & tersimpan!');
-        // Reset form
-        document.getElementById('rj-emr-patient').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted)">Pilih pasien dari antrian untuk memulai EMR</div>';
-        document.querySelectorAll('#rj-emr input, #rj-emr textarea, #rj-emr select').forEach(el => el.value = '');
-        document.querySelectorAll('#rj-emr input[type=checkbox]').forEach(el => el.checked = false);
-        window._activeRegId = null;
-        window._activePatient = null;
-        swTab(document.querySelector('.tgb'), 'rj-q');
-        loadRawatJalan();
-    } else {
-        showToast('Draft EMR tersimpan!');
-    }
-}
 
 // ─── LANJUT KE RESEP ───
-function lanjutResep() {
-    if (!window._activeRegId) return showToast(' Pilih pasien dulu');
-    swTab(document.querySelectorAll('.tgb')[2], 'rj-rx');
-}
 
 // ─── CETAK SURAT KONTROL ───
-function printKontrol() {
-    const pt = window._activePatient;
-    if (!pt) return showToast(' Pilih pasien dulu');
-    const win = window.open('', '_blank');
-    win.document.write(`<html><head><title>Surat Kontrol</title><style>body{font-family:sans-serif;padding:40px}</style></head><body>
-        <h2>Surat Kontrol</h2>
-        <p>Nama: <strong>${pt.nama}</strong></p>
-        <p>No. RM: ${pt.no_rm || '—'}</p>
-        <p>Tanggal: ${new Date().toLocaleDateString('id-ID')}</p>
-        <p>Kontrol kembali: ${document.getElementById('emr-kontrol')?.value || '—'}</p>
-        <br><br><p>Dokter,</p><br><br><p>(__________________)</p>
-        <script>window.print()</script></body></html>`);
-    win.document.close();
-}
 
 // ─── RESEP ───
 let _rxItems = [];
 
-async function loadMedicines() {
-    const { data } = await window.__sb.from('medicines').select('*').order('nama_obat');
-    if (!data) return;
-    const list = document.getElementById('rx-obat-list');
-    if (!list) return;
-    const searchInput = document.getElementById('rx-search');
-    if (!searchInput) return;
 
-    function render(filter = '') {
-        const filtered = data.filter(m => m.nama_obat.toLowerCase().includes(filter.toLowerCase()));
-        list.innerHTML = filtered.map(m => {
-            const stokClass = m.stok <= m.stok_minimum ? 'var(--danger)' : m.stok <= m.stok_minimum * 3 ? 'var(--warning)' : 'var(--success)';
-            return `<div class="di"><div class="d-icon">💊</div><div><div class="d-name">${m.nama_obat}</div><div class="d-det">${m.kategori||'Obat'} • Rp ${(m.harga_satuan||0).toLocaleString()}/${m.satuan||''}</div></div><div class="d-stock"><div class="d-qty" style="color:${stokClass}">${m.stok||0}</div><div class="d-unit">${m.satuan||''}</div></div><button class="btn btn-p btn-xs" onclick="tambahObat('${m.id}','${m.nama_obat.replace(/'/g,"\\'")}',${m.harga_satuan||0},'${m.satuan||''}')">+ Tambah</button></div>`;
-        }).join('');
-    }
 
-    render('');
-    searchInput.oninput = () => render(searchInput.value);
-}
 
-function tambahObat(id, nama, harga, satuan) {
-    if (!window._activePatient) return showToast(' Pilih pasien dulu dari EMR');
-    const tbody = document.getElementById('rx-tbody');
-    const idx = window._rxItems ? window._rxItems.length : 0;
-    if (!window._rxItems) window._rxItems = [];
-    window._rxItems.push({ id, nama, harga, satuan, dosis: '', frek: '', jumlah: 1, ket: '' });
-    
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td><strong>${nama}</strong></td>
-        <td><input class="fc" style="width:60px" value="" onchange="updateRx(${idx},'dosis',this.value)"></td>
-        <td><input class="fc" style="width:60px" value="" onchange="updateRx(${idx},'frek',this.value)"></td>
-        <td><input class="fc" style="width:50px" type="number" min="1" value="1" onchange="updateRx(${idx},'jumlah',parseInt(this.value)||1)"></td>
-        <td><input class="fc" style="width:70px" value="" onchange="updateRx(${idx},'ket',this.value)"></td>
-        <td><button class="btn btn-o btn-xs" onclick="hapusObat(${idx})">✕</button></td>`;
-    tbody.appendChild(tr);
-    hitungTotal();
-}
 
-function updateRx(idx, field, val) {
-    if (!window._rxItems) window._rxItems = [];
-    if (!window._rxItems[idx]) return;
-    window._rxItems[idx][field] = val;
-    hitungTotal();
-}
 
-function hapusObat(idx) {
-    if (!window._rxItems) return;
-    window._rxItems.splice(idx, 1);
-    renderRxTable();
-    hitungTotal();
-}
 
-function renderRxTable() {
-    const tbody = document.getElementById('rx-tbody');
-    tbody.innerHTML = '';
-    (window._rxItems || []).forEach((item, i) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td><strong>${item.nama}</strong></td>
-            <td><input class="fc" style="width:60px" value="${item.dosis||''}" onchange="updateRx(${i},'dosis',this.value)"></td>
-            <td><input class="fc" style="width:60px" value="${item.frek||''}" onchange="updateRx(${i},'frek',this.value)"></td>
-            <td><input class="fc" style="width:50px" type="number" min="1" value="${item.jumlah||1}" onchange="updateRx(${i},'jumlah',parseInt(this.value)||1)"></td>
-            <td><input class="fc" style="width:70px" value="${item.ket||''}" onchange="updateRx(${i},'ket',this.value)"></td>
-            <td><button class="btn btn-o btn-xs" onclick="hapusObat(${i})">✕</button></td>`;
-        tbody.appendChild(tr);
-    });
-}
 
-function hitungTotal() {
-    const items = window._rxItems || [];
-    const subtotal = items.reduce((sum, item) => sum + (item.harga || 0) * (item.jumlah || 1), 0);
-    document.getElementById('rx-subtotal').textContent = formatRupiah(subtotal);
-    document.getElementById('rx-total').textContent = 'Rp ' + (subtotal + 5000).toLocaleString();
-}
-
-async function kirimFarmasi() {
-    const regId = window._activeRegId;
-    const pt = window._activePatient;
-    if (!regId || !pt) return showToast(' Pilih pasien dulu dari EMR');
-    const items = window._rxItems || [];
-    if (!items.length) return showToast(' Belum ada obat di resep');
-
-    // Create prescription
-    const noResep = 'RX-' + Date.now().toString(36).toUpperCase();
-    const { data: presc, error: pe } = await window.__sb.from('prescriptions').insert({
-        no_resep: noResep,
-        patient_id: pt.id,
-        registration_id: regId,
-        unit: 'RJ',
-        status: 'Menunggu Farmasi',
-        created_at: new Date().toISOString()
-    }).select().single();
-
-    if (pe) return showToast(' Gagal buat resep: ' + pe.message);
-
-    // Create prescription items
-    const pItems = items.map(item => ({
-        prescription_id: presc.id,
-        medicine_id: item.id,
-        jumlah: item.jumlah || 1,
-        dosis: item.dosis || '',
-        harga: item.harga || 0,
-        subtotal: (item.harga || 0) * (item.jumlah || 1)
-    }));
-
-    const { error: ie } = await window.__sb.from('prescription_items').insert(pItems);
-    if (ie) return showToast(' Gagal simpan item: ' + ie.message);
-
-    // Kurangi stok otomatis
-    for (var si = 0; si < items.length; si++) {
-      var it = items[si];
-      if (!it.id) continue;
-      var { data: obat } = await window.__sb.from('medicines').select('stok, nama_obat').eq('id', it.id).single();
-      if (!obat) continue;
-      if ((obat.stok || 0) < (it.jumlah || 1)) {
-        showToast('Stok ' + obat.nama_obat + ' tidak cukup (sisa: ' + obat.stok + ')', 'warning');
-        continue;
-      }
-      await window.__sb.from('medicines').update({ stok: (obat.stok || 0) - (it.jumlah || 1) }).eq('id', it.id);
-    }
-
-    showToast(' Resep terkirim ke Farmasi! Stok dikurangi otomatis.', 'success');
-    window._rxItems = [];
-    document.getElementById('rx-tbody').innerHTML = '';
-    hitungTotal();
-}
-
-function cetakResep() {
-    const pt = window._activePatient;
-    if (!pt) return showToast(' Pilih pasien dulu dari EMR');
-    const items = window._rxItems || [];
-    if (!items.length) return showToast(' Belum ada obat di resep');
-
-    let rows = items.map((item, i) => `
-        <tr>
-            <td style="padding:6px 10px;border-bottom:1px solid #ddd">${i+1}.</td>
-            <td style="padding:6px 10px;border-bottom:1px solid #ddd"><strong>${item.nama}</strong></td>
-            <td style="padding:6px 10px;border-bottom:1px solid #ddd">${item.dosis || '—'}</td>
-            <td style="padding:6px 10px;border-bottom:1px solid #ddd">${item.frek || '—'}</td>
-            <td style="padding:6px 10px;border-bottom:1px solid #ddd">${item.jumlah || 1} ${item.satuan || ''}</td>
-            <td style="padding:6px 10px;border-bottom:1px solid #ddd">${item.ket || '—'}</td>
-        </tr>`).join('');
-
-    const tgl = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const win = window.open('', '_blank');
-    win.document.write(`<!DOCTYPE html>
-<html><head><title>Resep - MEDICORE</title>
-<style>
-    @page { margin: 15mm 20mm; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #222; padding: 0; margin: 0; }
-    .header { text-align: center; border-bottom: 2px solid #0A2540; padding-bottom: 12px; margin-bottom: 16px; }
-    .header h1 { margin: 0; font-size: 18px; color: #0A2540; }
-    .header p { margin: 3px 0 0; font-size: 11px; color: #555; }
-    .info { margin-bottom: 14px; }
-    .info table { width: 100%; border-collapse: collapse; }
-    .info td { padding: 2px 0; font-size: 12px; }
-    .info .lbl { color: #555; width: 80px; }
-    table.obat { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
-    table.obat th { background: #0A2540; color: #fff; padding: 7px 10px; text-align: left; font-size: 11px; }
-    table.obat td { font-size: 12px; }
-    .footer { margin-top: 30px; display: flex; justify-content: space-between; }
-    .footer .ttd { text-align: center; }
-    .footer .ttd p { margin: 0 0 40px; font-size: 11px; color: #555; }
-    .footer .ttd .line { width: 160px; border-top: 1px solid #222; padding-top: 4px; font-size: 11px; }
-    .no-print { display: none; }
-</style></head>
-<body>
-    <div class="header">
-        <h1>RESEP OBAT</h1>
-        <p>Edoy Hospital Management — Banten</p>
-    </div>
-    <div class="info">
-        <table>
-            <tr><td class="lbl">Nama</td><td>: <strong>${pt.nama}</strong></td><td style="text-align:right">Tanggal: ${tgl}</td></tr>
-            <tr><td class="lbl">No. RM</td><td>: ${pt.no_rm || '—'}</td><td style="text-align:right">No. Resep: RX-${Date.now().toString(36).toUpperCase()}</td></tr>
-            <tr><td class="lbl">Dokter</td><td>: ${window.medicoreUser?.nama || '—'}</td><td></td></tr>
-        </table>
-    </div>
-    <table class="obat">
-        <thead><tr><th style="width:30px">No</th><th>Nama Obat</th><th style="width:70px">Dosis</th><th style="width:70px">Frek.</th><th style="width:80px">Jumlah</th><th style="width:90px">Keterangan</th></tr></thead>
-        <tbody>${rows}</tbody>
-    </table>
-    <div class="footer">
-        <div class="ttd">
-            <p>Pasien / Keluarga,</p>
-            <div class="line">(__________________)</div>
-        </div>
-        <div class="ttd">
-            <p>Dokter,</p>
-            <div class="line">(${window.medicoreUser?.nama || '__________________'})</div>
-        </div>
-    </div>
-    <p style="text-align:center;font-size:10px;color:#999;margin-top:20px">— Dokumen ini sah tanpa tanda tangan basah —</p>
-    <script>window.onload=function(){setTimeout(function(){window.print()},300)};window.onafterprint=function(){window.close()};<\/script>
-</body></html>`);
-    win.document.close();
-}
 
 // ===== RAWAT INAP — from Supabase =====
 async function loadRawatInap() {
@@ -2464,160 +1519,8 @@ async function loadRad() {
 }
 
 // ===== FARMASI — from prescriptions & medicines tables =====
-async function loadFarmasi() {
-    const statsDiv = document.getElementById('far-stats');
-    if (!statsDiv) return;
 
-    const { count: rxCount } = await window.__sb
-        .from('prescriptions')
-        .select('id', { count: 'exact', head: true });
 
-    const { count: medCount } = await window.__sb
-        .from('medicines')
-        .select('id', { count: 'exact', head: true });
-
-    const { data: medicines } = await window.__sb
-        .from('medicines')
-        .select('stok, stok_minimum');
-
-    const menipis = (medicines || []).filter(m => m.stok <= m.stok_minimum && m.stok > 0).length;
-    const kritis = (medicines || []).filter(m => m.stok <= 0 || m.stok <= (m.stok_minimum * 0.5)).length;
-
-    statsDiv.innerHTML = `
-        <div class="sc"><div class="sb" style="background:var(--success)"></div><div class="sv" style="color:var(--success)">${rxCount || 0}</div><div class="sl">Resep Hari Ini</div></div>
-        <div class="sc"><div class="sb" style="background:var(--warning)"></div><div class="sv" style="color:var(--warning)">${menipis}</div><div class="sl">Stok Menipis</div></div>
-        <div class="sc"><div class="sb" style="background:var(--danger)"></div><div class="sv" style="color:var(--danger)">${kritis}</div><div class="sl">Stok Kritis</div></div>
-        <div class="sc"><div class="sb" style="background:var(--info)"></div><div class="sv" style="color:var(--info)">${medCount || 0}</div><div class="sl">Total Item Obat</div></div>`;
-
-    // Load active tab
-    const rxTab = document.getElementById('far-rx');
-    if (rxTab && rxTab.style.display !== 'none') loadFarRx();
-    const stokTab = document.getElementById('far-stok');
-    if (stokTab && stokTab.style.display !== 'none') loadFarStok();
-}
-
-async function loadFarRx() {
-    const tableDiv = document.getElementById('far-rx-table');
-    if (!tableDiv) return;
-
-    tableDiv.innerHTML = '<div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data resep...</div>';
-
-    const { data: rx } = await window.__sb
-        .from('prescriptions')
-        .select('*, patients!inner(no_rm, nama)')
-        .order('created_at', { ascending: false });
-
-    if (!rx) {
-        tableDiv.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">❌ Gagal memuat data resep</div>';
-        return;
-    }
-
-    // Count items per prescription
-    const rxIds = rx.map(r => r.id);
-    let itemsMap = {};
-    if (rxIds.length > 0) {
-        const { data: items } = await window.__sb
-            .from('prescription_items')
-            .select('prescription_id, jumlah, subtotal')
-            .in('prescription_id', rxIds);
-        (items || []).forEach(item => {
-            if (!itemsMap[item.prescription_id]) itemsMap[item.prescription_id] = { count: 0, total: 0 };
-            itemsMap[item.prescription_id].count += item.jumlah || 0;
-            itemsMap[item.prescription_id].total += item.subtotal || 0;
-        });
-    }
-
-    let rows = '';
-    rx.forEach(r => {
-        const p = r.patients;
-        const itemInfo = itemsMap[r.id] || { count: 0, total: 0 };
-        const statusCls = r.status === 'Siap Ambil' ? 'bs'
-            : r.status === 'Diracik' ? 'bp'
-            : r.status === 'Menunggu' ? 'bw'
-            : 'bg';
-        const totalStr = itemInfo.total ? 'Rp ' + Number(itemInfo.total).toLocaleString() : '—';
-
-        rows += `<tr>
-            <td class="mono">${r.no_resep || '—'}</td>
-            <td><strong>${p ? p.nama : '—'}</strong></td>
-            <td>${r.doctor_id || '—'}</td>
-            <td>${r.unit || '—'}</td>
-            <td>${itemInfo.count}</td>
-            <td>${totalStr}</td>
-            <td><span class="b ${statusCls}">${r.status || '—'}</span></td>
-            <td><button class="btn btn-o btn-xs" onclick="showFarmasiDetail('${r.id}')">Detail</button></td>
-        </tr>`;
-    });
-
-    if (!rows) {
-        rows = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">Tidak ada resep hari ini</td></tr>';
-    }
-
-    tableDiv.innerHTML = `
-        <div class="card"><div class="ch"><div class="ct">📋 Resep Masuk</div></div>
-        <table class="t"><thead><tr><th>No.Resep</th><th>Nama Pasien</th><th>Dokter</th><th>Unit</th><th>Jml Item</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead>
-        <tbody>${rows}</tbody></table></div>`;
-}
-
-async function loadFarStok() {
-    const tableDiv = document.getElementById('far-stok-table');
-    if (!tableDiv) return;
-
-    tableDiv.innerHTML = '<div class="loader" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Memuat data stok...</div>';
-
-    const { data: medicines } = await window.__sb
-        .from('medicines')
-        .select('*')
-        .order('nama_obat', { ascending: true });
-
-    if (!medicines) {
-        tableDiv.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">❌ Gagal memuat data stok</div>';
-        return;
-    }
-
-    let rows = '';
-    medicines.forEach(m => {
-        let statusLabel, statusCls, rowCls;
-        if (m.stok <= 0 || m.stok <= (m.stok_minimum * 0.5)) {
-            statusLabel = 'Kritis';
-            statusCls = 'bd';
-            rowCls = 'row-u';
-        } else if (m.stok <= m.stok_minimum) {
-            statusLabel = 'Menipis';
-            statusCls = 'bw';
-            rowCls = 'row-u';
-        } else {
-            statusLabel = 'Normal';
-            statusCls = 'bs';
-            rowCls = '';
-        }
-
-        const ed = m.expired_date ? new Date(m.expired_date).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }) : '—';
-        const harga = m.harga_satuan ? 'Rp ' + Number(m.harga_satuan).toLocaleString() : '—';
-        const kat = m.kategori ? m.kategori.slice(0,4) : '—';
-
-        rows += `<tr class="${rowCls}">
-            <td class="mono">${m.kode || '—'}</td>
-            <td><strong>${m.nama_obat}</strong></td>
-            <td>${kat}</td>
-            <td>${m.stok}</td>
-            <td>${m.stok_minimum}</td>
-            <td>${harga}</td>
-            <td style="font-size:11px">${ed}</td>
-            <td><span class="b ${statusCls}">${statusLabel}</span></td>
-        </tr>`;
-    });
-
-    if (!rows) {
-        rows = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">Tidak ada data obat</td></tr>';
-    }
-
-    tableDiv.innerHTML = `
-        <div class="srch"><input class="fc" style="max-width:260px" placeholder="🔍 Cari nama obat..."><select class="fc" style="max-width:140px"><option>Semua Kategori</option><option>Tablet</option><option>Kapsul</option><option>Injeksi</option><option>Infus</option></select><button class="btn btn-p btn-sm">Filter</button><button class="btn btn-o btn-sm" style="margin-left:auto" onclick="showMdlPenerimaanStok()">+ Penerimaan Stok</button></div>
-        <div class="card"><div class="ch"><div class="ct">Daftar Stok Obat</div></div>
-        <table class="t"><thead><tr><th>Kode</th><th>Nama Obat</th><th>Kat.</th><th>Stok</th><th>Min.Stok</th><th>Harga</th><th>ED</th><th>Status</th></tr></thead>
-        <tbody>${rows}</tbody></table></div>`;
-}
 
 function showMdlPenerimaanStok() {
     // Reset form
@@ -3246,7 +2149,8 @@ async function submitAdmit() {
         await window.__sb.from('beds').update({ status: 'Terpakai' }).eq('id', bedId);
         
         hideM('mdl-admit');
-        showToast(`✅ ${patientName} berhasil di-admit\nNo. Antrian: ${newNo}`);
+        logActivity('Admit','Pasien',patientName||'',`Admit rawat inap No.Antrian: ${newNo}`);
+    showToast(`✅ ${patientName} berhasil di-admit\nNo. Antrian: ${newNo}`);
         loadRawatInap();
     } catch (e) {
         showToast('' + e.message);
@@ -3854,7 +2758,8 @@ function initAuth() {
         return;
       }
       window.medicoreUser = user;
-      updateUserChip();
+      logActivity('Login','User',window.medicoreUser?.nama||'',`Login role: ${window.medicoreUser?.role||''}`);
+  updateUserChip();
       document.getElementById('login-overlay').classList.remove('active');
       document.getElementById('app-shell').classList.add('active');
     } catch(e) {
@@ -3921,6 +2826,7 @@ async function doLogin() {
   window.medicoreUser._loginAt = loginTime;
   window.medicoreUser._expiresAt = loginTime + (8 * 60 * 60 * 1000); // 8 jam
   localStorage.setItem('medicore_user', JSON.stringify(window.medicoreUser));
+  logActivity('Login','User',window.medicoreUser?.nama||'',`Login role: ${window.medicoreUser?.role||''}`);
   updateUserChip();
   document.getElementById('login-overlay').classList.remove('active');
   document.getElementById('app-shell').classList.add('active');
@@ -3953,78 +2859,16 @@ async function submitSEP() {
     created_at: new Date().toISOString()
   }).single();
   if (error) return showToast('Gagal simpan SEP: ' + error.message, 'error');
+  logActivity('Buat SEP','BPJS',noSEP,'No.BPJS: ' + noBPJS);
   showToast('✅ SEP ' + noSEP + ' berhasil disimpan', 'success');
   hideM('mdl-sep');
 }
 
 // ─── FORMAT RUPIAH ───
-function formatRupiah(angka) {
-  if (angka === null || angka === undefined) return 'Rp 0';
-  if (typeof angka === 'string') angka = parseFloat(angka.replace(/[^0-9.,-]/g, '').replace(',', '.'));
-  if (isNaN(angka)) angka = 0;
-  return 'Rp ' + Math.round(angka).toLocaleString('id-ID');
-}
-function formatCurrency(angka) { return formatRupiah(angka); }
 
 // ─── EXPORT TABLE TO CSV ───
-function exportTableToCSV(tableId, filename) {
-  var table = document.getElementById(tableId);
-  if (!table) { showToast('Tabel tidak ditemukan', 'error'); return; }
-  filename = filename || 'data-' + new Date().toISOString().slice(0,10) + '.csv';
-
-  var rows = [];
-  var headerRow = [];
-  table.querySelectorAll('thead th').forEach(function(th) {
-    var text = th.textContent.replace(/[▴▾]/g, '').trim();
-    if (text !== 'Aksi' && text !== '') headerRow.push('"' + text + '"');
-  });
-  if (headerRow.length) rows.push(headerRow.join(','));
-
-  table.querySelectorAll('tbody tr').forEach(function(tr) {
-    var dataRow = [];
-    var cells = tr.querySelectorAll('td');
-    if (cells.length <= 1 && tr.querySelector('[colspan]')) return;
-    cells.forEach(function(td, i) {
-      if (i === cells.length - 1) return;
-      var text = td.textContent.trim().replace(/"/g, '""');
-      dataRow.push('"' + text + '"');
-    });
-    if (dataRow.length) rows.push(dataRow.join(','));
-  });
-
-  if (rows.length <= 1) { showToast('Tidak ada data untuk di-export', 'warning'); return; }
-
-  var bom = '﻿';
-  var csv = bom + rows.join('\r\n');
-  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  var link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
-  showToast('✅ Data di-export: ' + filename, 'success');
-}
 
 // ─── DARK MODE TOGGLE ───
-function toggleDarkMode() {
-  var html = document.documentElement;
-  var current = html.getAttribute('data-theme') || 'light';
-  var next = current === 'dark' ? 'light' : 'dark';
-  html.setAttribute('data-theme', next);
-  localStorage.setItem('medicore-theme', next);
-  var btn = document.getElementById('dark-mode-toggle');
-  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
-}
-function initDarkMode() {
-  var saved = localStorage.getItem('medicore-theme');
-  if (saved === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    var btn = document.getElementById('dark-mode-toggle');
-    if (btn) btn.textContent = '☀️';
-  }
-}
 
 function doLogout() {
   localStorage.removeItem('medicore_user');
@@ -4592,6 +3436,7 @@ async function submitStokMasuk() {
   if (error) { showToast(' Gagal: ' + error.message); return; }
   
   console.log('📥 Stok Masuk:', { obatId, qty, ref, ket });
+  logActivity('Terima Stok','Obat',document.getElementById('mdl-obat-nama')?.value||'',`Penerimaan stok baru: ${newStok}`);
   showToast(`✅ Penerimaan berhasil! Stok baru: ${newStok}`);
   hideM('mdl-stok-masuk');
   loadStok();
@@ -4646,6 +3491,7 @@ async function submitStokOpname() {
   if (error) { showToast(' Gagal: ' + error.message); return; }
   
   console.log('📋 Stok Opname:', { obatId, stokFisik, ket });
+  logActivity('Opname Stok','Obat',document.getElementById('mdl-so-obat')?.selectedOptions?.[0]?.text||'',`Opname stok fisik: ${stokFisik}`);
   showToast(`✅ Opname berhasil! Stok diatur ke: ${stokFisik}`);
   hideM('mdl-stok-opname');
   loadStok();
@@ -5211,12 +4057,6 @@ async function hapusPO(id) {
 /**
  * Format a number as Indonesian Rupiah
  */
-function formatCurrency(n) {
-  if (n === null || n === undefined) return 'Rp 0';
-  const num = parseFloat(n);
-  if (isNaN(num)) return 'Rp 0';
-  return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
 
 /**
  * Get today's date as YYYY-MM-DD
@@ -7714,7 +6554,7 @@ async function loadAuditLogs() {
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">⏳ Memuat...</td></tr>';
 
   const { data, error } = await window.__sb.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
-  if (error || !data) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--danger)">' + (error?.message || 'Gagal memuat') + '</td></tr>'; return; }
+  if (error || !data) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--danger)"><div class="error-state"><div class="error-state-icon">⚠️</div><div style="font-size:var(--text-sm)">' + (error?.message || 'Gagal memuat') + '</div></div></td></tr>'; return; }
 
   __auditData = data;
   renderAuditLogs(data);

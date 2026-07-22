@@ -12,17 +12,15 @@ const ASSETS = [
   './manifest.json'
 ];
 
-// Install: cache core assets
 self.addEventListener('install', function(e) {
   e.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
       return cache.addAll(ASSETS);
-    })
+    })['catch'](function() { /* partial install ok */ })
   );
   self.skipWaiting();
 });
 
-// Activate: clean old caches
 self.addEventListener('activate', function(e) {
   e.waitUntil(
     caches.keys().then(function(keys) {
@@ -34,17 +32,19 @@ self.addEventListener('activate', function(e) {
   self.clients.claim();
 });
 
-// Fetch: network first (API), cache first (static)
 self.addEventListener('fetch', function(e) {
-  var url = new URL(e.request.url);
+  var url = e.request.url;
+
+  // Skip non-http (chrome-extension, data, blob, etc)
+  if (!url.startsWith('http')) return;
+
+  var urlObj = new URL(url);
 
   // Supabase API — network only, no cache
-  if (url.hostname.includes('supabase')) {
-    return;
-  }
+  if (urlObj.hostname.includes('supabase')) return;
 
   // Static assets — cache first
-  if (ASSETS.includes(url.pathname) || url.pathname.match(/\.(css|js|png|jpg|svg|woff2?)$/)) {
+  if (ASSETS.includes(urlObj.pathname) || urlObj.pathname.match(/\.(css|js|png|jpg|svg|woff2?)$/)) {
     e.respondWith(
       caches.match(e.request).then(function(cached) {
         return cached || fetch(e.request).then(function(res) {

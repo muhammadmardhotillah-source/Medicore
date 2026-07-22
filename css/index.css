@@ -1503,7 +1503,7 @@ textarea.fc { resize: vertical; min-height: 100px; }
 
 /* ===== APP SHELL ===== */
 #app-shell {
-  display: flex;
+  display: none;
   width: 100%;
   min-height: 100vh;
 }
