@@ -1,4 +1,4 @@
-const CACHE_NAME = 'medicore-v2';
+const CACHE_NAME = 'medicore-v3';
 const ASSETS = [
   './',
   './index.html',

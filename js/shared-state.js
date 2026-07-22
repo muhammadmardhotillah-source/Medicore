@@ -105,7 +105,7 @@ const SharedState = {
             const [regRes, bedRes, payRes] = await Promise.all([
                 window.__sb.from('registrations').select('*, patients(no_rm, nama), poli(nama_poli)'),
                 window.__sb.from('beds').select('*'),
-                window.__sb.from('payments').select('total').gte('created_at', today)
+                window.__sb.from('payments').select('total_tagihan').gte('created_at', today)
                     .then(function(r) { return r; }, function() { return { data: [] }; })
             ]);
 
@@ -115,7 +115,7 @@ const SharedState = {
 
             var totalIncome = 0;
             for (var i = 0; i < payments.length; i++) {
-              totalIncome += payments[i].total || 0;
+              totalIncome += payments[i].total_tagihan || 0;
             }
 
             return {

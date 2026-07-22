@@ -468,6 +468,10 @@ document.addEventListener('click', function(e) {
   var chip = e.target.closest('#user-chip');
   if (chip) toggleUserMenu();
 });
+document.addEventListener('click', function(e) { if (e.target.closest('#mobile-menu-btn')) toggleMobileMenu(); });
+document.addEventListener('submit', function(e) { if (e.target.id === 'login-form') { e.preventDefault(); doLogin(); } });
+document.addEventListener('keydown', function(e) { if (e.key === 'Enter' && (document.activeElement === document.getElementById('login-user') || document.activeElement === document.getElementById('login-pass'))) doLogin(); });
+
 
 // ─── KEYBOARD: Close modal on Escape + click outside ───
 document.addEventListener('keydown', function(e) {
@@ -1052,7 +1056,7 @@ async function submitRegistration() {
 }
 
 // ===== RAWAT JALAN — Queue from Supabase =====
-const _RJ = { regs: [], patients: {}, polis: {}, doctors: {} };
+var _RJ = { regs: [], patients: {}, polis: {}, doctors: {} };
 
 async function loadRawatJalan() {
     const container = document.getElementById('rj-queue-container');
