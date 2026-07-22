@@ -487,7 +487,7 @@
 
   <!-- ===== LAPORAN ===== -->
   <div id="pg-laporan" class="page">
-    <div class="sh"><div><div class="st">Laporan Keuangan</div><div class="ss">Rekapitulasi pendapatan &amp; analisis finansial RS</div></div><div class="sa"><select class="fc" style="max-width:130px"><option>Mei 2026</option><option>April 2026</option></select><button class="btn btn-o btn-sm" onclick="exportTableToCSV('stok-table','stok-obat.csv')">📥 Export Stok</button><button class="btn btn-p btn-sm" onclick="window.print()">🖨️ Cetak PDF</button></div></div>
+    <div class="sh"><div><div class="st">Laporan Keuangan</div><div class="ss">Rekapitulasi pendapatan &amp; analisis finansial RS</div></div><div class="sa"><select class="fc" style="max-width:130px"><option>Mei 2026</option><option>April 2026</option></select><button class="btn btn-o btn-sm" onclick="exportSIRS()">📋 SIRS Bulanan</button><button class="btn btn-o btn-sm" onclick="exportTableToCSV('stok-table','stok-obat.csv')">📥 Export Stok</button><button class="btn btn-p btn-sm" onclick="window.print()">🖨️ Cetak PDF</button></div></div>
     <div class="fin">
       <div class="fin-s">Total Pendapatan Bulan Ini</div>
       <div class="fin-m" id="fin-m"><div class="pending-skeleton"><div class="skeleton skeleton-text" style="width:40%"></div></div></div>
@@ -1829,6 +1829,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/shared-state.js?v=4"></script>
+<script src="js/helpers.js?v=1"></script>
+<script src="js/modules/registrasi.js?v=1"></script>
+<script src="js/modules/rawat-jalan.js?v=1"></script>
+<script src="js/modules/farmasi.js?v=1"></script>
+<script src="js/modules/kasir.js?v=1"></script>
 <script src="js/index.js?v=71" defer></script>
 <script defer>
     if ('serviceWorker' in navigator) {
