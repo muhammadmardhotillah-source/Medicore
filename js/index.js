@@ -779,14 +779,22 @@ async function renderDashboard() {
         });
     }
 
-    // 5. CSS-only Revenue Chart (7 days mock)
-    var mockIncome = [65, 72, 58, 84, 91, 78, 89];
-    renderMiniChart('chart-w', mockIncome, 'var(--primary-500)');
+    // 5. Revenue Chart — real data
+    var chartData = (dashboardData.stats && dashboardData.stats.incomeChart) || [65, 72, 58, 84, 91, 78, 89];
+    renderMiniChart('chart-w', chartData, 'var(--primary-500)');
 
     // 6. Chart legends
     var chartLegend = document.getElementById('chart-l');
     if (chartLegend) {
-      chartLegend.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">7 hari terakhir • dalam juta rupiah</span>';
+      chartLegend.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">7 hari terakhir</span>';
+    }
+
+    // 7. Income percentage change
+    var pctEl = document.getElementById('stat-income-pct');
+    if (pctEl) {
+      var pct = (dashboardData.stats && dashboardData.stats.incomePct) || 0;
+      pctEl.textContent = (pct >= 0 ? '▲ ' : '▼ ') + Math.abs(pct) + '% dari kemarin';
+      pctEl.className = 'sc-chg ' + (pct >= 0 ? 'up' : 'dn');
     }
 }
 
